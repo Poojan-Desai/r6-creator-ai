@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  READY
+  ERROR
+}
+
+enum ClipStatus {
+  PROCESSING
+  READY
+  ERROR
+}
+
+model Project {
+  id                 String        @id @default(cuid())
+  name               String
+  status             ProjectStatus @default(READY)
+  originalFilename   String
+  sourceRelativePath String        @unique
+  mimeType           String
+  fileSizeBytes      BigInt
+  durationSeconds    Float
+  width              Int
+  height             Int
+  frameRate          Float
+  errorMessage       String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  clips              Clip[]
+  contentDraft       ContentDraft?
+
+  @@index([createdAt])
+}
+
+model Clip {
+  id               String     @id @default(cuid())
+  projectId        String
+  project          Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name             String
+  status           ClipStatus @default(PROCESSING)
+  startSeconds     Float
+  endSeconds       Float
+  durationSeconds  Float
+  relativePath     String?    @unique
+  fileSizeBytes    BigInt?
+  errorMessage     String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([projectId, createdAt])
+}
+
+model ContentDraft {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  voiceoverScript     String   @default("")
+  openingHook         String   @default("")
+  youtubeTitle        String   @default("")
+  shortFormCaption    String   @default("")
+  thumbnailText       String   @default("")
+  editingInstructions String   @default("")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+

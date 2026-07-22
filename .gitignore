@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Local runtime data: private recordings, clips, and SQLite files
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Test and tool output
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Local scratch space
+work/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+
