@@ -39,4 +39,5 @@ export const appConfig = {
       path.join(dataRoot, "models", "whisper", "ggml-base.en.bin"),
   ),
   whisperModelName: process.env.WHISPER_MODEL_NAME?.trim() || "base.en",
+  youtubeDataApiKey: process.env.YOUTUBE_DATA_API_KEY?.trim() || null,
 };

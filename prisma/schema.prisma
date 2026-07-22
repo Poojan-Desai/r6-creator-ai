@@ -28,6 +28,29 @@ enum TranscriptionStatus {
   ERROR
 }
 
+enum ReferenceType {
+  LOCAL_VIDEO
+  YOUTUBE_LINK
+}
+
+enum ReferenceAnalysisStatus {
+  QUEUED
+  EXTRACTING
+  TRANSCRIBING
+  MEASURING
+  SAVING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
+enum StyleFeatureSource {
+  MEASURED
+  ESTIMATED
+  MANUAL
+  UNAVAILABLE
+}
+
 model Project {
   id                 String             @id @default(cuid())
   name               String
@@ -141,4 +164,181 @@ model ContentDraft {
   editingInstructions String   @default("")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+model ReferenceVideo {
+  id                    String                   @id @default(cuid())
+  referenceType         ReferenceType
+  title                 String
+  creatorName           String
+  game                  String                   @default("Rainbow Six Siege")
+  platform              String
+  sourceType            String
+  sourceUrl             String?
+  youtubeVideoId        String?                  @unique
+  contentCategory       String
+  notes                 String?
+  permissionConfirmed   Boolean                  @default(false)
+  permissionConfirmedAt DateTime?
+  originalFilename      String?
+  sourceRelativePath    String?                  @unique
+  mimeType              String?
+  fileSizeBytes         BigInt?
+  durationSeconds       Float?
+  width                 Int?
+  height                Int?
+  frameRate             Float?
+  thumbnailText         String?
+  metadataSource        String                   @default("MANUAL")
+  publicMetadataJson    String?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  audioTracks           ReferenceAudioTrack[]
+  styleAnalyses         ReferenceStyleAnalysis[]
+  profileLinks          StyleProfileReference[]
+
+  @@index([referenceType, createdAt])
+  @@index([contentCategory])
+}
+
+model ReferenceAudioTrack {
+  id               String                   @id @default(cuid())
+  referenceId      String
+  reference        ReferenceVideo           @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  streamIndex      Int
+  codecName        String
+  channels         Int
+  channelLayout    String?
+  language         String?
+  title            String?
+  isDefault        Boolean                  @default(false)
+  preferenceScore  Int                      @default(0)
+  preferenceReason String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  styleAnalyses    ReferenceStyleAnalysis[]
+
+  @@unique([referenceId, streamIndex])
+  @@index([referenceId, streamIndex])
+}
+
+model ReferenceStyleAnalysis {
+  id                 String                       @id @default(cuid())
+  referenceId        String
+  reference          ReferenceVideo               @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  audioTrackId       String?
+  audioTrack         ReferenceAudioTrack?         @relation(fields: [audioTrackId], references: [id], onDelete: SetNull)
+  status             ReferenceAnalysisStatus      @default(QUEUED)
+  progress           Int                          @default(0)
+  stage              String                       @default("Waiting to start")
+  analyzerVersion    String                       @default("reference-style-v1")
+  errorMessage       String?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  cancelRequestedAt  DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  transcriptSegments ReferenceTranscriptSegment[]
+  features           ReferenceStyleFeature[]
+
+  @@index([referenceId, createdAt])
+  @@index([status])
+}
+
+model ReferenceTranscriptSegment {
+  id           String                 @id @default(cuid())
+  analysisId   String
+  analysis     ReferenceStyleAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  segmentOrder Int
+  startSeconds Float
+  endSeconds   Float
+  text         String
+  originalText String
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@unique([analysisId, segmentOrder])
+  @@index([analysisId, startSeconds])
+}
+
+model ReferenceStyleFeature {
+  id                String                 @id @default(cuid())
+  analysisId        String
+  analysis          ReferenceStyleAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  key               String
+  label             String
+  valueJson         String
+  originalValueJson String
+  unit              String?
+  confidence        Float
+  evidence          String
+  source            StyleFeatureSource
+  detectorVersion   String
+  manuallyCorrected Boolean                @default(false)
+  correctionNote    String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@unique([analysisId, key])
+  @@index([analysisId, key])
+}
+
+model CreatorStyleProfile {
+  id                          String                  @id @default(cuid())
+  name                        String
+  description                 String?
+  preferredVideoLengthSeconds Float?
+  preferredHookLengthSeconds  Float?
+  energyLevel                 Int                     @default(50)
+  humorLevel                  Int                     @default(50)
+  educationalLevel            Int                     @default(50)
+  storytellingLevel           Int                     @default(50)
+  setupAmount                 Int                     @default(50)
+  voiceoverAmount             Int                     @default(50)
+  liveAudioAmount             Int                     @default(50)
+  captionDensity              Int                     @default(50)
+  cutFrequency                Int                     @default(50)
+  reactionEmphasis            Int                     @default(50)
+  titleStyle                  String                  @default("Clear and original")
+  thumbnailTextStyle          String                  @default("Short and readable")
+  wordsToAvoid                String                  @default("")
+  preferredPhrases            String                  @default("")
+  profanityPreference         String                  @default("CENSOR")
+  perspective                 String                  @default("FIRST_PERSON")
+  profileVersion              String                  @default("structured-v1")
+  createdAt                   DateTime                @default(now())
+  updatedAt                   DateTime                @updatedAt
+  referenceLinks              StyleProfileReference[]
+  features                    StyleProfileFeature[]
+
+  @@index([createdAt])
+}
+
+model StyleProfileReference {
+  profileId   String
+  referenceId String
+  profile     CreatorStyleProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  reference   ReferenceVideo      @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime            @default(now())
+
+  @@id([profileId, referenceId])
+  @@index([referenceId])
+}
+
+model StyleProfileFeature {
+  id                   String              @id @default(cuid())
+  profileId            String
+  profile              CreatorStyleProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  key                  String
+  label                String
+  valueJson            String
+  confidence           Float
+  reason               String
+  sourceReferenceCount Int
+  manuallyCorrected    Boolean             @default(false)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@unique([profileId, key])
+  @@index([profileId, key])
 }

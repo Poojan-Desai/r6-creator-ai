@@ -18,6 +18,13 @@ export type UploadedVideo = {
   sizeBytes: number;
 };
 
+export type UploadedReferenceVideo = {
+  originalFilename: string;
+  mimeType: string;
+  sizeBytes: number;
+  fields: Record<string, string>;
+};
+
 export function validateUploadIdentity(filename: string, mimeType: string) {
   if (!filename.toLowerCase().endsWith(".mp4")) {
     throw new AppError(
@@ -35,6 +42,30 @@ export async function streamMultipartVideo(
   request: Request,
   temporaryPath: string,
 ): Promise<UploadedVideo> {
+  const upload = await streamMultipartMp4(request, temporaryPath, 4);
+  const fallbackName =
+    upload.originalFilename.replace(/\.mp4$/i, "").trim() ||
+    "Untitled recording";
+  return {
+    originalFilename: upload.originalFilename,
+    mimeType: upload.mimeType,
+    projectName: upload.fields.name?.trim().slice(0, 100) || fallbackName,
+    sizeBytes: upload.sizeBytes,
+  };
+}
+
+export async function streamMultipartReferenceVideo(
+  request: Request,
+  temporaryPath: string,
+): Promise<UploadedReferenceVideo> {
+  return streamMultipartMp4(request, temporaryPath, 16);
+}
+
+async function streamMultipartMp4(
+  request: Request,
+  temporaryPath: string,
+  fieldLimit: number,
+): Promise<UploadedReferenceVideo> {
   const contentType = request.headers.get("content-type");
   if (!contentType?.toLowerCase().startsWith("multipart/form-data")) {
     throw new AppError(
@@ -52,7 +83,7 @@ export async function streamMultipartVideo(
   return new Promise((resolve, reject) => {
     let originalFilename = "";
     let mimeType = "";
-    let projectName = "";
+    const fields: Record<string, string> = {};
     let sizeBytes = 0;
     let fileSeen = false;
     let writePromise: Promise<void> | null = null;
@@ -68,7 +99,7 @@ export async function streamMultipartVideo(
         headers: { "content-type": contentType },
         limits: {
           files: 1,
-          fields: 4,
+          fields: fieldLimit,
           fileSize: appConfig.maxUploadBytes,
         },
       });
@@ -82,7 +113,7 @@ export async function streamMultipartVideo(
     }
 
     parser.on("field", (fieldName, value) => {
-      if (fieldName === "name") projectName = value.trim().slice(0, 100);
+      fields[fieldName] = value.trim().slice(0, 2_000);
     });
 
     parser.on("file", (fieldName, stream, info) => {
@@ -152,14 +183,11 @@ export async function streamMultipartVideo(
               "EMPTY_UPLOAD",
             );
           }
-          const fallbackName =
-            originalFilename.replace(/\.mp4$/i, "").trim() ||
-            "Untitled recording";
           resolve({
             originalFilename,
             mimeType,
-            projectName: projectName || fallbackName,
             sizeBytes,
+            fields,
           });
         } catch (error) {
           reject(error);
