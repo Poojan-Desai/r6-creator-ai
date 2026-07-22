@@ -2,9 +2,11 @@
 
 ## Current verified status
 
-**No Rainbow Six moment-detection benchmark results exist yet.** Phase 3A builds
-the Reference Library and structured Creator Style Profiles; it does not run or
-claim automatic R6 event detection.
+**No Rainbow Six moment-detection benchmark results exist yet.** Phase 3B.1 now
+provides manual ground-truth labeling, versioned path-free JSON interchange,
+the additive benchmark schema, and a versioned detector-job framework. Its only
+registered check validates local media integrity and intentionally emits no
+events or candidate moments.
 
 The application must not display or advertise “AI accurately detects R6
 highlights.” No precision, recall, approval-rate, processing-cost, or accuracy
@@ -39,10 +41,10 @@ permission. It must include, at minimum:
 - Replays and spectator screens
 - Edited clips and full unedited recordings
 
-Every label will include a category, start/peak/end timestamp, evidence notes,
-reviewer, and whether the label is confirmed or only possible. Clutches and 1vX
-states remain possible unless player-count and round-state evidence supports
-confirmation.
+Every label includes a category, start/peak/end timestamp, optional description,
+human confidence, creation/update dates, and benchmark-approval state. Clutches
+and 1vX states remain possible unless player-count and round-state evidence
+supports confirmation.
 
 ## Ground-truth labeling protocol (schema v1)
 
@@ -151,6 +153,33 @@ a trustworthy measurement.
   the complete benchmark protocol.
 - **Unsupported claim:** a statement without qualifying evidence; it must not be
   used in product copy.
+
+## Phase 3B.1 verified foundation — July 22, 2026
+
+- One legally usable 20:38, 1280×720 recording was sampled with local FFmpeg.
+  Frames at 30, 60, and 120 seconds visibly contained map/operator-ban menu
+  screens, so one approved `MENU` range was saved at start 30.25, peak 60, end
+  120 seconds with human confidence 0.8. This is one label, not an accuracy
+  dataset.
+- The label survived an application restart and a JSON export/import round trip.
+  The export used `r6-creator-benchmark-labels/v1`, seconds, the measured source
+  duration/resolution, and a streaming SHA-256 fingerprint. It contained no
+  local path or source filename; this document does not publish the fingerprint.
+- The version-pinned `core.media-integrity@1.0.0` framework check completed and
+  saved its warning that automatic detectors begin in Phase 3B.2. It produced
+  zero events and therefore supports no event-quality metric.
+- A deliberately interrupted job was reconciled to `ERROR` after a full server
+  restart; its run received the same readable interrupted state, its partial
+  temporary directory was removed, and Retry created a new completed run.
+- Migration, label/interchange, registry, enablement, version, failure-isolation,
+  cancellation, restart, cleanup, and legacy regression tests passed. The full
+  suite had 85 tests across 15 files, and formatting, ESLint, strict TypeScript,
+  production build, and browser-console inspection also passed.
+
+Because there is only one approved menu label and no candidate-producing
+detector, precision, recall, F1, timestamp error, approval rate, and review-time
+savings remain **Not measured**. The correct dashboard result for this dataset
+is **Insufficient benchmark examples**.
 
 ## Phase 3A development observations
 

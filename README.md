@@ -5,13 +5,14 @@ gameplay recording into a saved project where you can inspect the video, cut
 clips, transcribe one chosen audio track, edit and search the timestamped
 transcript, and create a complete writing package from a clip.
 Phase 3A adds a permission-gated Reference Library and structured Creator Style
-Profiles.
+Profiles. Phase 3B.1 adds manual benchmark labels and the safe background-job
+foundation needed before automatic detection is introduced.
 
 You do not need to know how to code to use it. There is no login, subscription,
 cloud upload, paid AI key, or separate FFmpeg setup. Speech recognition uses the
 free `whisper.cpp` program and a local model on this Mac.
 
-## What works now (Phase 1 through Phase 3A)
+## What works now (Phase 1 through Phase 3B.1)
 
 - Streamed MP4 uploads with progress, type checks, and a 20 GB default limit
 - Saved local projects that remain after the app is closed
@@ -43,10 +44,20 @@ free `whisper.cpp` program and a local model on this Mac.
   evidence explanation, and manual correction control
 - Named multi-reference Creator Style Profiles with adjustable high-level
   timing, pacing, energy, structure, wording, and perspective preferences
+- Manual start/peak/end benchmark labels for all planned R6, reaction, screen,
+  and negative-example categories
+- Keyboard shortcuts, range replay, quarter-second boundary nudges, category
+  correction, confidence, notes, approval, and deletion for labels
+- Versioned label JSON export/import with a streamed SHA-256 video fingerprint
+  and no filename or personal computer path
+- Version-pinned local detector definitions and persisted analysis jobs with
+  progress, cancellation, retry, deletion, isolated errors, restart recovery,
+  and temporary-file cleanup
 
-Automatic Rainbow Six moment detection is not implemented yet. It begins in
-Phase 3B after the verified Phase 3A commit. The app does not claim it can
-predict virality or guarantee views.
+Automatic Rainbow Six moment detection is not implemented yet. Phase 3B.1's
+framework check intentionally returns zero detector events and zero candidate
+moments. General video, audio, and transcript signals begin in Phase 3B.2. The
+app does not claim it can predict virality or guarantee views.
 
 ## First-time setup
 
@@ -247,7 +258,41 @@ Profiles store high-level characteristics only. They never mine another
 creator's transcript for scripts, jokes, titles, catchphrases, or preferred
 phrases. **My own preferred phrases** contains only text you enter yourself.
 
-### Optional official YouTube metadata
+## Create benchmark ground-truth labels
+
+Open one of your uploaded gameplay projects and find **Label what actually
+happened**.
+
+1. Play or seek the source recording to the beginning of a range.
+2. Click **Start label**, move to its main moment and click **Mark peak**, then
+   move to its end and click **End label**.
+3. Choose the closest category, add an optional note, and set your confidence.
+4. Check **Approved as benchmark ground truth** only after you have reviewed the
+   range, then click **Save manual label**.
+5. Use **Replay**, the start/end `±0.25` buttons, the category menu, and the note
+   field to correct a saved label.
+
+Keyboard shortcuts are `Shift+S` for start, `Shift+P` for peak, `Shift+E` for
+end, and `Shift+R` to replay the current range. Draft labels remain saved but do
+not count as verified benchmark examples.
+
+Use **Export JSON** to make a portable backup of the labels. The export contains
+a SHA-256 fingerprint, measured duration/resolution, and timestamps in seconds;
+it does not contain the MP4 name or a path on your Mac. **Choose JSON** imports a
+matching export and atomically replaces that project's labels. A different
+video, invalid timestamp, unknown category, or unsupported schema is rejected
+without partially changing the database.
+
+## Run the Phase 3B.1 framework check
+
+In the same project, find **Analysis jobs, without false claims** and click
+**Run framework check**. This verifies the selected project file, detector
+version persistence, job progress, warnings, retry, deletion, restart recovery,
+and cleanup. It does not analyze gameplay and cannot create candidate moments.
+That deliberate limitation is shown beside the control and in every completed
+job.
+
+## Optional official YouTube metadata
 
 The Reference Library works without a key. If you later obtain a YouTube Data
 API key, ask Codex to add it as `YOUTUBE_DATA_API_KEY` in `.env`, then restart
@@ -284,8 +329,10 @@ Everything is below:
 - `references/` stores permitted local reference copies.
 - `reference-analysis-temp/` holds temporary analysis files and is cleaned after
   completion, cancellation, or failure.
-- `detector-artifacts/` is reserved for bounded Phase 3B debugging evidence; no
-  automatic R6 detector runs in Phase 3A.
+- `detector-analysis-temp/` is temporary detector-job space and is cleaned after
+  completion, cancellation, failure, deletion, or restart recovery.
+- `detector-artifacts/` is reserved for bounded detector evidence. The Phase
+  3B.1 framework check retains no gameplay frames or OCR crops.
 
 To back up everything, stop the app and copy the entire `data` folder. Restore
 it as one unit; do not move individual recordings while their projects exist.
@@ -339,6 +386,13 @@ database marks the job interrupted instead of showing false progress. Open the
 reference and click **Run analysis again**. Completed transcripts, manual
 feature corrections, and style profiles are unaffected.
 
+### A detector framework job says “Interrupted” after restart
+
+An active detector process cannot resume through an app restart. Phase 3B.1
+marks the job and detector run as interrupted, removes partial events and
+temporary files, and offers **Retry**. Completed jobs and manual benchmark
+labels are unaffected.
+
 ### YouTube metadata is unavailable
 
 The official embed and manual metadata fallback work with no API key. If a
@@ -390,7 +444,7 @@ The detailed implementation and verification record is in
 [`PLAN.md`](./PLAN.md). Contributor safety rules are in
 [`AGENTS.md`](./AGENTS.md).
 
-## Deliberate limits through Phase 3A
+## Deliberate limits through Phase 3B.1
 
 - English local model only in the beginner setup
 - No automatic R6 moment detection, telemetry, calibrated HUD OCR, or event
@@ -400,9 +454,10 @@ The detailed implementation and verification record is in
   approvals
 - No paid AI provider; content writing is template-based and must be reviewed
 
-Phase 3A release verification passed on July 22, 2026: formatting, ESLint,
-strict TypeScript, all 75 automated tests, the production build, three permitted
-references, one YouTube reference-only link, cancellation, manual correction,
-multi-reference profile creation, browser-console inspection, and a full app
-restart all passed. See `PLAN.md` for the exact evidence and `BENCHMARK.md` for
-the intentionally empty R6 detection benchmark status.
+Phase 3B.1 verification passed on July 22, 2026: formatting, ESLint, strict
+TypeScript, all 85 automated tests, a production build, migration from preserved
+Phase 3A data, real-video labeling, path-free export/import, framework job,
+interrupted-job recovery, retry, temporary-file cleanup, browser regression
+checks, browser-console inspection, and a full app restart all passed. See
+`PLAN.md` for the exact evidence and `BENCHMARK.md` for the intentionally empty
+R6 detection-accuracy result.

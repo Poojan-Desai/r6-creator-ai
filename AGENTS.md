@@ -13,9 +13,13 @@ this repository.
   reference library, high-level style profiles, evidence-backed local candidate
   detection, explicit local feedback learning, and a later optional budgeted
   OpenAI provider in their documented sequence.
-- Do not implement automatic R6 detection before Phase 3A is committed and
-  verified. Do not add voice cloning, speaker identification, automatic cloud
-  upload, social publishing, or unsupported performance claims.
+- Phase 3B.1 is a verified labeling and detector-job foundation. It deliberately
+  produces no automatic candidates. Implement general local signals only in
+  Phase 3B.2, then calibrated R6 screen-state evidence in Phase 3B.3, fusion in
+  Phase 3B.4, and accuracy reporting in Phase 3B.5.
+- Do not add voice cloning, speaker identification, automatic cloud upload,
+  social publishing, learned ranking, OpenAI integration, or unsupported
+  performance claims during Phase 3B.
 
 ## Required stack
 
@@ -125,6 +129,12 @@ layer. Do not silently skip checks.
   confidence, processing duration, and useful bounded debug information.
 - Do not describe detection as accurate until a documented benchmark supports
   the exact claim.
+- Only approved human labels count as benchmark ground truth. Preserve the
+  `r6-creator-benchmark-labels/v1` export schema, use seconds, stream source
+  fingerprints, and never export a filename or local path.
+- Keep detector definitions version-pinned per run. A detector failure must be
+  recorded and isolated; cancellation or restart must not retain partial event
+  results or temporary files.
 
 ## Background media-analysis jobs
 

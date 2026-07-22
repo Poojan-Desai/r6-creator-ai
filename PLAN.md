@@ -64,6 +64,7 @@ data/
 ├── references/
 │   └── <reference-id>/source.mp4
 ├── reference-analysis-temp/
+├── detector-analysis-temp/
 ├── detector-artifacts/
 ├── transcription-temp/
 ├── uploads/
@@ -643,7 +644,11 @@ These remain outside the authorized Phase 3 scope.
 - Phase 3A local analysis/profile implementation commit: `8758f53`
 - Phase 3A: implementation and release verification complete on July 22, 2026
 - Verified Phase 3A checkpoint tag: `phase-3a-stable` → `6119de7`
-- Current active stage: Phase 3B.1 benchmark labeling and detector framework
+- Phase 3B benchmark-method commit: `3494f32`
+- Phase 3B.1 schema/framework commit: `820afda`
+- Phase 3B.1 labeling-workspace commit: `8d0e825`
+- Phase 3B.1: implementation and verification complete on July 22, 2026
+- Next active stage: Phase 3B.2 general video, audio, and transcript detectors
 
 - Stable Phase 1 application — complete and preserved in Git commit `2099b2f`
 - Phase 2A: audio inventory and migration — complete
@@ -736,3 +741,41 @@ Formatting, ESLint, strict TypeScript, all 75 tests across 12 files, and the
 production build passed. These checks verify Phase 3A reference ingestion and
 style profiling only; `BENCHMARK.md` correctly records that no R6 detection
 accuracy result exists yet.
+
+### Phase 3B.1 verified path — July 22, 2026
+
+The annotated `phase-3a-stable` tag preserves `6119de7`. The additive Phase 3B.1
+migration was applied to a copy of that SQLite state and to the real database;
+the existing three projects, two clips, two transcript segments, four
+references, one style profile, and their related Phase 1–3A data remained
+present. The migration regression test separately builds the Phase 1, Phase 2,
+and Phase 3A schema sequence, inserts legacy rows, applies Phase 3B.1, creates
+new label/detector/job data, and reopens the database.
+
+The in-app browser opened a real 20:38, 1280×720 gameplay project. Local FFmpeg
+frame samples supported an honest `MENU` label from 30.25 to 120 seconds with a
+60-second peak. The browser created the approved label, changed its start by
+0.25 seconds, displayed the saved note/confidence/category, and showed the
+versioned export and import controls. The actual 222 MB source was fingerprinted
+by streaming SHA-256; export/import completed against the real HTTP routes and
+preserved the label while the JSON contained no filename or personal path.
+The native macOS file chooser could not be automated because the verification
+Mac was locked, so file-selection behavior is additionally covered by the
+browser-rendered input, route round trip, and automated import tests rather than
+a synthetic browser file attachment.
+
+The browser started `core.media-integrity@1.0.0`, which completed with a stored
+version and an explicit warning that Phase 3B.1 performs no gameplay detection.
+It returned zero detector events and candidates. A deliberately inserted active
+job and partial temp file simulated an application interruption. After a full
+production-server restart, the job and run became readable `ERROR` records, the
+temporary directory was gone, the browser showed the interruption, and Retry
+created a fresh completed job. The test fixture was then deleted.
+
+The browser also reopened the Reference Library, existing multi-reference style
+profile, source preview, transcript workspace, clip station, and writing package.
+Its warning/error console was empty. Formatting, ESLint, strict TypeScript, all
+85 tests across 15 files, and the production build passed before documentation;
+the same complete gate is rerun for the final Phase 3B.1 commit. These checks
+prove the labeling and job framework only. No R6 event accuracy or footage-review
+savings have been measured.
