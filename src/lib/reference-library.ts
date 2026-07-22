@@ -8,8 +8,10 @@ import type {
 } from "@prisma/client";
 import { z } from "zod";
 
+import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { getRecommendedTrackId, type AudioTrackDto } from "@/lib/transcription";
+import { isYouTubeMetadataConfigured, parseYouTubeUrl } from "@/lib/youtube";
 
 const shortText = (label: string, max: number) =>
   z
@@ -124,6 +126,22 @@ export type ReferenceSummaryDto = {
   latestAnalysisStatus: ReferenceStyleAnalysis["status"] | "NOT_STARTED";
   createdAt: string;
   updatedAt: string;
+};
+
+export type ReferenceDetailDto = ReferenceSummaryDto & {
+  notes: string | null;
+  originalFilename: string | null;
+  mimeType: string | null;
+  frameRate: number | null;
+  thumbnailText: string | null;
+  permissionConfirmedAt: string | null;
+  publicMetadata: unknown;
+  embedUrl: string | null;
+  audioTracks: ReferenceAudioTrackDto[];
+  recommendedTrackId: string | null;
+  analysis: ReferenceAnalysisDto | null;
+  fullAnalysisAvailable: boolean;
+  youtubeMetadataConfigured: boolean;
 };
 
 type ReferenceWithLatestAnalysis = ReferenceVideo & {
@@ -255,4 +273,49 @@ export function parseJson(value: string): unknown {
   } catch {
     return null;
   }
+}
+
+export async function findReferenceDetailDto(
+  id: string,
+): Promise<ReferenceDetailDto | null> {
+  const reference = await db.referenceVideo.findUnique({
+    where: { id },
+    include: {
+      audioTracks: { orderBy: { streamIndex: "asc" } },
+      styleAnalyses: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        include: {
+          features: { orderBy: { label: "asc" } },
+          transcriptSegments: { orderBy: { segmentOrder: "asc" } },
+        },
+      },
+    },
+  });
+  if (!reference) return null;
+  const latestAnalysis = reference.styleAnalyses[0];
+  return {
+    ...serializeReferenceSummary(reference),
+    notes: reference.notes,
+    originalFilename: reference.originalFilename,
+    mimeType: reference.mimeType,
+    frameRate: reference.frameRate,
+    thumbnailText: reference.thumbnailText,
+    permissionConfirmedAt:
+      reference.permissionConfirmedAt?.toISOString() ?? null,
+    publicMetadata: reference.publicMetadataJson
+      ? parseJson(reference.publicMetadataJson)
+      : null,
+    embedUrl:
+      reference.referenceType === "YOUTUBE_LINK" && reference.sourceUrl
+        ? parseYouTubeUrl(reference.sourceUrl).embedUrl
+        : null,
+    audioTracks: reference.audioTracks.map(serializeReferenceAudioTrack),
+    recommendedTrackId: getRecommendedReferenceTrackId(reference.audioTracks),
+    analysis: latestAnalysis
+      ? serializeReferenceAnalysis(latestAnalysis)
+      : null,
+    fullAnalysisAvailable: reference.referenceType === "LOCAL_VIDEO",
+    youtubeMetadataConfigured: isYouTubeMetadataConfigured(),
+  };
 }

@@ -6,14 +6,8 @@ import {
   referenceVideoDirectory,
 } from "@/lib/data-paths";
 import { apiError, AppError } from "@/lib/errors";
-import {
-  getRecommendedReferenceTrackId,
-  parseJson,
-  serializeReferenceAnalysis,
-  serializeReferenceAudioTrack,
-  serializeReferenceSummary,
-} from "@/lib/reference-library";
-import { isYouTubeMetadataConfigured, parseYouTubeUrl } from "@/lib/youtube";
+import { reconcileInterruptedReferenceAnalyses } from "@/lib/reference-analysis";
+import { findReferenceDetailDto } from "@/lib/reference-library";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,21 +16,9 @@ type Context = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Context) {
   try {
+    await reconcileInterruptedReferenceAnalyses();
     const { id } = await params;
-    const reference = await db.referenceVideo.findUnique({
-      where: { id },
-      include: {
-        audioTracks: { orderBy: { streamIndex: "asc" } },
-        styleAnalyses: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          include: {
-            features: { orderBy: { label: "asc" } },
-            transcriptSegments: { orderBy: { segmentOrder: "asc" } },
-          },
-        },
-      },
-    });
+    const reference = await findReferenceDetailDto(id);
     if (!reference) {
       throw new AppError(
         "That reference no longer exists.",
@@ -44,39 +26,7 @@ export async function GET(_request: Request, { params }: Context) {
         "REFERENCE_NOT_FOUND",
       );
     }
-    const audioTracks = reference.audioTracks.map(serializeReferenceAudioTrack);
-    const latestAnalysis = reference.styleAnalyses[0];
-    const publicMetadata = reference.publicMetadataJson
-      ? parseJson(reference.publicMetadataJson)
-      : null;
-    const embedUrl =
-      reference.referenceType === "YOUTUBE_LINK" && reference.sourceUrl
-        ? parseYouTubeUrl(reference.sourceUrl).embedUrl
-        : null;
-
-    return Response.json({
-      reference: {
-        ...serializeReferenceSummary(reference),
-        notes: reference.notes,
-        originalFilename: reference.originalFilename,
-        mimeType: reference.mimeType,
-        frameRate: reference.frameRate,
-        thumbnailText: reference.thumbnailText,
-        permissionConfirmedAt:
-          reference.permissionConfirmedAt?.toISOString() ?? null,
-        publicMetadata,
-        embedUrl,
-        audioTracks,
-        recommendedTrackId: getRecommendedReferenceTrackId(
-          reference.audioTracks,
-        ),
-        analysis: latestAnalysis
-          ? serializeReferenceAnalysis(latestAnalysis)
-          : null,
-        fullAnalysisAvailable: reference.referenceType === "LOCAL_VIDEO",
-        youtubeMetadataConfigured: isYouTubeMetadataConfigured(),
-      },
-    });
+    return Response.json({ reference });
   } catch (error) {
     return apiError(error);
   }
