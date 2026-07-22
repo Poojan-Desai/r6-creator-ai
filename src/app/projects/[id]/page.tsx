@@ -11,12 +11,16 @@ import {
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { AnalysisFoundationPanel } from "@/components/analysis-foundation-panel";
+import { BenchmarkLabeler } from "@/components/benchmark-labeler";
 import { ClipStation } from "@/components/clip-station";
 import { ContentWorkbench } from "@/components/content-workbench";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { SourcePlayer } from "@/components/source-player";
 import { TranscriptionStudio } from "@/components/transcription-studio";
 import { formatBytes } from "@/lib/format";
+import { getDetectorFrameworkState } from "@/lib/detector-framework";
+import { getGroundTruthState } from "@/lib/ground-truth";
 import { findProjectDetail } from "@/lib/projects";
 import { formatDuration } from "@/lib/time";
 import { getTranscriptionState } from "@/lib/transcription";
@@ -35,7 +39,11 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
   const project = await findProjectDetail(id);
   if (!project) notFound();
-  const transcription = await getTranscriptionState(id);
+  const [transcription, groundTruth, analysis] = await Promise.all([
+    getTranscriptionState(id),
+    getGroundTruthState(id),
+    getDetectorFrameworkState(id),
+  ]);
 
   return (
     <main className="min-h-screen">
@@ -137,6 +145,18 @@ export default async function ProjectPage({ params }: Props) {
             />
           </aside>
         </div>
+
+        <BenchmarkLabeler
+          projectId={project.id}
+          projectName={project.name}
+          durationSeconds={project.durationSeconds}
+          initialState={groundTruth}
+        />
+
+        <AnalysisFoundationPanel
+          projectId={project.id}
+          initialState={analysis}
+        />
 
         <TranscriptionStudio
           projectId={project.id}
