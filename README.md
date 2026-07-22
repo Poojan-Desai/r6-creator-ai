@@ -4,12 +4,14 @@ R6 Creator AI is a private web app that runs on your own Mac. It turns an MP4
 gameplay recording into a saved project where you can inspect the video, cut
 clips, transcribe one chosen audio track, edit and search the timestamped
 transcript, and create a complete writing package from a clip.
+Phase 3A adds a permission-gated Reference Library and structured Creator Style
+Profiles.
 
 You do not need to know how to code to use it. There is no login, subscription,
 cloud upload, paid AI key, or separate FFmpeg setup. Speech recognition uses the
 free `whisper.cpp` program and a local model on this Mac.
 
-## What works in Phase 2
+## What works now (Phase 1 through Phase 3A)
 
 - Streamed MP4 uploads with progress, type checks, and a 20 GB default limit
 - Saved local projects that remain after the app is closed
@@ -29,9 +31,22 @@ free `whisper.cpp` program and a local model on this Mac.
 - Opening hook, full voiceover, YouTube title, short caption, thumbnail text,
   and editing instructions that you can review and save
 - Readable errors instead of server crashes
+- Streamed local reference-video uploads with required ownership/permission
+  confirmation
+- Legal YouTube reference-only links with strict URL normalization and the
+  official embedded player—never video/caption downloading or scraping
+- Optional official YouTube Data API metadata with a server-only key and a
+  complete manual metadata fallback
+- Cancellable local reference transcription and FFmpeg style measurements with
+  persisted progress and restart-safe status
+- Twenty-nine structured style characteristics, each with a source, confidence,
+  evidence explanation, and manual correction control
+- Named multi-reference Creator Style Profiles with adjustable high-level
+  timing, pacing, energy, structure, wording, and perspective preferences
 
-Automatic Rainbow Six highlight detection is intentionally not part of this
-phase.
+Automatic Rainbow Six moment detection is not implemented yet. It begins in
+Phase 3B after the verified Phase 3A commit. The app does not claim it can
+predict virality or guarantee views.
 
 ## First-time setup
 
@@ -177,6 +192,67 @@ The first provider is a deterministic local template system. Its code uses a
 provider interface so a future OpenAI provider can be added without replacing
 the clip UI or content package. No paid API is connected now.
 
+## Use the Reference Library
+
+Open **References** in the top navigation.
+
+### Add and analyze a permitted local reference
+
+1. Click **Choose one MP4**.
+2. Enter its title, creator/channel, game, platform, source type, and content
+   category.
+3. Optionally enter its source URL, notes, and visible thumbnail text.
+4. Check **I own this file or have permission to upload and analyze it.**
+5. Click **Save permitted reference**.
+6. Open the saved reference and choose the creator microphone track when audio
+   tracks are separate.
+7. Click **Run local analysis**. The page stays usable and **Cancel analysis**
+   stops the active local process without saving a partial transcript.
+8. Review the local transcript and the measured, estimated, or unavailable
+   feature cards. Use the pencil button to correct any feature.
+
+The permission checkbox is required. The app streams the file into
+`data/references/<reference-id>/source.mp4` and never changes the original file
+elsewhere on the Mac. It transcribes only the selected track; teammate audio is
+never selected by default when tracks are separate.
+
+Measured does not mean perfect. Scene changes, hook boundaries, meaningful
+action, reaction timing, emotion, humor, story, and live-versus-voiceover balance
+can be estimates. Caption fields are explicitly unavailable until a later
+calibrated OCR stage unless you enter them manually.
+
+### Add a YouTube reference link
+
+1. Paste a normal YouTube video, Shorts, share, live, or embed URL.
+2. When no YouTube Data API key is configured, enter the title and channel name
+   manually.
+3. Click **Save YouTube reference**.
+
+The detail page uses the official privacy-enhanced embedded player. The app does
+not download the video, audio, captions, browser cookies, or unofficial
+transcript data. URL-only mode cannot run full visual, audio, transcript, or
+editing-style analysis. Upload a permitted local MP4 for that.
+
+### Create a Creator Style Profile
+
+1. Complete analysis for at least one permitted local reference. Two or more
+   give more useful averages.
+2. Open **Style profiles** in the top navigation.
+3. Name the profile, select contributing references, and click **Create style
+   profile**.
+4. Open it to adjust every preference and inspect the reasons behind it.
+5. You can change the contributing references and save again.
+
+Profiles store high-level characteristics only. They never mine another
+creator's transcript for scripts, jokes, titles, catchphrases, or preferred
+phrases. **My own preferred phrases** contains only text you enter yourself.
+
+### Optional official YouTube metadata
+
+The Reference Library works without a key. If you later obtain a YouTube Data
+API key, ask Codex to add it as `YOUTUBE_DATA_API_KEY` in `.env`, then restart
+the app. The key stays server-side and is not included in browser JavaScript.
+
 ## Stop and reopen the app
 
 To stop the app, return to Terminal and press `Control + C` once.
@@ -205,6 +281,11 @@ Everything is below:
 - `clips/` stores generated MP4 clips.
 - `models/whisper/` stores the free local speech model.
 - `transcription-temp/` is temporary working space and is cleaned after jobs.
+- `references/` stores permitted local reference copies.
+- `reference-analysis-temp/` holds temporary analysis files and is cleaned after
+  completion, cancellation, or failure.
+- `detector-artifacts/` is reserved for bounded Phase 3B debugging evidence; no
+  automatic R6 detector runs in Phase 3A.
 
 To back up everything, stop the app and copy the entire `data` folder. Restore
 it as one unit; do not move individual recordings while their projects exist.
@@ -213,6 +294,11 @@ Deleting a project inside the app permanently removes that project’s local
 source copy, clips, transcripts, and writing. It does not delete the original
 recording you selected elsewhere on your Mac. The shared local Whisper model is
 not deleted with a project.
+
+Deleting a reference removes its app-owned copy, transcript, style analysis,
+and profile membership. It does not delete the original file outside the app.
+Deleting a style profile keeps its reference videos. A completed reference also
+has a separate transcript-deletion control.
 
 ## Troubleshooting
 
@@ -245,6 +331,19 @@ transcription** again. Completed transcripts and edits are unaffected.
 Choose another track and click **Transcribe this track again**. OBS track names
 such as “Creator Microphone” and “Game Audio” make selection much clearer. The
 app does not automatically transcribe every track.
+
+### A style analysis says “Interrupted” after restart
+
+An active FFmpeg or Whisper process cannot resume through an app restart. The
+database marks the job interrupted instead of showing false progress. Open the
+reference and click **Run analysis again**. Completed transcripts, manual
+feature corrections, and style profiles are unaffected.
+
+### YouTube metadata is unavailable
+
+The official embed and manual metadata fallback work with no API key. If a
+configured key is invalid, over quota, or offline, enter the title and channel
+manually. The app never falls back to scraping or downloading.
 
 ### “The video tools are unavailable”
 
@@ -291,11 +390,19 @@ The detailed implementation and verification record is in
 [`PLAN.md`](./PLAN.md). Contributor safety rules are in
 [`AGENTS.md`](./AGENTS.md).
 
-## Deliberate limits of Phase 2
+## Deliberate limits through Phase 3A
 
 - English local model only in the beginner setup
-- No automatic R6 highlight detection, telemetry, OCR, or computer vision
+- No automatic R6 moment detection, telemetry, calibrated HUD OCR, or event
+  accuracy claim yet
 - No voice cloning, teammate identification, or speaker voiceprints
 - No authentication, cloud storage, payments, social publishing, or team
   approvals
 - No paid AI provider; content writing is template-based and must be reviewed
+
+Phase 3A release verification passed on July 22, 2026: formatting, ESLint,
+strict TypeScript, all 75 automated tests, the production build, three permitted
+references, one YouTube reference-only link, cancellation, manual correction,
+multi-reference profile creation, browser-console inspection, and a full app
+restart all passed. See `PLAN.md` for the exact evidence and `BENCHMARK.md` for
+the intentionally empty R6 detection benchmark status.

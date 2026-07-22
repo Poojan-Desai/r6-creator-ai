@@ -529,7 +529,10 @@ These remain outside the authorized Phase 3 scope.
 - Phase 1 stable commit: `2099b2f`
 - Phase 2 stable commit: `22cd36c`
 - Phase 3 working branch: `codex/phase-3`
-- Current active stage: Phase 3A planning and foundation
+- Phase 3A foundation commit: `b14cc05`
+- Phase 3A local analysis/profile implementation commit: `8758f53`
+- Phase 3A: implementation and release verification complete on July 22, 2026
+- Next stage: Phase 3B local R6 moment detection (not started)
 
 - Stable Phase 1 application — complete and preserved in Git commit `2099b2f`
 - Phase 2A: audio inventory and migration — complete
@@ -582,3 +585,43 @@ six saved content fields reappeared from SQLite. The browser reported no warning
 or error logs. The final automated suite contains 51 passing tests, and
 formatting, ESLint, strict TypeScript, and the warning-free production build all
 pass.
+
+### Phase 3A verified end-to-end path — July 22, 2026
+
+The additive Phase 3A migration was applied to the existing local database while
+the three Phase 1/2 projects, two clips, three transcription jobs, two existing
+transcript segments, and saved writing data remained intact. A migration test
+also builds a fresh temporary Phase 1/2 database, inserts legacy data, applies
+the Phase 3A migration, creates reference/profile records, and reopens the
+database to prove persistence.
+
+Three owned or permitted MP4 references were saved through the streamed
+reference path: an 11-second two-track speech reference, a two-second no-audio
+reference, and a five-minute gameplay reference. The analysis selected the
+separately named Creator Microphone track, produced a timestamped local Whisper
+transcript, and saved all 29 requested style fields with a value or an explicit
+unavailable state plus source, confidence, evidence, and analyzer version. A
+caption-density value was manually corrected and retained its automated audit
+data. The no-audio reference completed without crashing. The five-minute job
+was cancelled during processing; it remained `CANCELLED`, saved no partial
+features or transcript, and left no temporary analysis files.
+
+A YouTube share link was normalized to its canonical eleven-character video ID
+and displayed through `youtube-nocookie.com` in reference-only mode. With no API
+key configured, the browser showed the manual metadata fallback and the exact
+full-analysis limitation. No media or captions were downloaded.
+
+A named Creator Style Profile was created from two analyzed references. The UI
+showed both contributing references, all adjustable preferences, and seven
+plain-language reasons with confidence and usable-reference counts. The title
+style was changed in the browser to “Short, original, result-first wording” and
+saved locally. After the production server was stopped and started again, the
+profile correction, two memberships, transcript, manual feature correction,
+cancelled-job state, YouTube ID/embed, and all legacy data were still present.
+
+The in-app browser rendered the Reference Library, legal YouTube detail,
+cancelled analysis, and profile editor with zero console warnings or errors.
+Formatting, ESLint, strict TypeScript, all 75 tests across 12 files, and the
+production build passed. These checks verify Phase 3A reference ingestion and
+style profiling only; `BENCHMARK.md` correctly records that no R6 detection
+accuracy result exists yet.
