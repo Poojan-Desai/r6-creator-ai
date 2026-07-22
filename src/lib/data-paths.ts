@@ -13,6 +13,7 @@ export const dataPaths = {
     appConfig.dataRoot,
     "reference-analysis-temp",
   ),
+  detectorAnalysisTemp: path.join(appConfig.dataRoot, "detector-analysis-temp"),
   detectorArtifacts: path.join(appConfig.dataRoot, "detector-artifacts"),
   models: path.join(appConfig.dataRoot, "models"),
   transcriptionTemp: path.join(appConfig.dataRoot, "transcription-temp"),
@@ -25,6 +26,7 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.clips, { recursive: true }),
     mkdir(dataPaths.references, { recursive: true }),
     mkdir(dataPaths.referenceAnalysisTemp, { recursive: true }),
+    mkdir(dataPaths.detectorAnalysisTemp, { recursive: true }),
     mkdir(dataPaths.detectorArtifacts, { recursive: true }),
     mkdir(dataPaths.models, { recursive: true }),
     mkdir(dataPaths.transcriptionTemp, { recursive: true }),
@@ -69,4 +71,12 @@ export function referenceVideoDirectory(referenceId: string) {
 
 export function referenceAnalysisDirectory(analysisId: string) {
   return path.join(dataPaths.referenceAnalysisTemp, analysisId);
+}
+
+export function detectorAnalysisDirectory(analysisId: string) {
+  return path.join(dataPaths.detectorAnalysisTemp, analysisId);
+}
+
+export function detectorArtifactDirectory(analysisId: string) {
+  return path.join(dataPaths.detectorArtifacts, analysisId);
 }

@@ -51,25 +51,148 @@ enum StyleFeatureSource {
   UNAVAILABLE
 }
 
+enum GroundTruthCategory {
+  KILL
+  DEATH
+  MULTI_KILL
+  ROUND_WIN
+  ROUND_LOSS
+  MATCH_ENDING
+  POSSIBLE_CLUTCH
+  DEFUSER_PLANT
+  DEFUSER_DISABLE
+  HIGH_ACTION_GAMEPLAY
+  LOUD_CREATOR_REACTION
+  FUNNY_CONVERSATION
+  RAGE_OR_FRUSTRATION
+  FAIL_OR_MISTAKE
+  EDUCATIONAL_EXPLANATION
+  QUIET_OR_LOW_INTEREST
+  MENU
+  SCOREBOARD
+  REPLAY
+  SPECTATOR_SCREEN
+  LOADING_SCREEN
+  OTHER_INTERESTING
+  OTHER_UNINTERESTING
+}
+
+enum BenchmarkDatasetSplit {
+  DEVELOPMENT
+  VERIFICATION
+}
+
+enum BenchmarkRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
+enum LocalAnalysisStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
+enum DetectorRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+  SKIPPED
+}
+
+enum DetectorCost {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DetectorSourceSignal {
+  VIDEO
+  AUDIO
+  CREATOR_MICROPHONE
+  GAME_AUDIO
+  TRANSCRIPT
+  OCR
+  TEMPLATE_MATCHING
+  FRAME_DIFFERENCE
+  MOTION
+  IMPORTED_TELEMETRY
+  COMBINED_EVIDENCE
+}
+
+enum DetectorEvidenceKind {
+  SUPPORTING
+  CONFLICTING
+}
+
+enum CandidateReviewDecision {
+  USEFUL
+  NOT_USEFUL
+  WRONG_EVENT
+}
+
+enum OcrRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
+enum TelemetryImportStatus {
+  READY
+  ERROR
+}
+
+enum TelemetryEventCategory {
+  MATCH_START
+  MATCH_END
+  ROUND_START
+  ROUND_END
+  KILL
+  DEATH
+  DEFUSER_PLANTED
+  DEFUSER_DISABLED
+  SCORE_UPDATE
+  UNKNOWN
+}
+
 model Project {
-  id                 String             @id @default(cuid())
-  name               String
-  status             ProjectStatus      @default(READY)
-  originalFilename   String
-  sourceRelativePath String             @unique
-  mimeType           String
-  fileSizeBytes      BigInt
-  durationSeconds    Float
-  width              Int
-  height             Int
-  frameRate          Float
-  errorMessage       String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  clips              Clip[]
-  contentDraft       ContentDraft?
-  audioTracks        AudioTrack[]
-  transcriptionJobs  TranscriptionJob[]
+  id                     String                    @id @default(cuid())
+  name                   String
+  status                 ProjectStatus             @default(READY)
+  originalFilename       String
+  sourceRelativePath     String                    @unique
+  mimeType               String
+  fileSizeBytes          BigInt
+  durationSeconds        Float
+  width                  Int
+  height                 Int
+  frameRate              Float
+  errorMessage           String?
+  videoFingerprintSha256 String?
+  fingerprintComputedAt  DateTime?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  clips                  Clip[]
+  contentDraft           ContentDraft?
+  audioTracks            AudioTrack[]
+  transcriptionJobs      TranscriptionJob[]
+  groundTruthLabels      GroundTruthLabel[]
+  benchmarkLinks         BenchmarkDatasetProject[]
+  detectorConfigs        DetectorConfiguration[]
+  analysisJobs           AnalysisJob[]
+  calibrationProfiles    HudCalibrationProfile[]
+  ocrRuns                OcrRun[]
+  candidateMoments       CandidateMoment[]
+  telemetryImports       TelemetryImport[]
 
   @@index([createdAt])
 }
@@ -310,6 +433,8 @@ model CreatorStyleProfile {
   updatedAt                   DateTime                @updatedAt
   referenceLinks              StyleProfileReference[]
   features                    StyleProfileFeature[]
+  analysisJobs                AnalysisJob[]
+  candidateMoments            CandidateMoment[]
 
   @@index([createdAt])
 }
@@ -341,4 +466,385 @@ model StyleProfileFeature {
 
   @@unique([profileId, key])
   @@index([profileId, key])
+}
+
+model GroundTruthLabel {
+  id              String              @id @default(cuid())
+  projectId       String
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category        GroundTruthCategory
+  startSeconds    Float
+  peakSeconds     Float
+  endSeconds      Float
+  description     String?
+  humanConfidence Float               @default(1)
+  approved        Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([projectId, startSeconds])
+  @@index([projectId, category, approved])
+}
+
+model BenchmarkDataset {
+  id            String                    @id @default(cuid())
+  name          String
+  description   String?
+  schemaVersion String                    @default("r6-benchmark-dataset/v1")
+  split         BenchmarkDatasetSplit     @default(DEVELOPMENT)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  projects      BenchmarkDatasetProject[]
+  runs          BenchmarkRun[]
+
+  @@index([split, createdAt])
+}
+
+model BenchmarkDatasetProject {
+  datasetId          String
+  projectId          String
+  dataset            BenchmarkDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  videoFingerprint   String
+  durationSeconds    Float
+  width              Int
+  height             Int
+  recordingType      String           @default("UNSPECIFIED")
+  labelSchemaVersion String           @default("r6-creator-benchmark-labels/v1")
+  addedAt            DateTime         @default(now())
+
+  @@id([datasetId, projectId])
+  @@index([projectId])
+}
+
+model BenchmarkRun {
+  id                  String             @id @default(cuid())
+  datasetId           String
+  dataset             BenchmarkDataset   @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  analysisJobId       String?
+  analysisJob         AnalysisJob?       @relation(fields: [analysisJobId], references: [id], onDelete: SetNull)
+  status              BenchmarkRunStatus @default(QUEUED)
+  matchingRuleVersion String             @default("temporal-category-v1")
+  detectorSetVersion  String
+  reportJson          String?
+  errorMessage        String?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  metrics             BenchmarkMetric[]
+
+  @@index([datasetId, createdAt])
+  @@index([status])
+}
+
+model BenchmarkMetric {
+  id                   String               @id @default(cuid())
+  benchmarkRunId       String
+  benchmarkRun         BenchmarkRun         @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  category             GroundTruthCategory?
+  sampleCount          Int
+  truePositives        Int
+  falsePositives       Int
+  falseNegatives       Int
+  precision            Float?
+  recall               Float?
+  f1                   Float?
+  medianPeakError      Float?
+  medianStartError     Float?
+  medianEndError       Float?
+  insufficientExamples Boolean              @default(true)
+  extraMetricsJson     String               @default("{}")
+  createdAt            DateTime             @default(now())
+
+  @@index([benchmarkRunId, category])
+}
+
+model DetectorDefinition {
+  id                  String                  @id @default(cuid())
+  stableId            String
+  name                String
+  version             String
+  description         String
+  requiredInputsJson  String                  @default("[]")
+  parameterSchemaJson String                  @default("{}")
+  estimatedCost       DetectorCost            @default(LOW)
+  implementationState String                  @default("ACTIVE")
+  enabledByDefault    Boolean                 @default(true)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  configurations      DetectorConfiguration[]
+  runs                DetectorRun[]
+
+  @@unique([stableId, version])
+  @@index([stableId])
+}
+
+model DetectorConfiguration {
+  id                   String             @id @default(cuid())
+  projectId            String
+  project              Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  detectorDefinitionId String
+  detectorDefinition   DetectorDefinition @relation(fields: [detectorDefinitionId], references: [id], onDelete: Cascade)
+  enabled              Boolean
+  parametersJson       String             @default("{}")
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@unique([projectId, detectorDefinitionId])
+  @@index([projectId, enabled])
+}
+
+model AnalysisJob {
+  id                      String                 @id @default(cuid())
+  projectId               String
+  project                 Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  calibrationProfileId    String?
+  calibrationProfile      HudCalibrationProfile? @relation(fields: [calibrationProfileId], references: [id], onDelete: SetNull)
+  styleProfileId          String?
+  styleProfile            CreatorStyleProfile?   @relation(fields: [styleProfileId], references: [id], onDelete: SetNull)
+  status                  LocalAnalysisStatus    @default(QUEUED)
+  progress                Int                    @default(0)
+  stage                   String                 @default("Waiting to start")
+  analysisVersion         String                 @default("phase3b-framework-v1")
+  detectorSetVersion      String
+  currentDetectorStableId String?
+  enabledDetectorCount    Int                    @default(0)
+  completedDetectorCount  Int                    @default(0)
+  failedDetectorCount     Int                    @default(0)
+  estimatedWorkUnits      Int                    @default(0)
+  temporaryDiskUsageBytes BigInt                 @default(0)
+  warningsJson            String                 @default("[]")
+  errorMessage            String?
+  startedAt               DateTime?
+  completedAt             DateTime?
+  cancelRequestedAt       DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  detectorRuns            DetectorRun[]
+  candidates              CandidateMoment[]
+  benchmarkRuns           BenchmarkRun[]
+
+  @@index([projectId, createdAt])
+  @@index([status])
+}
+
+model DetectorRun {
+  id                   String             @id @default(cuid())
+  analysisJobId        String
+  analysisJob          AnalysisJob        @relation(fields: [analysisJobId], references: [id], onDelete: Cascade)
+  detectorDefinitionId String
+  detectorDefinition   DetectorDefinition @relation(fields: [detectorDefinitionId], references: [id], onDelete: Restrict)
+  detectorStableId     String
+  detectorVersion      String
+  status               DetectorRunStatus  @default(QUEUED)
+  progress             Int                @default(0)
+  stage                String             @default("Waiting")
+  requiredInputsJson   String             @default("[]")
+  parametersJson       String             @default("{}")
+  processingDurationMs Int?
+  warningsJson         String             @default("[]")
+  errorMessage         String?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  cancelRequestedAt    DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  events               DetectorEvent[]
+
+  @@index([analysisJobId, createdAt])
+  @@index([detectorStableId, detectorVersion])
+  @@index([status])
+}
+
+model DetectorEvent {
+  id                      String                   @id @default(cuid())
+  detectorRunId           String
+  detectorRun             DetectorRun              @relation(fields: [detectorRunId], references: [id], onDelete: Cascade)
+  category                GroundTruthCategory
+  startSeconds            Float
+  peakSeconds             Float
+  endSeconds              Float
+  confidence              Float
+  supportingEvidenceJson  String                   @default("[]")
+  conflictingEvidenceJson String                   @default("[]")
+  sourceSignal            DetectorSourceSignal
+  rawMeasurementsJson     String                   @default("{}")
+  thresholdsJson          String                   @default("{}")
+  debugArtifactsJson      String                   @default("[]")
+  processingDurationMs    Int
+  warningMessagesJson     String                   @default("[]")
+  humanReviewStatus       String                   @default("UNREVIEWED")
+  createdAt               DateTime                 @default(now())
+  evidence                DetectorEvidence[]
+  candidateLinks          CandidateDetectorEvent[]
+
+  @@index([detectorRunId, startSeconds])
+  @@index([category])
+}
+
+model DetectorEvidence {
+  id                   String               @id @default(cuid())
+  detectorEventId      String
+  detectorEvent        DetectorEvent        @relation(fields: [detectorEventId], references: [id], onDelete: Cascade)
+  kind                 DetectorEvidenceKind
+  sourceSignal         DetectorSourceSignal
+  summary              String
+  timestampSeconds     Float?
+  dataJson             String               @default("{}")
+  artifactRelativePath String?
+  containsPersonalData Boolean              @default(false)
+  createdAt            DateTime             @default(now())
+
+  @@index([detectorEventId, kind])
+}
+
+model HudCalibrationProfile {
+  id             String        @id @default(cuid())
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name           String
+  description    String?
+  game           String        @default("Rainbow Six Siege")
+  baseWidth      Int
+  baseHeight     Int
+  profileVersion String        @default("hud-calibration-v1")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  regions        HudRegion[]
+  analysisJobs   AnalysisJob[]
+
+  @@index([projectId])
+  @@index([baseWidth, baseHeight])
+}
+
+model HudRegion {
+  id                   String                @id @default(cuid())
+  calibrationProfileId String
+  calibrationProfile   HudCalibrationProfile @relation(fields: [calibrationProfileId], references: [id], onDelete: Cascade)
+  name                 String
+  regionKind           String
+  normalizedX          Float
+  normalizedY          Float
+  normalizedWidth      Float
+  normalizedHeight     Float
+  preprocessingJson    String                @default("{}")
+  thresholdsJson       String                @default("{}")
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  ocrRuns              OcrRun[]
+
+  @@unique([calibrationProfileId, name])
+  @@index([calibrationProfileId, regionKind])
+}
+
+model OcrRun {
+  id                String       @id @default(cuid())
+  projectId         String
+  project           Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hudRegionId       String
+  hudRegion         HudRegion    @relation(fields: [hudRegionId], references: [id], onDelete: Cascade)
+  timestampSeconds  Float
+  status            OcrRunStatus @default(QUEUED)
+  engineId          String
+  engineVersion     String
+  preprocessingJson String       @default("{}")
+  redactedText      String?
+  confidence        Float?
+  measurementsJson  String       @default("{}")
+  errorMessage      String?
+  createdAt         DateTime     @default(now())
+  completedAt       DateTime?
+
+  @@index([projectId, timestampSeconds])
+  @@index([hudRegionId, createdAt])
+}
+
+model CandidateMoment {
+  id                        String                   @id @default(cuid())
+  projectId                 String
+  project                   Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analysisJobId             String
+  analysisJob               AnalysisJob              @relation(fields: [analysisJobId], references: [id], onDelete: Cascade)
+  styleProfileId            String?
+  styleProfile              CreatorStyleProfile?     @relation(fields: [styleProfileId], references: [id], onDelete: SetNull)
+  category                  GroundTruthCategory
+  alternativeCategoriesJson String                   @default("[]")
+  startSeconds              Float
+  peakSeconds               Float
+  endSeconds                Float
+  eventConfidence           Float
+  contentPotentialScore     Float
+  styleSimilarity           Float?
+  scoreBreakdownJson        String                   @default("{}")
+  explanation               String
+  missingEvidenceJson       String                   @default("[]")
+  detectorVersionsJson      String                   @default("{}")
+  note                      String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  detectorLinks             CandidateDetectorEvent[]
+  reviews                   CandidateReviewLabel[]
+
+  @@index([projectId, startSeconds])
+  @@index([analysisJobId])
+  @@index([category])
+}
+
+model CandidateDetectorEvent {
+  candidateId     String
+  detectorEventId String
+  candidate       CandidateMoment @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  detectorEvent   DetectorEvent   @relation(fields: [detectorEventId], references: [id], onDelete: Cascade)
+  role            String          @default("SUPPORTING")
+  createdAt       DateTime        @default(now())
+
+  @@id([candidateId, detectorEventId])
+  @@index([detectorEventId])
+}
+
+model CandidateReviewLabel {
+  id                    String                  @id @default(cuid())
+  candidateId           String
+  candidate             CandidateMoment         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  decision              CandidateReviewDecision
+  correctedStartSeconds Float?
+  correctedEndSeconds   Float?
+  correctedCategory     GroundTruthCategory?
+  note                  String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  @@index([candidateId, createdAt])
+}
+
+model TelemetryImport {
+  id                    String                @id @default(cuid())
+  projectId             String
+  project               Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  schemaVersion         String
+  recordingStartTime    DateTime?
+  clockSource           String
+  synchronizationOffset Float                 @default(0)
+  eventSource           String
+  sourceVersion         String
+  status                TelemetryImportStatus @default(READY)
+  errorMessage          String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  events                TelemetryEvent[]
+
+  @@index([projectId, createdAt])
+}
+
+model TelemetryEvent {
+  id                 String                 @id @default(cuid())
+  telemetryImportId  String
+  telemetryImport    TelemetryImport        @relation(fields: [telemetryImportId], references: [id], onDelete: Cascade)
+  timestampSeconds   Float
+  normalizedCategory TelemetryEventCategory
+  rawPayloadJson     String                 @default("{}")
+  createdAt          DateTime               @default(now())
+
+  @@index([telemetryImportId, timestampSeconds])
 }

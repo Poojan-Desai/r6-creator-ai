@@ -1,0 +1,127 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { PrismaClient } from "@prisma/client";
+import { afterEach, describe, expect, it } from "vitest";
+
+const temporaryDirectories: string[] = [];
+
+function applyMigration(
+  databasePath: string,
+  migrationRoot: string,
+  name: string,
+) {
+  execFileSync("sqlite3", [databasePath], {
+    input: readFileSync(path.join(migrationRoot, name, "migration.sql")),
+  });
+}
+
+afterEach(() => {
+  while (temporaryDirectories.length) {
+    const directory = temporaryDirectories.pop();
+    if (directory) rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+describe("Phase 3B.1 additive migration", () => {
+  it("preserves Phase 1-3A rows and persists benchmark/framework rows", async () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "r6-phase3b1-"));
+    temporaryDirectories.push(directory);
+    const databasePath = path.join(directory, "test.db");
+    const databaseUrl = `file:${databasePath}`;
+    const migrationRoot = path.resolve(process.cwd(), "prisma", "migrations");
+    for (const name of [
+      "20260722034340_init",
+      "20260722042544_phase2_transcription",
+      "20260722051921_phase3a_reference_library",
+    ]) {
+      applyMigration(databasePath, migrationRoot, name);
+    }
+
+    execFileSync("sqlite3", [databasePath], {
+      input: `
+        INSERT INTO Project (id, name, originalFilename, sourceRelativePath, mimeType, fileSizeBytes, durationSeconds, width, height, frameRate, updatedAt)
+        VALUES ('stable-project', 'Preserved Phase 3A project', 'stable.mp4', 'uploads/stable/source.mp4', 'video/mp4', 1000, 60, 1920, 1080, 60, CURRENT_TIMESTAMP);
+        INSERT INTO ContentDraft (id, projectId, openingHook, updatedAt)
+        VALUES ('stable-content', 'stable-project', 'Keep this hook', CURRENT_TIMESTAMP);
+        INSERT INTO ReferenceVideo (id, referenceType, title, creatorName, platform, sourceType, contentCategory, permissionConfirmed, updatedAt)
+        VALUES ('stable-reference', 'LOCAL_VIDEO', 'Preserved reference', 'My channel', 'YouTube', 'OWN_CREATION', 'Natural', 1, CURRENT_TIMESTAMP);
+        INSERT INTO CreatorStyleProfile (id, name, updatedAt)
+        VALUES ('stable-profile', 'Preserved profile', CURRENT_TIMESTAMP);
+        INSERT INTO StyleProfileReference (profileId, referenceId)
+        VALUES ('stable-profile', 'stable-reference');
+      `,
+    });
+
+    applyMigration(
+      databasePath,
+      migrationRoot,
+      "20260722145757_phase3b1_benchmark_framework",
+    );
+    let client = new PrismaClient({ datasourceUrl: databaseUrl });
+    await client.groundTruthLabel.create({
+      data: {
+        id: "ground-truth",
+        projectId: "stable-project",
+        category: "KILL",
+        startSeconds: 10,
+        peakSeconds: 11,
+        endSeconds: 12,
+        humanConfidence: 0.9,
+        approved: true,
+      },
+    });
+    const definition = await client.detectorDefinition.create({
+      data: {
+        stableId: "fixture.detector",
+        name: "Fixture detector",
+        version: "1.0.0",
+        description: "Migration fixture",
+      },
+    });
+    const job = await client.analysisJob.create({
+      data: {
+        projectId: "stable-project",
+        detectorSetVersion: "fixture-set-v1",
+        enabledDetectorCount: 1,
+        detectorRuns: {
+          create: {
+            detectorDefinitionId: definition.id,
+            detectorStableId: definition.stableId,
+            detectorVersion: definition.version,
+          },
+        },
+      },
+    });
+    await client.$disconnect();
+
+    client = new PrismaClient({ datasourceUrl: databaseUrl });
+    const [project, reference, profile, label, savedJob] = await Promise.all([
+      client.project.findUnique({
+        where: { id: "stable-project" },
+        include: { contentDraft: true },
+      }),
+      client.referenceVideo.findUnique({ where: { id: "stable-reference" } }),
+      client.creatorStyleProfile.findUnique({
+        where: { id: "stable-profile" },
+        include: { referenceLinks: true },
+      }),
+      client.groundTruthLabel.findUnique({ where: { id: "ground-truth" } }),
+      client.analysisJob.findUnique({
+        where: { id: job.id },
+        include: { detectorRuns: { include: { detectorDefinition: true } } },
+      }),
+    ]);
+    expect(project?.contentDraft?.openingHook).toBe("Keep this hook");
+    expect(reference?.permissionConfirmed).toBe(true);
+    expect(profile?.referenceLinks).toHaveLength(1);
+    expect(label).toMatchObject({ category: "KILL", approved: true });
+    expect(savedJob?.detectorRuns[0]).toMatchObject({
+      detectorStableId: "fixture.detector",
+      detectorVersion: "1.0.0",
+    });
+    await client.$disconnect();
+  });
+});

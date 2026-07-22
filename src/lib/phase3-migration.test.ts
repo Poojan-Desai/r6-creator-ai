@@ -35,23 +35,14 @@ describe("Phase 3A additive migration and persistence", () => {
   it("keeps Phase 1/2 rows and reopens reference/profile rows", async () => {
     const { databasePath, migrationRoot } = createDatabase();
     const databaseUrl = `file:${databasePath}`;
-    let client = new PrismaClient({ datasourceUrl: databaseUrl });
-    await client.project.create({
-      data: {
-        id: "stable-project",
-        name: "Preserved Phase 2 project",
-        originalFilename: "stable.mp4",
-        sourceRelativePath: "uploads/stable/source.mp4",
-        mimeType: "video/mp4",
-        fileSizeBytes: BigInt(500),
-        durationSeconds: 10,
-        width: 1920,
-        height: 1080,
-        frameRate: 60,
-        contentDraft: { create: { openingHook: "Preserve me" } },
-      },
+    execFileSync("sqlite3", [databasePath], {
+      input: `
+        INSERT INTO Project (id, name, originalFilename, sourceRelativePath, mimeType, fileSizeBytes, durationSeconds, width, height, frameRate, updatedAt)
+        VALUES ('stable-project', 'Preserved Phase 2 project', 'stable.mp4', 'uploads/stable/source.mp4', 'video/mp4', 500, 10, 1920, 1080, 60, CURRENT_TIMESTAMP);
+        INSERT INTO ContentDraft (id, projectId, openingHook, updatedAt)
+        VALUES ('stable-content', 'stable-project', 'Preserve me', CURRENT_TIMESTAMP);
+      `,
     });
-    await client.$disconnect();
     execFileSync("sqlite3", [databasePath], {
       input: readFileSync(
         path.join(
@@ -61,50 +52,29 @@ describe("Phase 3A additive migration and persistence", () => {
         ),
       ),
     });
-    client = new PrismaClient({ datasourceUrl: databaseUrl });
-    await client.referenceVideo.create({
-      data: {
-        id: "owned-reference",
-        referenceType: "LOCAL_VIDEO",
-        title: "Owned reference",
-        creatorName: "My channel",
-        game: "Rainbow Six Siege",
-        platform: "Shorts",
-        sourceType: "OWN_CREATION",
-        contentCategory: "Funny",
-        permissionConfirmed: true,
-        permissionConfirmedAt: new Date(),
-        originalFilename: "owned.mp4",
-        sourceRelativePath: "references/owned-reference/source.mp4",
-        mimeType: "video/mp4",
-        fileSizeBytes: BigInt(1_000),
-        durationSeconds: 20,
-        width: 1920,
-        height: 1080,
-        frameRate: 60,
-        audioTracks: {
-          create: {
-            streamIndex: 2,
-            codecName: "aac",
-            channels: 1,
-            title: "Creator Microphone",
-            preferenceScore: 100,
-          },
-        },
-      },
+    execFileSync("sqlite3", [databasePath], {
+      input: `
+        INSERT INTO ReferenceVideo (id, referenceType, title, creatorName, platform, sourceType, contentCategory, permissionConfirmed, permissionConfirmedAt, originalFilename, sourceRelativePath, mimeType, fileSizeBytes, durationSeconds, width, height, frameRate, updatedAt)
+        VALUES ('owned-reference', 'LOCAL_VIDEO', 'Owned reference', 'My channel', 'Shorts', 'OWN_CREATION', 'Funny', 1, CURRENT_TIMESTAMP, 'owned.mp4', 'references/owned-reference/source.mp4', 'video/mp4', 1000, 20, 1920, 1080, 60, CURRENT_TIMESTAMP);
+        INSERT INTO ReferenceAudioTrack (id, referenceId, streamIndex, codecName, channels, title, preferenceScore, updatedAt)
+        VALUES ('owned-track', 'owned-reference', 2, 'aac', 1, 'Creator Microphone', 100, CURRENT_TIMESTAMP);
+        INSERT INTO CreatorStyleProfile (id, name, updatedAt)
+        VALUES ('profile', 'My Natural Style', CURRENT_TIMESTAMP);
+        INSERT INTO StyleProfileReference (profileId, referenceId)
+        VALUES ('profile', 'owned-reference');
+      `,
     });
-    await client.creatorStyleProfile.create({
-      data: {
-        id: "profile",
-        name: "My Natural Style",
-        referenceLinks: {
-          create: { referenceId: "owned-reference" },
-        },
-      },
+    execFileSync("sqlite3", [databasePath], {
+      input: readFileSync(
+        path.join(
+          migrationRoot,
+          "20260722145757_phase3b1_benchmark_framework",
+          "migration.sql",
+        ),
+      ),
     });
-    await client.$disconnect();
 
-    client = new PrismaClient({ datasourceUrl: databaseUrl });
+    const client = new PrismaClient({ datasourceUrl: databaseUrl });
     const [project, reference, profile] = await Promise.all([
       client.project.findUnique({
         where: { id: "stable-project" },
