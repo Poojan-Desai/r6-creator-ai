@@ -444,6 +444,64 @@ automatic detection claim is displayed.
 signals on real media, creator/game audio remain separate, failures are isolated,
 and cancellation/restart cleanup is verified.
 
+### Phase 3B.2-M — Versioned R6 map knowledge foundation
+
+This is a separately committed workstream alongside Phase 3B.2. It supplies
+user-confirmed map context and inspectable knowledge for later detectors and
+writing; it does not identify a map, floor, or room from video.
+
+1. Seed a versioned official catalog from Ubisoft's current map directory and
+   Operation System Override sources. Preserve source URL/title, retrieval and
+   verification dates, season/version, provenance, descriptions, release and
+   modernization dates, blueprint availability, and per-playlist state. Keep
+   the July 2026 mid-season Ranked rotation as a newer source-backed override
+   rather than rewriting older map-page evidence. Include all 27 current map
+   guides plus Dual Front-only District.
+2. Add an additive normalized schema for game-data versions, maps, aliases, map
+   versions, floors, typed knowledge elements and aliases, bomb-site pairs,
+   graph edges, citations, blueprint assets, project map context, preferred
+   callout terminology, and edit history. A typed element table represents the
+   requested rooms, hallways, stairs, ladders, hatches, doors, windows,
+   exterior entries, spawns, objectives, cameras, drone routes, surface types,
+   sightlines, rotations, routes, plants, positions, entries, flanks, and
+   utility without duplicating identical geometry/provenance fields across many
+   brittle tables.
+3. Preserve every historical layout as an immutable-by-default map version.
+   Large changes require duplicating a version. Store normalized `[0,1]`
+   coordinates, confidence/provenance labels, last verification, tactical text,
+   and source citations. Distinguish current, possibly outdated, historical,
+   and unverified knowledge.
+4. Add a visible manual blueprint import for an official Ubisoft ZIP or image.
+   Stream the upload to bounded local storage, reject traversal/symlink/unsafe
+   archive entries and unsupported content, preserve originals, create local
+   optimized previews with FFmpeg, support floor naming/order, and delete owned
+   assets safely. Never auto-download blueprint files.
+5. Add a keyboard-accessible Map Knowledge workspace with map/playlist search,
+   version duplication, floor switching, blueprint zoom/pan, polygon/line/point
+   annotations, room/callout/bomb-site/graph/citation editing, safe autosave,
+   undo/redo, and explicit deletion of user-created knowledge.
+6. Add deterministic local graph and search queries plus versioned JSON
+   import/export for a complete map or selected knowledge slice. Reject future
+   schemas, path fields, duplicate stable IDs, out-of-range coordinates, broken
+   references, and invalid element/edge combinations transactionally.
+7. Add manual project context for map/version, bomb site, side, starting room,
+   important rooms, operator, and round result. Expose only user-confirmed or
+   explicitly selected facts through a provider-neutral writing-context
+   interface. Define—but do not implement—the future map-location detector
+   contract using possible/uncertain labels and supporting/conflicting evidence.
+8. Test migration, official seed idempotency, versions, aliases, playlists,
+   geometry, graph/vertical queries, bomb sites, citations, ZIP safety,
+   import/export, search, deletion, undo/redo, project context, and all earlier
+   regressions. Browser-verify the eight requested maps, one manually imported
+   permitted blueprint fixture, partial annotations, export/delete/import, and
+   restart persistence without implying every map is annotated.
+
+**Exit condition:** current official map records and sources exist; versions,
+blueprints, partial annotations, callouts, bomb sites, graph links, search,
+manual project context, and import/export work and persist; all claims describe
+knowledge status honestly; the quality gate passes; and the work is committed
+separately from Phase 3B.2 detectors.
+
 ### Phase 3B.3 — R6 HUD calibration and screen-state detectors
 
 1. Research maintained offline OCR choices for Apple Silicon and record the
@@ -648,7 +706,8 @@ These remain outside the authorized Phase 3 scope.
 - Phase 3B.1 schema/framework commit: `820afda`
 - Phase 3B.1 labeling-workspace commit: `8d0e825`
 - Phase 3B.1: implementation and verification complete on July 22, 2026
-- Next active stage: Phase 3B.2 general video, audio, and transcript detectors
+- Active parallel stages: Phase 3B.2 general video/audio/transcript detectors
+  and separately committed Phase 3B.2-M map knowledge foundation
 
 - Stable Phase 1 application — complete and preserved in Git commit `2099b2f`
 - Phase 2A: audio inventory and migration — complete
