@@ -126,13 +126,18 @@ export default async function HomePage() {
                 ],
                 [
                   "02",
+                  "Choose the voice",
+                  "Select one audio track and create an editable local transcript.",
+                ],
+                [
+                  "03",
                   "Mark the moment",
                   "Choose exact start and end times while watching the recording.",
                 ],
                 [
-                  "03",
+                  "04",
                   "Shape the post",
-                  "Save the hook, script, title, caption, thumbnail text, and edit notes.",
+                  "Draft the hook, script, title, caption, thumbnail text, and edit notes.",
                 ],
               ].map(([number, title, description]) => (
                 <li key={number} className="flex gap-4">

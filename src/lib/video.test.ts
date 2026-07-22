@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { AppError } from "@/lib/errors";
 import {
   buildClipArguments,
+  normalizeAudioTracks,
   normalizeProbeOutput,
   parseFrameRate,
 } from "@/lib/video";
@@ -31,6 +32,7 @@ describe("video metadata", () => {
       width: 1920,
       height: 1080,
       frameRate: expect.closeTo(59.94, 2),
+      audioTracks: [],
     });
   });
 
@@ -38,6 +40,53 @@ describe("video metadata", () => {
     expect(() =>
       normalizeProbeOutput({ streams: [{ codec_type: "audio" }] }),
     ).toThrow(AppError);
+  });
+});
+
+describe("audio track metadata", () => {
+  it("recommends a clearly named creator microphone over game audio", () => {
+    const tracks = normalizeAudioTracks([
+      {
+        index: 1,
+        codec_type: "audio",
+        codec_name: "aac",
+        channels: 2,
+        tags: { title: "Game Audio" },
+        disposition: { default: 1 },
+      },
+      {
+        index: 2,
+        codec_type: "audio",
+        codec_name: "aac",
+        channels: 1,
+        tags: { title: "Creator Microphone" },
+      },
+    ]);
+
+    expect(tracks).toHaveLength(2);
+    expect(tracks[0]?.preferenceScore).toBeLessThan(0);
+    expect(tracks[1]).toMatchObject({
+      streamIndex: 2,
+      title: "Creator Microphone",
+      preferenceScore: 100,
+    });
+  });
+
+  it("does not strongly recommend ambiguous multi-track audio", () => {
+    const tracks = normalizeAudioTracks([
+      { index: 1, codec_type: "audio", channels: 2 },
+      { index: 2, codec_type: "audio", channels: 2 },
+    ]);
+
+    expect(tracks.map((track) => track.preferenceScore)).toEqual([0, 0]);
+  });
+
+  it("marks the only audio stream as safe to preselect", () => {
+    expect(
+      normalizeAudioTracks([
+        { index: 1, codec_type: "audio", codec_name: "aac", channels: 2 },
+      ])[0],
+    ).toMatchObject({ preferenceScore: 100 });
   });
 });
 

@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["ffmpeg-static", "ffprobe-static"],
   turbopack: {
-    root: process.cwd(),
+    root: /* turbopackIgnore: true */ process.cwd(),
   },
 };
 

@@ -8,6 +8,8 @@ export const dataPaths = {
   database: path.join(appConfig.dataRoot, "r6-creator.db"),
   uploads: path.join(appConfig.dataRoot, "uploads"),
   clips: path.join(appConfig.dataRoot, "clips"),
+  models: path.join(appConfig.dataRoot, "models"),
+  transcriptionTemp: path.join(appConfig.dataRoot, "transcription-temp"),
 };
 
 export async function ensureDataDirectories() {
@@ -15,6 +17,8 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.root, { recursive: true }),
     mkdir(dataPaths.uploads, { recursive: true }),
     mkdir(dataPaths.clips, { recursive: true }),
+    mkdir(dataPaths.models, { recursive: true }),
+    mkdir(dataPaths.transcriptionTemp, { recursive: true }),
   ]);
 }
 

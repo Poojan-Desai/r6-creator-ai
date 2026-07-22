@@ -7,9 +7,11 @@ this repository.
 
 - Build the local-first R6 Creator AI MVP described in `PLAN.md`.
 - Treat the ClutchScript service plan as strategic context, not permission to
-  add automation, AI, accounts, billing, or cloud infrastructure to this MVP.
-- Prefer a small, dependable manual workflow over speculative features.
-- Do not add paid services, authentication, or machine-learning features.
+  add accounts, billing, cloud infrastructure, or automatic highlight
+  detection to this milestone.
+- Phase 2 permits local `whisper.cpp` transcription and deterministic local
+  writing suggestions. Do not add paid APIs, hosted inference, voice cloning,
+  or highlight-detection models.
 
 ## Required stack
 
@@ -17,6 +19,7 @@ this repository.
 - Tailwind CSS
 - SQLite with Prisma
 - FFmpeg and FFprobe as local executables
+- Homebrew `whisper.cpp` with a local GGML model for speech-to-text
 - Vitest for unit/service tests
 - npm and the checked-in `package-lock.json`
 
@@ -55,6 +58,8 @@ layer. Do not silently skip checks.
   behavior such as upload progress, video controls, and forms.
 - Keep route handlers thin; put reusable validation, database, storage, and
   video-processing logic in focused modules under `src/lib`.
+- Keep content generation behind `ContentSuggestionProvider`; components and
+  routes must not depend directly on an OpenAI or template implementation.
 - Validate every untrusted request at the server boundary.
 - Return a consistent JSON error shape with a plain-language message.
 - Use UTC ISO timestamps in APIs and format them for display in the UI.
@@ -70,9 +75,12 @@ layer. Do not silently skip checks.
 - Use generated IDs, resolve paths below the configured data root, and verify
   path containment.
 - Run FFmpeg and FFprobe directly with argument arrays, never through a shell.
+- Run `whisper-cli` directly with argument arrays, never through a shell.
 - Validate extension, MIME type, maximum size, real video stream, and duration.
 - Validate that `0 <= start < end <= source duration` before invoking FFmpeg.
 - Clean up partial files on upload or clip failures.
+- Extract only the explicitly selected audio stream to a temporary 16 kHz mono
+  WAV, and remove all temporary transcription artifacts afterward.
 - Store only relative paths in SQLite so the project folder can move.
 
 ## Local data and privacy
@@ -82,14 +90,29 @@ layer. Do not silently skip checks.
 - Do not send gameplay, audio, filenames, metadata, or drafts to external
   services.
 - Do not use uploaded content for training or analytics.
-- Do not transcribe or analyze voice chat in this MVP.
+- Prefer a clearly labeled creator microphone. Do not preselect an ambiguous
+  multi-track source, and never transcribe teammate/voice-chat audio by default.
+- Do not create speaker identities, voiceprints, or voice clones.
+
+## Background transcription jobs
+
+- A start route must return promptly; never wait for FFmpeg or Whisper inside
+  the request before responding.
+- Persist queued, extracting, transcribing, saving, completed, cancelled, and
+  error transitions with readable progress and errors.
+- Keep direct child-process references only in server memory so cancellation can
+  send `SIGTERM` and then a bounded `SIGKILL` fallback.
+- Reconcile interrupted jobs after an application restart; never leave a stale
+  job looking active.
+- Never save a partial transcript after cancellation or process failure.
 
 ## Database rules
 
 - Schema changes require a checked-in Prisma migration.
 - Keep MP4 data on disk; SQLite stores metadata and owned relative paths only.
 - Use transactions when one user action changes related records.
-- Preserve projects across application restarts.
+- Preserve projects, transcript edits, content drafts, and completed job history
+  across application restarts.
 
 ## UX and accessibility
 

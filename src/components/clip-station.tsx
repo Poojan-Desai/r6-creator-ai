@@ -6,12 +6,20 @@ import {
   Clock3,
   Download,
   Film,
+  Lightbulb,
   LoaderCircle,
   Play,
   Scissors,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 
+import {
+  CONTENT_SUGGESTION_EVENT,
+  CONTENT_TONES,
+  type ContentSuggestion,
+  type ContentTone,
+} from "@/lib/content-writing";
 import { formatBytes } from "@/lib/format";
 import type { ClipDto } from "@/lib/projects";
 import { formatDuration, parseTimeInput } from "@/lib/time";
@@ -34,6 +42,12 @@ export function ClipStation({
   const [state, setState] = useState<FormState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [tone, setTone] = useState<ContentTone>("Natural");
+  const [suggestion, setSuggestion] = useState<ContentSuggestion | null>(null);
+  const [suggestionClipName, setSuggestionClipName] = useState("");
+  const [generatingClipId, setGeneratingClipId] = useState<string | null>(null);
+  const [writingError, setWritingError] = useState<string | null>(null);
+  const [applied, setApplied] = useState(false);
 
   const selectedDuration = useMemo(() => {
     const start = parseTimeInput(startTime);
@@ -137,6 +151,51 @@ export function ClipStation({
     } finally {
       setDeletingId(null);
     }
+  }
+
+  async function generateSuggestions(clip: ClipDto) {
+    setGeneratingClipId(clip.id);
+    setWritingError(null);
+    setApplied(false);
+    try {
+      const response = await fetch(`/api/clips/${clip.id}/suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tone }),
+      });
+      const body = (await response.json()) as {
+        suggestion?: ContentSuggestion;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.suggestion) {
+        throw new Error(
+          body.error?.message || "Writing suggestions could not be generated.",
+        );
+      }
+      setSuggestion(body.suggestion);
+      setSuggestionClipName(clip.name);
+    } catch (reason) {
+      setWritingError(
+        reason instanceof Error
+          ? reason.message
+          : "Writing suggestions could not be generated.",
+      );
+    } finally {
+      setGeneratingClipId(null);
+    }
+  }
+
+  function applySuggestion() {
+    if (!suggestion) return;
+    window.dispatchEvent(
+      new CustomEvent<ContentSuggestion>(CONTENT_SUGGESTION_EVENT, {
+        detail: suggestion,
+      }),
+    );
+    setApplied(true);
+    document
+      .querySelector("#content-workbench-title")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
@@ -247,6 +306,50 @@ export function ClipStation({
           </span>
         </div>
 
+        {clips.length > 0 && (
+          <div className="flex flex-col gap-3 border-b border-white/8 bg-[#b8ff2c]/3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                <Sparkles
+                  className="text-[#b8ff2c]"
+                  aria-hidden="true"
+                  size={15}
+                />
+                Local writing assistant
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                Choose a tone, then use a clip’s transcript to draft all six
+                content fields.
+              </p>
+            </div>
+            <label
+              className="flex items-center gap-2 text-xs font-semibold text-slate-400"
+              htmlFor="writing-tone"
+            >
+              Tone
+              <select
+                id="writing-tone"
+                className="field w-40 py-2"
+                value={tone}
+                onChange={(event) => setTone(event.target.value as ContentTone)}
+                disabled={Boolean(generatingClipId)}
+              >
+                {CONTENT_TONES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
+        {writingError && (
+          <div className="error-box m-5 sm:m-6" role="alert">
+            {writingError}
+          </div>
+        )}
+
         {clips.length === 0 ? (
           <div className="grid min-h-80 place-items-center px-6 py-12 text-center">
             <div>
@@ -319,13 +422,33 @@ export function ClipStation({
 
                 <div className="mt-4 flex items-center gap-2 border-t border-white/8 pt-4">
                   {clip.status === "READY" && (
-                    <a
-                      className="secondary-button flex-1"
-                      href={`/api/media/clips/${clip.id}?download=1`}
-                      download
-                    >
-                      <Download aria-hidden="true" size={15} /> Download
-                    </a>
+                    <>
+                      <button
+                        type="button"
+                        className="secondary-button flex-1"
+                        onClick={() => generateSuggestions(clip)}
+                        disabled={generatingClipId === clip.id}
+                      >
+                        {generatingClipId === clip.id ? (
+                          <LoaderCircle
+                            className="animate-spin"
+                            aria-hidden="true"
+                            size={15}
+                          />
+                        ) : (
+                          <Lightbulb aria-hidden="true" size={15} />
+                        )}
+                        Write
+                      </button>
+                      <a
+                        className="icon-button"
+                        href={`/api/media/clips/${clip.id}?download=1`}
+                        download
+                        aria-label={`Download ${clip.name}`}
+                      >
+                        <Download aria-hidden="true" size={15} />
+                      </a>
+                    </>
                   )}
                   <button
                     type="button"
@@ -354,7 +477,83 @@ export function ClipStation({
             ))}
           </div>
         )}
+
+        {suggestion && (
+          <SuggestionPreview
+            suggestion={suggestion}
+            clipName={suggestionClipName}
+            tone={tone}
+            applied={applied}
+            onApply={applySuggestion}
+          />
+        )}
       </div>
+    </section>
+  );
+}
+
+const suggestionFields: Array<{
+  key: keyof ContentSuggestion;
+  label: string;
+}> = [
+  { key: "openingHook", label: "Opening hook" },
+  { key: "voiceoverScript", label: "Full voiceover script" },
+  { key: "youtubeTitle", label: "YouTube title" },
+  { key: "shortFormCaption", label: "Short-form caption" },
+  { key: "thumbnailText", label: "Thumbnail text" },
+  { key: "editingInstructions", label: "Editing instructions" },
+];
+
+function SuggestionPreview({
+  suggestion,
+  clipName,
+  tone,
+  applied,
+  onApply,
+}: {
+  suggestion: ContentSuggestion;
+  clipName: string;
+  tone: ContentTone;
+  applied: boolean;
+  onApply: () => void;
+}) {
+  return (
+    <section className="border-t border-white/8 bg-black/15 px-5 py-5 sm:px-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="section-kicker">Draft ready · {tone}</p>
+          <h3 className="font-display mt-1 text-2xl font-bold text-white uppercase">
+            {clipName}
+          </h3>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Generated locally from the overlapping edited transcript. Review the
+            wording before publishing.
+          </p>
+        </div>
+        <button type="button" className="primary-button" onClick={onApply}>
+          {applied ? (
+            <CheckCircle2 aria-hidden="true" size={16} />
+          ) : (
+            <Sparkles aria-hidden="true" size={16} />
+          )}
+          {applied ? "Added below" : "Use in content package"}
+        </button>
+      </div>
+      <dl className="mt-5 grid gap-3 md:grid-cols-2">
+        {suggestionFields.map((field) => (
+          <div
+            key={field.key}
+            className="rounded-xl border border-white/8 bg-[#0c1013] p-4"
+          >
+            <dt className="text-[10px] font-bold tracking-[0.12em] text-[#b8ff2c] uppercase">
+              {field.label}
+            </dt>
+            <dd className="mt-2 text-sm leading-6 whitespace-pre-wrap text-slate-300">
+              {suggestion[field.key]}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

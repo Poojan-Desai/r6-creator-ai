@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ensureDataDirectories } from "@/lib/data-paths";
+import { getTranscriptionHealth } from "@/lib/transcription";
 import { getVideoToolHealth } from "@/lib/video";
 
 export const runtime = "nodejs";
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const tools = await getVideoToolHealth();
+  const transcription = getTranscriptionHealth();
   let database = false;
 
   try {
@@ -17,13 +19,19 @@ export async function GET() {
     database = false;
   }
 
-  const ready = tools.ffmpeg && tools.ffprobe && database;
+  const ready =
+    tools.ffmpeg && tools.ffprobe && database && transcription.ready;
   return Response.json(
     {
       ready,
-      checks: { database, ...tools },
+      checks: {
+        database,
+        ...tools,
+        whisperEngine: transcription.engineReady,
+        whisperModel: transcription.modelReady,
+      },
       message: ready
-        ? "Local video tools and project storage are ready."
+        ? "Local video, speech, and project storage are ready."
         : "Local setup is incomplete. Run the setup steps in README.md.",
     },
     { status: ready ? 200 : 503 },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Captions,
   Check,
@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 
 import type { ContentDraftDto } from "@/lib/projects";
+import {
+  CONTENT_SUGGESTION_EVENT,
+  type ContentSuggestion,
+} from "@/lib/content-writing";
 
 type DraftValues = Omit<ContentDraftDto, "updatedAt">;
 
@@ -104,6 +108,19 @@ export function ContentWorkbench({
   const [message, setMessage] = useState<string | null>(null);
   const dirty = fields.some(({ key }) => draft[key] !== lastSaved[key]);
 
+  useEffect(() => {
+    function receiveSuggestion(event: Event) {
+      const suggestion = (event as CustomEvent<ContentSuggestion>).detail;
+      if (!suggestion) return;
+      setDraft(suggestion);
+      setStatus("idle");
+      setMessage("Suggestions added—review and save when ready");
+    }
+    window.addEventListener(CONTENT_SUGGESTION_EVENT, receiveSuggestion);
+    return () =>
+      window.removeEventListener(CONTENT_SUGGESTION_EVENT, receiveSuggestion);
+  }, []);
+
   function updateField(key: keyof DraftValues, value: string) {
     setDraft((current) => ({ ...current, [key]: value }));
     setStatus("idle");
@@ -163,7 +180,8 @@ export function ContentWorkbench({
             Build the story around the clip
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            These are private writing spaces—no AI service is connected yet.
+            Edit freely or add local suggestions from a clip above. No paid AI
+            service is connected.
           </p>
         </div>
         <div className="flex items-center gap-3">

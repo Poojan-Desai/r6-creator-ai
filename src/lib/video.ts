@@ -4,12 +4,24 @@ import { appConfig } from "@/lib/config";
 import { AppError } from "@/lib/errors";
 
 type ProbeStream = {
+  index?: number;
   codec_type?: string;
+  codec_name?: string;
   width?: number;
   height?: number;
   avg_frame_rate?: string;
   r_frame_rate?: string;
   duration?: string;
+  channels?: number;
+  channel_layout?: string;
+  tags?: {
+    language?: string;
+    title?: string;
+    handler_name?: string;
+  };
+  disposition?: {
+    default?: number;
+  };
 };
 
 type ProbeOutput = {
@@ -24,6 +36,19 @@ export type VideoMetadata = {
   width: number;
   height: number;
   frameRate: number;
+  audioTracks: AudioTrackMetadata[];
+};
+
+export type AudioTrackMetadata = {
+  streamIndex: number;
+  codecName: string;
+  channels: number;
+  channelLayout: string | null;
+  language: string | null;
+  title: string | null;
+  isDefault: boolean;
+  preferenceScore: number;
+  preferenceReason: string | null;
 };
 
 type ProcessResult = {
@@ -129,7 +154,69 @@ export function normalizeProbeOutput(output: ProbeOutput): VideoMetadata {
     );
   }
 
-  return { durationSeconds, width, height, frameRate };
+  return {
+    durationSeconds,
+    width,
+    height,
+    frameRate,
+    audioTracks: normalizeAudioTracks(output.streams ?? []),
+  };
+}
+
+export function normalizeAudioTracks(
+  streams: ProbeStream[],
+): AudioTrackMetadata[] {
+  const audioStreams = streams.filter(
+    (stream): stream is ProbeStream & { index: number } =>
+      stream.codec_type === "audio" && Number.isInteger(stream.index),
+  );
+
+  return audioStreams.map((stream) => {
+    const title = (stream.tags?.title ?? stream.tags?.handler_name)?.trim();
+    const searchableTitle = title?.toLowerCase() ?? "";
+    const channels =
+      Number.isInteger(stream.channels) && Number(stream.channels) > 0
+        ? Number(stream.channels)
+        : 1;
+    let preferenceScore = 0;
+    let preferenceReason: string | null = null;
+
+    if (audioStreams.length === 1) {
+      preferenceScore = 100;
+      preferenceReason = "This is the recording's only audio track.";
+    } else if (
+      /(?:creator|microphone|\bmic\b|commentary|narration|voice)/i.test(
+        searchableTitle,
+      )
+    ) {
+      preferenceScore = 100;
+      preferenceReason = "Its track name looks like a creator microphone.";
+    } else if (
+      /(?:teammate|team chat|party|discord|voice chat)/i.test(searchableTitle)
+    ) {
+      preferenceScore = -100;
+      preferenceReason = "Its name suggests teammate or voice-chat audio.";
+    } else if (/(?:game|desktop|system|music|mixed?)/i.test(searchableTitle)) {
+      preferenceScore = -50;
+      preferenceReason = "Its name suggests game, desktop, or mixed audio.";
+    } else if (channels === 1) {
+      preferenceScore = 25;
+      preferenceReason =
+        "This is a mono track, which may be an isolated microphone.";
+    }
+
+    return {
+      streamIndex: stream.index,
+      codecName: stream.codec_name?.trim() || "unknown",
+      channels,
+      channelLayout: stream.channel_layout?.trim() || null,
+      language: stream.tags?.language?.trim() || null,
+      title: title || null,
+      isDefault: stream.disposition?.default === 1,
+      preferenceScore,
+      preferenceReason,
+    };
+  });
 }
 
 export async function probeVideo(filePath: string) {

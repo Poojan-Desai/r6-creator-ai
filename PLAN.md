@@ -4,9 +4,9 @@
 
 Build a private, local-first web application that turns an uploaded Rainbow Six
 Siege MP4 recording into a saved project with inspectable video metadata,
-manually selected clips, previews, downloads, and structured content-writing
-placeholders. The first version uses no paid services, authentication, or
-machine-learning features.
+manually selected clips, editable timestamped transcripts, and useful
+content-writing suggestions. Phase 2 remains free and local: recordings and
+transcripts do not leave this computer, and no paid AI API is required.
 
 The longer ClutchScript business plan informs the product direction, but this
 milestone is deliberately limited to the useful internal workflow that can be
@@ -20,8 +20,12 @@ the deliverables.
 - Node.js: installed (`v22.18.0`)
 - npm: installed (`10.9.3`)
 - SQLite command-line tool: installed (`3.43.2`)
-- System FFmpeg / FFprobe: not detected; the application therefore uses
-  bundled local FFmpeg binaries installed with its npm dependencies
+- System FFmpeg / FFprobe: not detected; the application uses bundled local
+  FFmpeg binaries installed with its npm dependencies
+- Local speech engine: Homebrew `whisper-cpp` 1.9.1, verified available as an
+  Apple Silicon bottle
+- Speech model: English `base.en` GGML model (about 142 MB), downloaded into
+  the ignored application data directory by the setup script
 
 ## Architecture
 
@@ -31,6 +35,13 @@ the deliverables.
 - **Video processing:** server-side `ffprobe` for metadata and `ffmpeg` for clip
   creation, using explicit environment paths when configured and bundled local
   binaries otherwise
+- **Speech-to-text:** `whisper.cpp`, launched as a child process against a
+  temporary 16 kHz mono WAV extracted from the user-selected audio stream
+- **Background jobs:** persistent SQLite job records plus a server-side process
+  controller; the browser polls status while FFmpeg/Whisper run off the request
+  path and can request cancellation
+- **Content writing:** a provider interface with a local deterministic template
+  provider now; a future OpenAI provider can implement the same interface
 - **File storage:** local filesystem, outside the public web directory
 - **Video delivery:** route handlers that stream files with HTTP byte-range
   support; uploads are written as streams instead of copied into browser memory
@@ -46,6 +57,9 @@ Runtime files are ignored by Git and live in one configurable directory:
 ```text
 data/
 ├── r6-creator.db
+├── models/
+│   └── whisper/ggml-base.en.bin
+├── transcription-temp/
 ├── uploads/
 │   └── <project-id>/source.mp4
 └── clips/
@@ -85,6 +99,31 @@ One record per project with editable placeholders for:
 - thumbnail text
 - editing instructions
 
+### AudioTrack
+
+- project and FFprobe stream index
+- codec, channel count, channel layout, language, and title metadata
+- whether the container marks the stream as default
+- a transparent preference score used only to recommend an isolated creator
+  microphone; ambiguous multi-track recordings require an explicit selection
+
+### TranscriptionJob
+
+- selected project and audio track
+- queued, extracting, transcribing, saving, completed, cancelled, or error
+  status
+- integer progress, readable current stage, provider/model, timestamps, and
+  persisted error details
+- cancellation request timestamp so status remains understandable across a
+  server restart
+
+### TranscriptSegment
+
+- job and stable segment order
+- start/end time in seconds
+- editable text plus the original local-Whisper text
+- timestamps for persistence and auditability
+
 ## API surface
 
 - `POST /api/projects` — stream one MP4 to local storage, validate it with
@@ -95,6 +134,15 @@ One record per project with editable placeholders for:
 - `GET /api/media/projects/:id/source` — byte-range stream the source recording
 - `GET /api/media/clips/:id` — byte-range stream or download a generated clip
 - `PATCH /api/projects/:id/content` — save all editable content fields
+- `GET /api/projects/:id/transcription` — get audio tracks, current job, and
+  the completed transcript
+- `POST /api/projects/:id/transcription` — queue transcription for one explicit
+  audio stream
+- `POST /api/transcriptions/:id/cancel` — request cancellation and stop its
+  active local process
+- `PATCH /api/transcript-segments/:id` — save an edited transcript line
+- `POST /api/clips/:id/suggestions` — generate six local writing suggestions
+  from the selected clip and its overlapping transcript
 - `GET /api/health` — report application, database, and FFmpeg readiness
 
 ## User experience
@@ -115,6 +163,11 @@ One record per project with editable placeholders for:
 - Visual validation for nonnumeric, negative, reversed, or out-of-range times
 - Clip library with preview, download, timing, status, and failure details
 - Autosafe-feeling explicit save area for the six content-writing placeholders
+- Audio-track chooser with conservative creator-microphone recommendation
+- Non-blocking transcription progress, cancellation, and readable setup/errors
+- Searchable, editable timestamped transcript; timestamp buttons seek the
+  streamed source player without loading the whole MP4 in memory
+- Clip writing assistant with six tones and all six requested outputs
 - Responsive navigation back to all projects
 
 ## Reliability and security rules
@@ -132,86 +185,90 @@ One record per project with editable placeholders for:
 - Return structured, readable API errors; keep command details out of the UI.
 - Keep all local uploads, generated clips, SQLite files, and environment secrets
   out of source control.
+- Never transcribe a multi-track recording until the user has selected a track;
+  recommend a likely creator microphone only when the metadata is convincing.
+- Map the selected FFprobe stream index explicitly when extracting audio.
+- Spawn local media/speech tools without a shell, cap captured output, and clean
+  temporary WAV/JSON artifacts on success, failure, or cancellation.
+- Persist every job state transition and convert interrupted in-flight jobs into
+  a readable restart error rather than leaving them stuck forever.
 
-## Phased implementation and validation
+## Phase 1 — stable foundation (completed and preserved)
 
-### Phase 0 — Foundation
+The complete upload, metadata, streamed playback, manual clipping, local
+project/clip persistence, and content-draft workflow was committed before Phase
+2 work as `2099b2f` (`chore: preserve stable phase 1`).
 
-1. Create `PLAN.md` and `AGENTS.md`.
-2. Initialize a strict Next.js + TypeScript + Tailwind project.
-3. Add linting, formatting, type-checking, and Vitest scripts.
-4. Add environment examples, local-data ignores, and a minimal README skeleton.
-5. Run formatter check, lint, type check, unit tests, and production build.
+## Phase 2 — transcription and assisted writing
 
-**Exit condition:** the empty foundation installs and every validation command
-passes.
+### Phase 2A — Audio inventory and migration
 
-### Phase 1 — Local persistence and service layer
+1. Extend FFprobe normalization to capture every audio stream.
+2. Add audio-track, transcription-job, and transcript-segment tables using a
+   checked-in additive migration.
+3. Populate audio tracks during new uploads and safely backfill old projects
+   when their workspace is opened.
+4. Test stream normalization and creator-microphone recommendation rules.
 
-1. Add the SQLite schema and Prisma client.
-2. Add local storage path helpers and database initialization.
-3. Add FFmpeg/FFprobe discovery and process helpers.
-4. Add time parsing, filename, upload, and clip-range validation.
-5. Unit-test validation and process-result parsing.
-6. Run all validation commands again.
+**Exit condition:** one-track, multi-track, and silent MP4s are represented
+accurately without losing any Phase 1 data.
 
-**Exit condition:** the database can be created locally, pure validation logic
-is covered by tests, and missing FFmpeg is represented as an understandable
-health result.
+### Phase 2B — Local transcription jobs
 
-### Phase 2 — Upload and dashboard
+1. Add an idempotent setup script for the Homebrew binary and free `base.en`
+   model, with explicit binary/model environment overrides.
+2. Add the persistent job runner, explicit audio-stream extraction, Whisper JSON
+   parsing, progress updates, cancellation, cleanup, and restart reconciliation.
+3. Add thin validated job status/start/cancel routes.
+4. Test arguments, progress parsing, transcript parsing, state transitions, and
+   cancellation behavior with controlled process fixtures.
 
-1. Implement streaming multipart upload.
-2. Validate the saved video with FFprobe and persist metadata.
-3. Build the project dashboard and upload progress UI.
-4. Add saved-project listing, empty, loading, and failure states.
-5. Add service-level tests for metadata normalization and upload constraints.
-6. Run formatter, lint, type check, tests, and production build.
+**Exit condition:** a job runs outside the request lifecycle, reports useful
+progress, can be cancelled, and cannot remain falsely active after a restart.
 
-**Exit condition:** a real MP4 can be uploaded when FFmpeg is installed, its
-metadata is saved, and the project survives an application restart.
+### Phase 2C — Transcript workspace
 
-### Phase 3 — Project workspace and media streaming
+1. Add audio selection and transcription controls.
+2. Render timestamped transcript segments and seek the existing streamed video
+   player from each timestamp.
+3. Add instant local search plus validated per-line edits saved to SQLite.
+4. Add accessible loading, empty, no-audio, setup, cancelled, and failure states.
 
-1. Build the project detail dashboard.
-2. Add secure byte-range streaming for the original file.
-3. Display duration, resolution, frame rate, and file size.
-4. Add not-found and corrupt/missing-file states.
-5. Test HTTP range parsing and media response behavior.
-6. Run all validation commands.
+**Exit condition:** the selected track becomes a searchable, editable transcript
+whose changes survive a server restart.
 
-**Exit condition:** the source recording previews without loading the entire
-file into browser memory and displays persisted metadata.
+### Phase 2D — Content-writing provider
 
-### Phase 4 — Manual clipping and clip library
+1. Define provider-neutral tone/context/result contracts.
+2. Implement a deterministic local template provider for Funny, High energy,
+   Storytelling, Educational, Serious, and Natural tones.
+3. Generate hook, full voiceover, title, caption, thumbnail text, and editing
+   instructions using only the selected clip and overlapping transcript.
+4. Let the user review and apply suggestions to the existing saved content
+   package.
 
-1. Add timestamp parsing and clip-range validation on both sides.
-2. Create clips with FFmpeg and record processing status.
-3. Add byte-range clip preview and attachment download.
-4. Show clip progress, duration, file size, and readable errors.
-5. Add tests for valid/invalid timestamps and FFmpeg argument construction.
-6. Run all validation commands.
+**Exit condition:** no route or component is coupled to an OpenAI SDK, and a
+future provider can be added behind the interface without rewriting the UI.
 
-**Exit condition:** valid time ranges produce previewable, downloadable local
-MP4 clips and bad inputs never crash the app.
+### Phase 2E — Documentation and release verification
 
-### Phase 5 — Content package placeholders and documentation
+1. Update `AGENTS.md`, `.env.example`, and the beginner `README.md`.
+2. Run formatting, lint, strict type checking, automated tests, and production
+   build.
+3. Generate a multi-audio-track MP4 with spoken creator audio, upload it through
+   the browser, transcribe the creator track, inspect/click/edit/search the
+   transcript, and generate all writing outputs.
+4. Stop and restart the application, then verify the transcript edit and job
+   completion still appear correctly in the browser.
 
-1. Add editable fields for all six requested content deliverables.
-2. Persist drafts to SQLite.
-3. Finish the README with exact macOS setup, FFmpeg installation, running,
-   testing, data location, backup, and troubleshooting instructions.
-4. Perform a final end-to-end smoke test with a generated sample MP4.
-5. Run formatter, lint, type check, tests, and production build one final time.
-
-**Exit condition:** a beginner can follow the README from installation to a
-saved project, generated clip, preview, download, and saved content draft.
+**Exit condition:** all checks pass and the complete real-video path, including
+restart persistence, has evidence. Completion will not be claimed earlier.
 
 ## Deferred deliberately
 
 - Authentication and multi-user accounts
 - Cloud uploads, deployment, billing, or paid services
-- AI generation, transcription, voice cloning, or automated detection
+- Paid/hosted AI generation, voice cloning, or automatic highlight detection
 - Overwolf telemetry and OBS synchronization
 - OCR, computer vision, audio-peak detection, and highlight ranking
 - Social publishing and third-party integrations
@@ -220,21 +277,16 @@ saved project, generated clip, preview, download, and saved content draft.
 These belong after the manual workflow and the business demand gates are
 validated.
 
-## Implementation status — completed July 22, 2026
+## Implementation status
 
-- Phase 0: foundation, project rules, local configuration, and build tooling —
-  complete
-- Phase 1: SQLite schema, migrations, storage helpers, FFmpeg/FFprobe services,
-  and validation — complete
-- Phase 2: streamed MP4 upload and persistent projects dashboard — complete
-- Phase 3: project workspace, metadata display, and HTTP byte-range source
-  playback — complete
-- Phase 4: timestamp validation, FFmpeg clipping, clip preview, download, and
-  deletion — complete
-- Phase 5: saved content package, beginner README, and end-to-end verification —
-  complete
+- Stable Phase 1 application — complete and preserved in Git commit `2099b2f`
+- Phase 2A: audio inventory and migration — complete
+- Phase 2B: local transcription jobs — complete
+- Phase 2C: transcript workspace — complete
+- Phase 2D: content-writing provider — complete
+- Phase 2E: final documentation and release verification — complete
 
-### Verified end-to-end path
+### Phase 1 verified end-to-end path
 
 A generated six-second H.264/AAC MP4 was uploaded through the real multipart
 route. FFprobe persisted its 6-second duration, 640×360 resolution, 30 fps frame
@@ -247,3 +299,34 @@ fields were saved and retrieved after an application restart. The dashboard and
 project workspace were also opened in the in-app browser; the saved project,
 video players, clip controls, download, and writing fields rendered without
 browser console warnings or errors.
+
+### Phase 2 verified end-to-end path — July 22, 2026
+
+The Apple Silicon Homebrew bottle for `whisper.cpp` 1.9.1 was installed and the
+official `base.en` GGML model was downloaded into the ignored local data folder
+and verified by SHA-1. An 11-second 960×540 H.264 test MP4 was created with two
+AAC streams: a default “Game Audio” stream and a non-default “Creator
+Microphone” stream containing real spoken English. Upload-time FFprobe discovery
+saved both streams and correctly recommended the named creator microphone rather
+than the default game stream.
+
+A transcription was cancelled during audio extraction and persisted as
+`CANCELLED` without partial segments. A subsequent background job completed,
+produced the expected timestamped sentence, and left no temporary job directory.
+A separate real no-audio MP4 returned an empty audio-track list and a usable
+project instead of an error; its temporary test project was removed afterward.
+
+In the in-app browser, the completed transcript appeared beside the selected
+creator track. Clicking `0:00` set the streamed source player to that timestamp
+and began playback. Search found the edited line, and saving changed it to
+“Verified after restart: ask what you can do for your country.” The Storytelling
+provider used that edited text to generate the opening hook, full voiceover,
+YouTube title, short-form caption, thumbnail text, and editing instructions. All
+six were applied to and saved in the content package.
+
+The production server was stopped completely and started again. After a browser
+reload, the selected audio inventory, completed transcript edit, clip, and all
+six saved content fields reappeared from SQLite. The browser reported no warning
+or error logs. The final automated suite contains 51 passing tests, and
+formatting, ESLint, strict TypeScript, and the warning-free production build all
+pass.

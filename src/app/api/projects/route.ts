@@ -53,6 +53,19 @@ export async function POST(request: Request) {
         height: metadata.height,
         frameRate: metadata.frameRate,
         contentDraft: { create: {} },
+        audioTracks: {
+          create: metadata.audioTracks.map((track) => ({
+            streamIndex: track.streamIndex,
+            codecName: track.codecName,
+            channels: track.channels,
+            channelLayout: track.channelLayout,
+            language: track.language,
+            title: track.title,
+            isDefault: track.isDefault,
+            preferenceScore: track.preferenceScore,
+            preferenceReason: track.preferenceReason,
+          })),
+        },
       },
       include: { _count: { select: { clips: true } } },
     });

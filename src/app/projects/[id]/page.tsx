@@ -15,9 +15,11 @@ import { ClipStation } from "@/components/clip-station";
 import { ContentWorkbench } from "@/components/content-workbench";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { SourcePlayer } from "@/components/source-player";
+import { TranscriptionStudio } from "@/components/transcription-studio";
 import { formatBytes } from "@/lib/format";
 import { findProjectDetail } from "@/lib/projects";
 import { formatDuration } from "@/lib/time";
+import { getTranscriptionState } from "@/lib/transcription";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,7 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
   const project = await findProjectDetail(id);
   if (!project) notFound();
+  const transcription = await getTranscriptionState(id);
 
   return (
     <main className="min-h-screen">
@@ -134,6 +137,11 @@ export default async function ProjectPage({ params }: Props) {
             />
           </aside>
         </div>
+
+        <TranscriptionStudio
+          projectId={project.id}
+          initialState={transcription}
+        />
 
         <ClipStation
           projectId={project.id}
