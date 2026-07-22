@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, FolderOpen, SlidersHorizontal } from "lucide-react";
+import { BookOpen, FolderOpen, Map, SlidersHorizontal } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 
@@ -17,6 +17,7 @@ export function AppHeader() {
         <nav className="flex flex-wrap items-center gap-2" aria-label="Main">
           <NavItem href="/" icon={FolderOpen} label="Projects" />
           <NavItem href="/references" icon={BookOpen} label="References" />
+          <NavItem href="/maps" icon={Map} label="Map knowledge" />
           <NavItem
             href="/style-profiles"
             icon={SlidersHorizontal}

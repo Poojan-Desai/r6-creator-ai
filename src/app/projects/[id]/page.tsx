@@ -16,11 +16,13 @@ import { BenchmarkLabeler } from "@/components/benchmark-labeler";
 import { ClipStation } from "@/components/clip-station";
 import { ContentWorkbench } from "@/components/content-workbench";
 import { DeleteProjectButton } from "@/components/delete-project-button";
+import { ProjectMapContext } from "@/components/project-map-context";
 import { SourcePlayer } from "@/components/source-player";
 import { TranscriptionStudio } from "@/components/transcription-studio";
 import { formatBytes } from "@/lib/format";
 import { getDetectorFrameworkState } from "@/lib/detector-framework";
 import { getGroundTruthState } from "@/lib/ground-truth";
+import { getProjectMapContextState } from "@/lib/map-knowledge/service";
 import { findProjectDetail } from "@/lib/projects";
 import { formatDuration } from "@/lib/time";
 import { getTranscriptionState } from "@/lib/transcription";
@@ -39,10 +41,11 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
   const project = await findProjectDetail(id);
   if (!project) notFound();
-  const [transcription, groundTruth, analysis] = await Promise.all([
+  const [transcription, groundTruth, analysis, mapContext] = await Promise.all([
     getTranscriptionState(id),
     getGroundTruthState(id),
     getDetectorFrameworkState(id),
+    getProjectMapContextState(id),
   ]);
 
   return (
@@ -157,6 +160,8 @@ export default async function ProjectPage({ params }: Props) {
           projectId={project.id}
           initialState={analysis}
         />
+
+        <ProjectMapContext projectId={project.id} initialState={mapContext} />
 
         <TranscriptionStudio
           projectId={project.id}

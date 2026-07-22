@@ -15,6 +15,8 @@ export const dataPaths = {
   ),
   detectorAnalysisTemp: path.join(appConfig.dataRoot, "detector-analysis-temp"),
   detectorArtifacts: path.join(appConfig.dataRoot, "detector-artifacts"),
+  mapKnowledge: path.join(appConfig.dataRoot, "map-knowledge"),
+  mapBlueprintTemp: path.join(appConfig.dataRoot, "map-blueprint-temp"),
   models: path.join(appConfig.dataRoot, "models"),
   transcriptionTemp: path.join(appConfig.dataRoot, "transcription-temp"),
 };
@@ -28,6 +30,8 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.referenceAnalysisTemp, { recursive: true }),
     mkdir(dataPaths.detectorAnalysisTemp, { recursive: true }),
     mkdir(dataPaths.detectorArtifacts, { recursive: true }),
+    mkdir(dataPaths.mapKnowledge, { recursive: true }),
+    mkdir(dataPaths.mapBlueprintTemp, { recursive: true }),
     mkdir(dataPaths.models, { recursive: true }),
     mkdir(dataPaths.transcriptionTemp, { recursive: true }),
   ]);
@@ -79,4 +83,12 @@ export function detectorAnalysisDirectory(analysisId: string) {
 
 export function detectorArtifactDirectory(analysisId: string) {
   return path.join(dataPaths.detectorArtifacts, analysisId);
+}
+
+export function mapVersionAssetDirectory(mapVersionId: string) {
+  return path.join(dataPaths.mapKnowledge, mapVersionId);
+}
+
+export function mapBlueprintImportDirectory(importId: string) {
+  return path.join(dataPaths.mapBlueprintTemp, importId);
 }

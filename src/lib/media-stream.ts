@@ -1,6 +1,5 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { Readable } from "node:stream";
 
 import { AppError } from "@/lib/errors";
 
@@ -74,12 +73,23 @@ export async function streamLocalMp4(
   absolutePath: string,
   options: { downloadName?: string } = {},
 ) {
+  return streamLocalFile(request, absolutePath, {
+    ...options,
+    contentType: "video/mp4",
+  });
+}
+
+export async function streamLocalFile(
+  request: Request,
+  absolutePath: string,
+  options: { downloadName?: string; contentType: string },
+) {
   let file;
   try {
     file = await stat(absolutePath);
   } catch {
     throw new AppError(
-      "This saved video file is missing. Restore it from a backup or create the project again.",
+      "This saved file is missing. Restore it from a backup or import it again.",
       404,
       "MEDIA_NOT_FOUND",
     );
@@ -87,7 +97,7 @@ export async function streamLocalMp4(
 
   if (!file.isFile() || file.size <= 0) {
     throw new AppError(
-      "This saved video file is empty or unavailable.",
+      "This saved file is empty or unavailable.",
       404,
       "MEDIA_NOT_FOUND",
     );
@@ -97,11 +107,48 @@ export async function streamLocalMp4(
   const nodeStream = range
     ? createReadStream(absolutePath, { start: range.start, end: range.end })
     : createReadStream(absolutePath);
-  const body = Readable.toWeb(nodeStream) as ReadableStream;
+  let finished = false;
+  const iterator = nodeStream[Symbol.asyncIterator]();
+  const removeAbortListener = () =>
+    request.signal.removeEventListener("abort", handleAbort);
+  const handleAbort = () => {
+    finished = true;
+    nodeStream.destroy();
+    removeAbortListener();
+  };
+  request.signal.addEventListener("abort", handleAbort, { once: true });
+  const body = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      if (finished) return;
+      try {
+        const next = await iterator.next();
+        if (finished) return;
+        if (next.done) {
+          finished = true;
+          removeAbortListener();
+          controller.close();
+          return;
+        }
+        controller.enqueue(next.value);
+      } catch (error) {
+        if (finished) return;
+        finished = true;
+        removeAbortListener();
+        controller.error(error);
+      }
+    },
+    async cancel() {
+      if (finished) return;
+      finished = true;
+      removeAbortListener();
+      await iterator.return?.();
+      nodeStream.destroy();
+    },
+  });
   const headers = new Headers({
     "Accept-Ranges": "bytes",
     "Cache-Control": "private, no-store",
-    "Content-Type": "video/mp4",
+    "Content-Type": options.contentType,
     "Content-Length": String(range?.length ?? file.size),
   });
 

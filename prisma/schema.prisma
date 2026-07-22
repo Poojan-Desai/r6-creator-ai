@@ -164,6 +164,124 @@ enum TelemetryEventCategory {
   UNKNOWN
 }
 
+enum MapKnowledgeSource {
+  OFFICIAL
+  MANUAL
+  IMPORTED
+  INFERRED
+}
+
+enum MapKnowledgeStatus {
+  CURRENT
+  POSSIBLY_OUTDATED
+  HISTORICAL
+  UNVERIFIED
+}
+
+enum MapLifecycleStatus {
+  ACTIVE
+  DUAL_FRONT_ONLY
+  EVENT_ONLY
+  TEMPORARILY_UNAVAILABLE
+  LEGACY
+  UNAVAILABLE
+}
+
+enum MapPlaylist {
+  RANKED
+  UNRANKED
+  QUICK_MATCH
+  TEAM_DEATHMATCH
+  EVENT_ONLY
+  DUAL_FRONT
+}
+
+enum MapPlaylistAvailability {
+  ACTIVE
+  TEMPORARILY_OUTSIDE
+  UNAVAILABLE
+  LEGACY
+}
+
+enum MapElementType {
+  ROOM
+  HALLWAY
+  STAIR
+  LADDER
+  HATCH
+  DOOR
+  WINDOW
+  EXTERIOR_ENTRY
+  EXTERIOR_AREA
+  SPAWN_LOCATION
+  OBJECTIVE_ROOM
+  OBJECTIVE_LOCATION
+  CAMERA
+  DRONE_ROUTE
+  SOFT_WALL
+  REINFORCEABLE_WALL
+  INDESTRUCTIBLE_WALL
+  SOFT_FLOOR
+  SOFT_CEILING
+  VERTICAL_SIGHTLINE
+  COMMON_ROTATION
+  COMMON_CALLOUT
+  COMMON_PLAYER_ROUTE
+  DEFAULT_PLANT_LOCATION
+  DEFAULT_DEFENSIVE_POSITION
+  COMMON_ATTACKER_ENTRY_ROUTE
+  COMMON_FLANK_ROUTE
+  COMMON_UTILITY_POSITION
+  OPEN_PASSAGE
+}
+
+enum MapGeometryType {
+  NONE
+  POINT
+  LINE
+  POLYGON
+  PATH
+}
+
+enum MapCalloutKind {
+  OFFICIAL
+  COMMUNITY
+  PERSONAL
+  IMPORTED
+  UNVERIFIED
+}
+
+enum MapConnectionType {
+  DOOR
+  WINDOW
+  BREACHABLE_WALL
+  OPEN_PASSAGE
+  STAIRCASE
+  LADDER
+  HATCH
+  EXTERIOR_ENTRY
+  VERTICAL_DESTRUCTION
+}
+
+enum MapSide {
+  UNKNOWN
+  ATTACK
+  DEFENSE
+}
+
+enum BlueprintAssetKind {
+  ORIGINAL_ZIP
+  ORIGINAL_IMAGE
+  PREVIEW_IMAGE
+}
+
+enum MapUpdateCheckStatus {
+  READY_FOR_MANUAL_REVIEW
+  REVIEWED_NO_CHANGE
+  CHANGES_FOUND
+  CANCELLED
+}
+
 model Project {
   id                     String                    @id @default(cuid())
   name                   String
@@ -193,6 +311,7 @@ model Project {
   ocrRuns                OcrRun[]
   candidateMoments       CandidateMoment[]
   telemetryImports       TelemetryImport[]
+  mapContext             ProjectMapContext?
 
   @@index([createdAt])
 }
@@ -847,4 +966,397 @@ model TelemetryEvent {
   createdAt          DateTime               @default(now())
 
   @@index([telemetryImportId, timestampSeconds])
+}
+
+model GameDataVersion {
+  id               String              @id @default(cuid())
+  stableId         String              @unique
+  game             String              @default("Rainbow Six Siege")
+  year             Int
+  seasonName       String
+  seasonNumber     Int
+  releaseDate      DateTime
+  verificationDate DateTime
+  notes            String?
+  sourceUrl        String
+  sourceTitle      String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  mapVersions      MapVersion[]
+  playlistStatuses MapPlaylistStatus[]
+  updateChecks     MapUpdateCheck[]
+
+  @@index([year, seasonNumber])
+}
+
+model SiegeMap {
+  id                         String                @id @default(cuid())
+  stableId                   String                @unique
+  slug                       String                @unique
+  name                       String
+  officialDescription        String
+  location                   String?
+  releaseLabel               String
+  releaseDate                DateTime?
+  modernizationLabel         String?
+  modernizationDate          DateTime?
+  lifecycleStatus            MapLifecycleStatus    @default(ACTIVE)
+  knowledgeStatus            MapKnowledgeStatus    @default(UNVERIFIED)
+  sourceType                 MapKnowledgeSource    @default(OFFICIAL)
+  officialSourceUrl          String
+  officialSourceTitle        String
+  retrievedAt                DateTime
+  lastVerifiedAt             DateTime
+  officialBlueprintAvailable Boolean               @default(false)
+  officialBlueprintPageUrl   String?
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
+  aliases                    MapAlias[]
+  versions                   MapVersion[]
+  playlistStatuses           MapPlaylistStatus[]
+  citations                  MapSourceCitation[]
+  calloutPreference          MapCalloutPreference?
+  projectContexts            ProjectMapContext[]
+
+  @@index([name])
+  @@index([knowledgeStatus])
+}
+
+model MapAlias {
+  id             String             @id @default(cuid())
+  mapId          String
+  map            SiegeMap           @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  displayName    String
+  normalizedName String
+  calloutKind    MapCalloutKind     @default(UNVERIFIED)
+  sourceType     MapKnowledgeSource @default(MANUAL)
+  confidence     Float              @default(1)
+  lastVerifiedAt DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([mapId, normalizedName])
+  @@index([normalizedName])
+}
+
+model MapVersion {
+  id                String              @id @default(cuid())
+  stableId          String              @unique
+  mapId             String
+  map               SiegeMap            @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  gameDataVersionId String?
+  gameDataVersion   GameDataVersion?    @relation(fields: [gameDataVersionId], references: [id], onDelete: SetNull)
+  parentVersionId   String?
+  parentVersion     MapVersion?         @relation("MapVersionHistory", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions     MapVersion[]        @relation("MapVersionHistory")
+  versionKey        String
+  versionName       String
+  effectiveDate     DateTime?
+  knowledgeStatus   MapKnowledgeStatus  @default(UNVERIFIED)
+  sourceType        MapKnowledgeSource  @default(OFFICIAL)
+  sourceUrl         String
+  sourceTitle       String
+  confidence        Float               @default(1)
+  notes             String?
+  lastVerifiedAt    DateTime
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  floors            MapFloor[]
+  elements          MapElement[]
+  connections       MapConnection[]
+  bombSites         MapBombSitePair[]
+  blueprintAssets   BlueprintAsset[]
+  citations         MapSourceCitation[]
+  editHistory       MapEditHistory[]
+  projectContexts   ProjectMapContext[]
+
+  @@unique([mapId, versionKey])
+  @@index([mapId, knowledgeStatus])
+}
+
+model MapPlaylistStatus {
+  id                String                  @id @default(cuid())
+  mapId             String
+  map               SiegeMap                @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  gameDataVersionId String
+  gameDataVersion   GameDataVersion         @relation(fields: [gameDataVersionId], references: [id], onDelete: Cascade)
+  playlist          MapPlaylist
+  availability      MapPlaylistAvailability
+  sourceType        MapKnowledgeSource      @default(OFFICIAL)
+  sourceUrl         String
+  sourceTitle       String
+  notes             String?
+  lastVerifiedAt    DateTime
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@unique([mapId, gameDataVersionId, playlist])
+  @@index([playlist, availability])
+}
+
+model MapFloor {
+  id              String              @id @default(cuid())
+  stableId        String              @unique
+  mapVersionId    String
+  mapVersion      MapVersion          @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  displayName     String
+  shortName       String?
+  sortOrder       Int
+  elevation       Int                 @default(0)
+  sourceType      MapKnowledgeSource  @default(MANUAL)
+  confidence      Float               @default(1)
+  notes           String?
+  lastVerifiedAt  DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  elements        MapElement[]
+  bombSites       MapBombSitePair[]
+  blueprintAssets BlueprintAsset[]
+  citations       MapSourceCitation[]
+
+  @@unique([mapVersionId, displayName])
+  @@index([mapVersionId, sortOrder])
+}
+
+model MapElement {
+  id                      String               @id @default(cuid())
+  stableId                String               @unique
+  mapVersionId            String
+  mapVersion              MapVersion           @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  floorId                 String?
+  floor                   MapFloor?            @relation(fields: [floorId], references: [id], onDelete: SetNull)
+  elementType             MapElementType
+  displayName             String
+  canonicalCallout        String?
+  calloutKind             MapCalloutKind       @default(UNVERIFIED)
+  geometryType            MapGeometryType      @default(NONE)
+  geometryJson            String               @default("[]")
+  sourceType              MapKnowledgeSource   @default(MANUAL)
+  confidence              Float                @default(1)
+  notes                   String?
+  commonAttackerApproach  String?
+  commonDefenderHold      String?
+  commonFlankRisk         String?
+  captionName             String?
+  voiceoverName           String?
+  lastVerifiedAt          DateTime?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  aliases                 MapElementAlias[]
+  outgoingConnections     MapConnection[]      @relation("MapConnectionFrom")
+  incomingConnections     MapConnection[]      @relation("MapConnectionTo")
+  bombSiteLinks           MapBombSiteElement[]
+  citations               MapSourceCitation[]
+  startingProjectContexts ProjectMapContext[]  @relation("ProjectStartingRoom")
+
+  @@unique([mapVersionId, displayName, elementType])
+  @@index([mapVersionId, elementType])
+  @@index([floorId, elementType])
+}
+
+model MapElementAlias {
+  id             String             @id @default(cuid())
+  elementId      String
+  element        MapElement         @relation(fields: [elementId], references: [id], onDelete: Cascade)
+  displayName    String
+  normalizedName String
+  calloutKind    MapCalloutKind
+  sourceType     MapKnowledgeSource @default(MANUAL)
+  confidence     Float              @default(1)
+  notes          String?
+  lastVerifiedAt DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([elementId, normalizedName])
+  @@index([normalizedName])
+}
+
+model MapConnection {
+  id              String             @id @default(cuid())
+  stableId        String             @unique
+  mapVersionId    String
+  mapVersion      MapVersion         @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  fromElementId   String
+  fromElement     MapElement         @relation("MapConnectionFrom", fields: [fromElementId], references: [id], onDelete: Cascade)
+  toElementId     String
+  toElement       MapElement         @relation("MapConnectionTo", fields: [toElementId], references: [id], onDelete: Cascade)
+  connectionType  MapConnectionType
+  isBidirectional Boolean            @default(true)
+  traversable     Boolean            @default(true)
+  destructible    Boolean            @default(false)
+  floorChange     Boolean            @default(false)
+  requiredAction  String?
+  notes           String?
+  sourceType      MapKnowledgeSource @default(MANUAL)
+  confidence      Float              @default(1)
+  lastVerifiedAt  DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([mapVersionId, fromElementId, toElementId, connectionType])
+  @@index([fromElementId])
+  @@index([toElementId])
+}
+
+model MapBombSitePair {
+  id              String               @id @default(cuid())
+  stableId        String               @unique
+  mapVersionId    String
+  mapVersion      MapVersion           @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  floorId         String?
+  floor           MapFloor?            @relation(fields: [floorId], references: [id], onDelete: SetNull)
+  displayName     String
+  siteAName       String
+  siteBName       String
+  tacticalNotes   String?
+  sourceType      MapKnowledgeSource   @default(MANUAL)
+  confidence      Float                @default(1)
+  lastVerifiedAt  DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  elementLinks    MapBombSiteElement[]
+  citations       MapSourceCitation[]
+  projectContexts ProjectMapContext[]
+
+  @@unique([mapVersionId, displayName])
+  @@index([mapVersionId, floorId])
+}
+
+model MapBombSiteElement {
+  id         String          @id @default(cuid())
+  bombSiteId String
+  bombSite   MapBombSitePair @relation(fields: [bombSiteId], references: [id], onDelete: Cascade)
+  elementId  String
+  element    MapElement      @relation(fields: [elementId], references: [id], onDelete: Cascade)
+  role       String
+  notes      String?
+  createdAt  DateTime        @default(now())
+
+  @@unique([bombSiteId, elementId, role])
+  @@index([elementId])
+}
+
+model BlueprintAsset {
+  id               String             @id @default(cuid())
+  stableId         String             @unique
+  mapVersionId     String
+  mapVersion       MapVersion         @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  floorId          String?
+  floor            MapFloor?          @relation(fields: [floorId], references: [id], onDelete: SetNull)
+  parentAssetId    String?
+  parentAsset      BlueprintAsset?    @relation("BlueprintDerivatives", fields: [parentAssetId], references: [id], onDelete: Cascade)
+  derivedAssets    BlueprintAsset[]   @relation("BlueprintDerivatives")
+  assetKind        BlueprintAssetKind
+  originalFileName String
+  relativePath     String             @unique
+  mimeType         String
+  fileSizeBytes    BigInt
+  sha256           String
+  width            Int?
+  height           Int?
+  sourceType       MapKnowledgeSource @default(IMPORTED)
+  sourceUrl        String?
+  sourceTitle      String?
+  notes            String?
+  importedAt       DateTime           @default(now())
+  lastVerifiedAt   DateTime?
+
+  @@index([mapVersionId, assetKind])
+  @@index([floorId])
+}
+
+model MapSourceCitation {
+  id             String             @id @default(cuid())
+  stableId       String             @unique
+  mapId          String?
+  map            SiegeMap?          @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  mapVersionId   String?
+  mapVersion     MapVersion?        @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  floorId        String?
+  floor          MapFloor?          @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  elementId      String?
+  element        MapElement?        @relation(fields: [elementId], references: [id], onDelete: Cascade)
+  bombSiteId     String?
+  bombSite       MapBombSitePair?   @relation(fields: [bombSiteId], references: [id], onDelete: Cascade)
+  title          String
+  url            String
+  sourceType     MapKnowledgeSource @default(MANUAL)
+  retrievedAt    DateTime
+  lastVerifiedAt DateTime?
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([mapId])
+  @@index([mapVersionId])
+  @@index([elementId])
+  @@index([bombSiteId])
+}
+
+model MapCalloutPreference {
+  id            String         @id @default(cuid())
+  mapId         String         @unique
+  map           SiegeMap       @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  preferredKind MapCalloutKind @default(OFFICIAL)
+  customNotes   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model ProjectMapContext {
+  id                   String             @id @default(cuid())
+  projectId            String             @unique
+  project              Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mapId                String?
+  map                  SiegeMap?          @relation(fields: [mapId], references: [id], onDelete: SetNull)
+  mapVersionId         String?
+  mapVersion           MapVersion?        @relation(fields: [mapVersionId], references: [id], onDelete: SetNull)
+  bombSiteId           String?
+  bombSite             MapBombSitePair?   @relation(fields: [bombSiteId], references: [id], onDelete: SetNull)
+  side                 MapSide            @default(UNKNOWN)
+  startingRoomId       String?
+  startingRoom         MapElement?        @relation("ProjectStartingRoom", fields: [startingRoomId], references: [id], onDelete: SetNull)
+  importantRoomIdsJson String             @default("[]")
+  operator             String?
+  roundResult          String?
+  userConfirmed        Boolean            @default(false)
+  confidence           Float              @default(1)
+  sourceType           MapKnowledgeSource @default(MANUAL)
+  notes                String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([mapId, mapVersionId])
+}
+
+model MapEditHistory {
+  id             String     @id @default(cuid())
+  mapVersionId   String
+  mapVersion     MapVersion @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  operation      String
+  entityType     String
+  entityStableId String
+  beforeJson     String?
+  afterJson      String?
+  undoGroup      String
+  revertedAt     DateTime?
+  createdAt      DateTime   @default(now())
+
+  @@index([mapVersionId, createdAt])
+  @@index([undoGroup])
+}
+
+model MapUpdateCheck {
+  id                String               @id @default(cuid())
+  gameDataVersionId String
+  gameDataVersion   GameDataVersion      @relation(fields: [gameDataVersionId], references: [id], onDelete: Cascade)
+  status            MapUpdateCheckStatus @default(READY_FOR_MANUAL_REVIEW)
+  sourceUrlsJson    String
+  findingsJson      String               @default("[]")
+  notes             String?
+  requestedAt       DateTime             @default(now())
+  completedAt       DateTime?
+
+  @@index([gameDataVersionId, requestedAt])
 }

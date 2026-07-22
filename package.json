@@ -28,6 +28,7 @@
     "next": "16.2.11",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "yauzl": "3.4.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
@@ -36,6 +37,7 @@
     "@types/node": "22.19.1",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@types/yauzl": "2.10.3",
     "eslint": "9.39.2",
     "eslint-config-next": "16.2.11",
     "prettier": "3.9.6",
