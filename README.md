@@ -6,13 +6,15 @@ clips, transcribe one chosen audio track, edit and search the timestamped
 transcript, and create a complete writing package from a clip.
 Phase 3A adds a permission-gated Reference Library and structured Creator Style
 Profiles. Phase 3B.1 adds manual benchmark labels and the safe background-job
-foundation needed before automatic detection is introduced.
+foundation needed before automatic detection is introduced. Phase 3B.2-M adds
+a local, versioned R6 map knowledge foundation with user-confirmed context; it
+does not locate a player from gameplay footage.
 
 You do not need to know how to code to use it. There is no login, subscription,
 cloud upload, paid AI key, or separate FFmpeg setup. Speech recognition uses the
 free `whisper.cpp` program and a local model on this Mac.
 
-## What works now (Phase 1 through Phase 3B.1)
+## What works now (Phase 1 through Phase 3B.2-M)
 
 - Streamed MP4 uploads with progress, type checks, and a 20 GB default limit
 - Saved local projects that remain after the app is closed
@@ -53,11 +55,30 @@ free `whisper.cpp` program and a local model on this Mac.
 - Version-pinned local detector definitions and persisted analysis jobs with
   progress, cancellation, retry, deletion, isolated errors, restart recovery,
   and temporary-file cleanup
+- A source-cited catalog of 28 currently documented R6 maps: 27 official map
+  guides plus the separately sourced Dual Front-only District record
+- Separate map existence, lifecycle, playlist availability, and historical
+  layout versions so a rotation does not delete a map
+- Manual blueprint ZIP/image import with archive safety checks, preserved
+  originals, and optimized local previews—never automatic downloading
+- A normalized floor editor with zoom/pan, room polygons, point/line/path
+  annotations, alternate-callout provenance, confidence, tactical notes,
+  bomb-site pairs, graph connections, citations, undo/redo, and autosave
+- Local map/callout/room/site/tactical-note search and versioned JSON
+  import/export with broken-reference and coordinate validation
+- Manual project facts for map, map version, bomb site, side, starting room,
+  important rooms, operator, and round result; writing may use them only after
+  explicit confirmation
 
 Automatic Rainbow Six moment detection is not implemented yet. Phase 3B.1's
 framework check intentionally returns zero detector events and zero candidate
 moments. General video, audio, and transcript signals begin in Phase 3B.2. The
 app does not claim it can predict virality or guarantee views.
+
+The map catalog does not mean every map is fully annotated. “Map listed,”
+“blueprint imported,” “rooms partially annotated,” “bomb sites entered,”
+“connectivity entered,” “tactics entered,” and “fully verified” are separate
+states. Visual map, floor, and room recognition are not implemented.
 
 ## First-time setup
 
@@ -258,6 +279,59 @@ Profiles store high-level characteristics only. They never mine another
 creator's transcript for scripts, jokes, titles, catchphrases, or preferred
 phrases. **My own preferred phrases** contains only text you enter yourself.
 
+## Use Map Knowledge
+
+Open **Map knowledge** in the top navigation.
+
+### Browse and search
+
+1. Filter map cards by the current known playlist or type a map/alias.
+2. Click **Search annotations** to search rooms, callouts, bomb sites, hatches,
+   cameras, rotations, routes, and tactical notes that have actually been added.
+3. Open a map to see its official source, release/modernization information,
+   current known playlist evidence, versions, and annotation status.
+
+The current seed was verified from official Ubisoft sources on July 22, 2026
+and is versioned as `r6-y11s2.2-2026-07-22`. Click **Prepare update review** to
+make a local review record after a later season change. This does not fetch the
+internet or overwrite saved knowledge automatically.
+
+### Import a permitted blueprint and annotate a floor
+
+1. Open the map and click **Add floor**. Give it a clear display name.
+2. In **Blueprint assets**, click the official source link if Ubisoft lists a
+   blueprint, then manually choose a ZIP/image you downloaded or may use.
+3. Assign the import to a saved floor and click **Import locally**.
+4. Select an element type, enter a name, and click **Begin shape**.
+5. Click the blueprint to add normalized points, then click **Finish**.
+6. Select the annotation to edit its canonical callout, alternate callouts,
+   source label, confidence, caption/voiceover names, and tactical notes.
+7. Add graph connections, bomb-site relationships, and source citations only
+   when you have evidence or personal knowledge for them.
+
+The editor autosaves after a short pause. **Undo** and **Redo** work during the
+current browser session. Duplicate the current map version before a rework or a
+large layout experiment. Official and historical versions cannot be deleted.
+
+### Back up, delete, and restore local map knowledge
+
+- **Export complete map** downloads `r6-map-knowledge/v1` JSON without any
+  absolute Mac path.
+- **Import matching JSON** validates the entire document before changing the
+  matching map version. Future schemas, duplicate IDs, unsafe coordinates, and
+  broken references are rejected.
+- Imported blueprint assets have explicit download and delete controls. Delete
+  removes the app-owned original and preview, not the file you selected
+  elsewhere on the Mac.
+
+### Confirm map facts for a project
+
+Open a gameplay project and find **Manual map context**. Choose the map,
+version, optional site/rooms, attack or defense, operator, and round result.
+Check the confirmation box, then save. Future writing integration receives only
+these confirmed local facts. Unknown values should remain unknown; the app does
+not invent or visually detect them in this phase.
+
 ## Create benchmark ground-truth labels
 
 Open one of your uploaded gameplay projects and find **Label what actually
@@ -333,6 +407,10 @@ Everything is below:
   completion, cancellation, failure, deletion, or restart recovery.
 - `detector-artifacts/` is reserved for bounded detector evidence. The Phase
   3B.1 framework check retains no gameplay frames or OCR crops.
+- `map-knowledge/` stores imported blueprint originals and optimized local
+  previews by map version. SQLite stores only their relative paths and hashes.
+- `map-blueprint-temp/` is bounded temporary ZIP/image import space and is
+  removed after success or failure.
 
 To back up everything, stop the app and copy the entire `data` folder. Restore
 it as one unit; do not move individual recordings while their projects exist.
@@ -399,6 +477,20 @@ The official embed and manual metadata fallback work with no API key. If a
 configured key is invalid, over quota, or offline, enter the title and channel
 manually. The app never falls back to scraping or downloading.
 
+### A blueprint ZIP is rejected
+
+Use the original ZIP from the official source or unzip it yourself and import
+one PNG/JPG/WebP floor image. The app rejects archives with unsafe paths,
+symbolic links, too many files, unexpectedly large expansion, or unsupported
+image bytes. It does not bypass the safety check.
+
+### A map or playlist looks outdated
+
+The source verification date is visible on the map. Playlist rotations and map
+layouts change. Prepare an update review and check the linked official Ubisoft
+sources; saved versions are never silently rewritten. The current seed is a
+July 22, 2026 snapshot, not a permanent claim.
+
 ### “The video tools are unavailable”
 
 Stop the app, reinstall its packages, and start again:
@@ -444,7 +536,7 @@ The detailed implementation and verification record is in
 [`PLAN.md`](./PLAN.md). Contributor safety rules are in
 [`AGENTS.md`](./AGENTS.md).
 
-## Deliberate limits through Phase 3B.1
+## Deliberate limits through Phase 3B.2-M
 
 - English local model only in the beginner setup
 - No automatic R6 moment detection, telemetry, calibrated HUD OCR, or event
@@ -453,11 +545,23 @@ The detailed implementation and verification record is in
 - No authentication, cloud storage, payments, social publishing, or team
   approvals
 - No paid AI provider; content writing is template-based and must be reviewed
+- No visual map, floor, room, operator, bomb-site, or route recognition
+- No claim that all listed maps have complete blueprints, room geometry, bomb
+  sites, graph connectivity, or verified tactics
+- No automatic Ubisoft blueprint downloads or tactical-fact generation from a
+  room name
 
-Phase 3B.1 verification passed on July 22, 2026: formatting, ESLint, strict
-TypeScript, all 85 automated tests, a production build, migration from preserved
-Phase 3A data, real-video labeling, path-free export/import, framework job,
-interrupted-job recovery, retry, temporary-file cleanup, browser regression
-checks, browser-console inspection, and a full app restart all passed. See
-`PLAN.md` for the exact evidence and `BENCHMARK.md` for the intentionally empty
-R6 detection-accuracy result.
+Phase 3B.2-M verification passed on July 22, 2026. The official Oregon blueprint
+ZIP imported through the bounded local route, preserved five originals, created
+five previews, and left no temporary files. A partial Oregon version with rooms,
+callouts, a bomb-site pair, a hatch, horizontal and vertical connections, and a
+citation survived export/delete/import and a full restart. Confirmed project map
+context also survived. Formatting, ESLint, strict TypeScript, the complete test
+suite (99 tests across 17 files), production build, browser regressions, and
+browser-console inspection passed. See `PLAN.md` for the exact evidence and
+`BENCHMARK.md` for the still intentionally empty R6 detection-accuracy result.
+
+`npm audit` reports no direct blueprint-parser advisory after updating `yauzl`
+to 3.4.0. It still reports three transitive findings inside the pinned Next.js
+toolchain (`postcss` and `sharp`); npm offers only a breaking forced downgrade,
+so this release records rather than applies that unsafe suggestion.

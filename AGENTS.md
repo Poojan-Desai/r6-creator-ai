@@ -20,6 +20,10 @@ this repository.
 - Do not add voice cloning, speaker identification, automatic cloud upload,
   social publishing, learned ranking, OpenAI integration, or unsupported
   performance claims during Phase 3B.
+- Phase 3B.2-M map knowledge is versioned and inspectable. Preserve historical
+  layouts, source citations, provenance, confidence, and normalized geometry.
+  Never silently replace a map version or present personal/community callouts
+  as official Ubisoft facts.
 
 ## Required stack
 
@@ -96,6 +100,9 @@ layer. Do not silently skip checks.
 - Never download YouTube video, audio, or captions. YouTube URL references may
   use only strict URL parsing, the official embedded player, permitted official
   API metadata, and manual metadata fallback.
+- Never scrape or automatically download map blueprints. Import only a ZIP or
+  image chosen through a visible user action; reject archive traversal, links,
+  compression bombs, misleading image bytes, and out-of-root paths.
 
 ## Local data and privacy
 
@@ -114,6 +121,9 @@ layer. Do not silently skip checks.
   structure, pacing, energy, timing, category, and user-entered preferences.
 - Never send footage, frames, transcripts, or reference data to a cloud provider
   without a visible, deliberate user action and configured spending controls.
+- Expose map facts to writing only after the user confirms the project context.
+  The Phase 3B.2-M interface must not imply that footage recognition can locate
+  the player on a map, floor, or room.
 
 ## Detection and scoring integrity
 
@@ -161,6 +171,8 @@ layer. Do not silently skip checks.
 - Phase 3 migrations must be additive and preserve every Phase 1/2 row. Store
   reference/profile/detector/feedback/AI records in normalized related tables,
   while keeping large media and temporary artifacts on disk.
+- A map rework, modernization, or large manual layout change creates a new
+  `MapVersion`; do not overwrite or delete official/historical versions.
 
 ## UX and accessibility
 

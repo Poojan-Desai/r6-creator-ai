@@ -706,8 +706,9 @@ These remain outside the authorized Phase 3 scope.
 - Phase 3B.1 schema/framework commit: `820afda`
 - Phase 3B.1 labeling-workspace commit: `8d0e825`
 - Phase 3B.1: implementation and verification complete on July 22, 2026
-- Active parallel stages: Phase 3B.2 general video/audio/transcript detectors
-  and separately committed Phase 3B.2-M map knowledge foundation
+- Phase 3B.2-M implementation commit: `4ed43ca`
+- Phase 3B.2-M: implementation and verification complete on July 22, 2026
+- Next detector stage: Phase 3B.2 general video/audio/transcript detectors
 
 - Stable Phase 1 application — complete and preserved in Git commit `2099b2f`
 - Phase 2A: audio inventory and migration — complete
@@ -838,3 +839,56 @@ Its warning/error console was empty. Formatting, ESLint, strict TypeScript, all
 the same complete gate is rerun for the final Phase 3B.1 commit. These checks
 prove the labeling and job framework only. No R6 event accuracy or footage-review
 savings have been measured.
+
+### Phase 3B.2-M verified path — July 22, 2026
+
+The two additive map migrations were applied to both a preserved Phase 3B.1
+database copy and the working database. Three existing projects, two clips, two
+transcript segments, four references, one style profile, and the approved
+benchmark label remained intact. The migration regression test rebuilt the
+complete Phase 1-through-3B.1 schema, inserted legacy rows, applied both map
+migrations, reopened SQLite, and verified historical/current versions, floors,
+rooms, a graph edge, a bomb-site relationship, and confirmed project context.
+
+The local catalog contains 28 source-cited records: all 27 guides on Ubisoft's
+official map index plus District from Ubisoft's official Daybreak page. The
+browser displayed Oregon, Clubhouse, Chalet, Border, Lair, Fortress, Villa, and
+Calypso Casino and kept playlist state separate from map existence. The catalog
+snapshot is `r6-y11s2.2-2026-07-22`; a local update-review record never fetches
+or silently overwrites later data.
+
+The official Oregon page's visible blueprint-download action supplied Ubisoft's
+3,339,075-byte ZIP. The streamed importer preserved the ZIP and five original
+JPEGs, created five 2000×1125 local previews, recorded their hashes and official
+source URL, and left the temporary import directory empty. A generated ZIP with
+an invalid AppleDouble image was rejected without partial assets, while a safe
+fixture verified the same route before the official package was used. The npm
+audit-discovered `yauzl` archive advisory was removed by upgrading to 3.4.0.
+
+In the map editor, a Basement floor, Laundry, Supply, Freezer, Laundry Hatch,
+alternate callouts, a Laundry/Supply bomb-site pair, a door connection, a
+vertical-destruction relationship, and a source citation were saved. The map
+export used `r6-map-knowledge/v1` and contained no `/Users/` path. A duplicated
+manual version was exported, deleted, imported again, and reopened with four
+elements, two connections, one bomb-site pair, and the citation. Searches for
+“Oregon basement hatches” and “rooms above Laundry” returned the appropriate
+typed element/graph evidence. The UI calls graph results possible routes, never
+the best route.
+
+A generated smoke-test project was assigned user-confirmed Oregon, version,
+Laundry/Supply, defense, starting room, important rooms, and an explicit note
+that the context was only a verification fixture. After a complete production
+server restart, the context, imported version, annotations, graph, official
+blueprint assets, and all earlier project/reference/profile data remained.
+Existing gameplay and Phase 2 speech projects reopened with video, transcript,
+clip, and writing controls. The Map Knowledge, project, Reference Library, and
+Style Profiles pages had no browser warning or error logs. A shutdown-only media
+stream race discovered during this check was replaced with a backpressure-aware,
+cancellable file stream and covered by range and early-cancellation tests.
+
+The exact-room limitation remained visible throughout: this foundation does not
+recognize a map, floor, room, route, operator, or bomb site from footage. It does
+not add a detector event, candidate moment, precision/recall result, or content
+performance claim. Final formatting, ESLint, strict TypeScript, the complete
+99 tests across 17 files, and the production build passed for the dedicated
+commit.

@@ -187,3 +187,18 @@ The Phase 3A real-media smoke test verifies only reference ingestion,
 creator-track local transcription, FFmpeg signal extraction, cancellation,
 manual correction, and restart persistence. These checks do not measure R6
 event-detection accuracy and must not be presented as benchmark results.
+
+## Phase 3B.2-M map-knowledge result boundary — July 22, 2026
+
+The versioned map catalog, blueprint importer, annotations, connectivity graph,
+search, and user-confirmed project context are knowledge-management features.
+They produced no automatic detector events or candidate moments and therefore
+do not change any Phase 3B precision, recall, F1, timestamp-error, or
+footage-review-savings result.
+
+Browser verification proved that one official Oregon blueprint package and one
+partially annotated Oregon version can be stored, exported, deleted, restored,
+and reopened after an application restart. That is a persistence/workflow
+result, not evidence that the application recognizes Oregon or any room from a
+video. All event-quality measurements remain **Not measured**, and the current
+benchmark result remains **Insufficient benchmark examples**.
