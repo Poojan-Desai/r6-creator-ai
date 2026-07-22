@@ -44,6 +44,85 @@ reviewer, and whether the label is confirmed or only possible. Clutches and 1vX
 states remain possible unless player-count and round-state evidence supports
 confirmation.
 
+## Ground-truth labeling protocol (schema v1)
+
+1. Label only a locally uploaded recording the user owns or may analyze.
+2. Review the complete recording at normal speed, replay uncertain ranges, and
+   label meaningful positive events plus representative negative/menu/loading
+   sections. The labeler records start, peak, end, category, optional notes, and
+   confidence from zero to one.
+3. A label becomes benchmark ground truth only after the user explicitly marks
+   it approved. Draft labels remain useful working notes but are excluded from
+   verified calculations.
+4. Avoid overlapping duplicate labels for the same event/category. Related
+   categories may overlap—for example a round win and loud creator reaction—when
+   they describe distinct observable facts.
+5. Export uses `r6-creator-benchmark-labels/v1`, seconds as the timestamp unit,
+   a streaming SHA-256 fingerprint of the MP4 bytes, measured duration and
+   resolution, creation metadata, and labels. It contains no local path or
+   original filename.
+6. Import accepts only the supported schema, valid finite/clamped timestamps,
+   known categories, and a matching fingerprint/duration/resolution. It is
+   transactional: one invalid label rejects the whole file instead of saving a
+   partial dataset.
+
+Supported v1 categories are kill, death, multi-kill, round win, round loss,
+match ending, possible clutch, defuser plant, defuser disable, high action, loud
+creator reaction, funny conversation, rage/frustration, fail/mistake,
+educational explanation, quiet/low-interest, menu, scoreboard, replay,
+spectator screen, loading screen, other interesting, and other uninteresting.
+
+## Versioned candidate-matching rule (planned for Phase 3B.5)
+
+Matching rule ID: `temporal-category-v1`.
+
+- Only approved ground-truth labels participate.
+- A candidate and label must have the same normalized benchmark category or a
+  documented compatible mapping. Alternative categories are not silently used.
+- A pair qualifies when its temporal intersection-over-union is at least 0.30,
+  or its peak timestamps are within 2.0 seconds while their ranges overlap.
+- Each candidate and label can match at most once. Qualifying pairs are assigned
+  deterministically by highest intersection-over-union, then smallest peak
+  error, then stable ID order.
+- An unmatched candidate is a false positive. An unmatched approved label is a
+  false negative. A matched pair is a true positive.
+- Peak error is the absolute candidate/label peak difference. Start/end errors
+  are absolute boundary differences. Median is reported instead of only mean so
+  a few severe misses do not hide typical timing behavior.
+- The dashboard always shows sample counts. Fewer than five approved positive
+  labels in a category displays **Insufficient benchmark examples**; development
+  counts may be shown, but no category-quality claim is permitted.
+
+This rule may be revised only under a new ID. Old benchmark runs retain their
+original rule ID and detector versions.
+
+## Dataset splits and claim discipline
+
+- Detector thresholds may be adjusted on a versioned development dataset.
+- A separate held-out verification dataset is required before results are
+  labeled verified. The same event range must not appear in both sets.
+- Negative examples include routine play, false audio peaks, quiet tension,
+  menus, loading, scoreboards, replays, spectator screens, and edited cuts.
+- Results are filtered by video, resolution, recording type, detector version,
+  calibration profile, and category where sample sizes permit.
+- Poor results and unsupported categories remain visible. The app never chooses
+  only favorable videos after seeing results.
+- No numerical Eklipse comparison is allowed unless both systems process the
+  same legally usable recordings under this documented labeling and matching
+  method.
+
+## Expected detector reliability before measurement
+
+| Tier                | Expected signals                                                                                                                            | Permitted interpretation before benchmark        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Reliable foundation | Manual labels, metadata, timestamps, fingerprints, persisted versions, deterministic metric math                                            | Data/process behavior only; not event accuracy   |
+| Moderately reliable | Persistent cuts/black frames, relative audio peaks/silence, calibrated region changes, transcript rule matches                              | Observable signal candidate with evidence        |
+| Experimental        | Motion/action intensity, OCR/template screen state, reaction types, kill-feed/round/death/defuser interpretations, possible clutch          | Possible/candidate wording with missing evidence |
+| Unsupported         | Confirmed local-player kill or 1vX without identity/player-count evidence, emotion diagnosis, virality/views prediction, live Mac telemetry | Must not be claimed                              |
+
+These are engineering expectations, not benchmark results. Measured results
+replace expectations only after the documented evaluation protocol runs.
+
 ## Measurements required before a claim
 
 | Measurement       | Definition                                               | Verified result |
@@ -58,6 +137,11 @@ confirmation.
 | Disk usage        | Temporary and retained bytes per source hour             | Not measured    |
 | Human review time | Minutes needed to accept/correct results per source hour | Not measured    |
 | Approval rate     | Candidate moments approved by the user                   | Not measured    |
+
+Additional Phase 3B reports will include per-category F1, median peak/start/end
+error, candidates per video hour, useful-ground-truth discovery rate, review
+minutes, temporary disk use, and peak memory where the operating system exposes
+a trustworthy measurement.
 
 ## Result labels used by the dashboard
 

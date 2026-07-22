@@ -385,31 +385,123 @@ an application restart.
 **Exit condition:** every Phase 3A path above is proven with automated and real
 browser/media checks; Phase 3A is not complete merely because its screens exist.
 
-## Phase 3B — Modular local R6 moment detection
+## Phase 3B — Local R6 candidate-moment detection
 
-1. Define a common, versioned detector contract with category, time range,
-   confidence, supporting/conflicting evidence, source signals, processing time,
-   debug artifacts, and human-review state. Detectors are independently toggled
-   and failures are isolated.
-2. Generate candidates efficiently from sampled scene/motion/HUD changes,
-   creator/game audio energy and silence, and existing creator-track transcript
-   signals before any optional semantic analysis.
-3. Add proportional 1080p HUD calibration profiles, editable region overlays,
-   frame/OCR/template previews, confidence, temporal-consistency rules, and
-   artifact cleanup.
-4. Implement local detector families for possible kill/death/multi-kill,
-   round/match outcomes, possible clutch/defuser events, high action, reactions,
-   conversation, frustration, mistakes, explanations, and quiet sections.
-5. Merge overlapping events into candidate moments and separately compute event
-   confidence, Content Potential Score, and structured style similarity.
-6. Add previewable/correctable boundaries and explanations of missing evidence.
-   A clutch is never called confirmed without player-count and round-state
-   evidence.
-7. Build the benchmark harness and `BENCHMARK.md` before making accuracy claims.
+The engineering question is whether local, evidence-supported candidates reduce
+human footage-review time. Phase 3B does not need to understand every gameplay
+event perfectly and does not predict views or virality.
 
-**Exit condition:** a real R6 recording produces inspectable candidates with
-reproducible evidence, detector versions, honest uncertainty, bounded resource
-use, and initial verified benchmark measurements.
+### Phase 3B.1 — Benchmark labeling and detector framework
+
+1. Add an annotated Git checkpoint for the exact verified Phase 3A commit.
+2. Add additive SQLite tables for ground-truth labels, benchmark datasets/runs,
+   detector definitions/configurations/runs/events/evidence, analysis jobs, HUD
+   calibration, OCR records, candidate foundations, review labels, telemetry
+   import foundations, and benchmark metrics. Preserve every Phase 1–3A row.
+3. Add timestamp-validated manual label create/edit/delete operations covering
+   all requested categories and benchmark-approval state.
+4. Add streaming SHA-256 video fingerprints plus versioned JSON export/import.
+   Exports contain no source path or original filename. Reject a mismatched
+   project fingerprint, duration, or resolution unless a later explicit remap
+   workflow is introduced.
+5. Add a keyboard-friendly project labeling workspace with start/peak/end marks,
+   range replay, boundary nudges, category edits, deletion, and visible keyboard
+   shortcuts. Reuse the byte-range player rather than loading the MP4 into
+   browser memory.
+6. Define a versioned detector contract and registry with declared inputs,
+   parameters, cost, enablement, progress, cancellation, cleanup, warnings, and
+   structured results. Add job/run persistence, failure isolation, retry/delete
+   services, interrupted-job reconciliation, and temporary artifact cleanup.
+7. Register only framework definitions in this stage. Real scene/audio/
+   transcript detectors begin in Phase 3B.2; the UI must say that no automatic
+   candidates are available yet.
+8. Test migration from a Phase 3A database, label CRUD/import/export, fingerprint
+   safety, detector registration/configuration/version persistence, isolated
+   fixture failures, cancellation, restart reconciliation, and cleanup.
+
+**Exit condition:** a real project can be labeled and exported/imported through
+the browser, the detector framework proves cancellation/failure/restart behavior
+with deterministic fixture detectors, all Phase 1–3A regressions pass, and no
+automatic detection claim is displayed.
+
+### Phase 3B.2 — General video, audio, and transcript detectors
+
+1. Add sampled FFmpeg scene, temporally consistent black-frame, downscaled
+   motion/action, and generic screen-state-change detectors. Never equate motion
+   with a kill.
+2. Generate separate normalized energy curves for the selected creator track
+   and game audio. Detect relative peaks, sustained loudness, overlap, silence,
+   and low-energy intervals without one universal raw-volume threshold.
+3. Add inspectable, editable transcript-pattern rules for reaction, tactical,
+   kill/death, outcome, defuser, clutch, mistake, setup, and payoff evidence.
+   Transcript words can support but never confirm a gameplay event.
+4. Persist structured events with raw values, thresholds, evidence, warnings,
+   versions, duration, and isolated detector errors. Complete runs keep results;
+   cancelled runs save no partial invalid event set.
+
+**Exit condition:** efficient local detectors produce reproducible general
+signals on real media, creator/game audio remain separate, failures are isolated,
+and cancellation/restart cleanup is verified.
+
+### Phase 3B.3 — R6 HUD calibration and screen-state detectors
+
+1. Research maintained offline OCR choices for Apple Silicon and record the
+   accuracy/install/speed/confidence/license/testability decision in an ADR
+   before adding a dependency.
+2. Add normalized calibration profiles and proportional 1920×1080,
+   2560×1440, and 1280×720 region presets with frame seek, draw/resize, crop
+   preview, duplicate/delete, project association, and positive/negative frame
+   examples.
+3. Add configurable crop preprocessing, selected-region OCR/image-difference
+   previews, confidence, thresholds, temporal consistency, and bounded/redacted
+   debug evidence.
+4. Implement conservative kill-feed, round-result, death/spectator, defuser,
+   rapid-event, and possible-clutch detectors. Unconfirmed results use “possible”
+   or “candidate” wording and list missing evidence.
+5. Add only a versioned telemetry JSON import/synchronization boundary plus a
+   synthetic fixture. Label it “Prepared for a future Windows gameplay
+   companion”; do not build Overwolf software on this Mac.
+
+**Exit condition:** calibrated sampled HUD regions produce inspectable local
+evidence with repeated-frame support, privacy-safe artifacts, and no unsupported
+local-player or 1vX claim.
+
+### Phase 3B.4 — Evidence fusion and candidate moments
+
+1. Deterministically merge overlapping/nearby detector events while keeping
+   sufficiently separated events distinct and removing near duplicates.
+2. Clamp configurable context boundaries to the video. Persist category,
+   alternatives, supporting/conflicting detectors, evidence timeline, missing
+   evidence, detector/job versions, and plain-language explanations.
+3. Compute and display separate formulas and breakdowns for Event Confidence,
+   Content Potential Score, and optional structured Style Similarity. Keep all
+   rule weights visible and fixed during Phase 3B.
+4. Add candidate range playback, boundary/context correction, category/note
+   edits, useful/not-useful/wrong-event review labels, transcript/debug links,
+   and conversion through the existing real clip pipeline.
+
+**Exit condition:** a real recording creates multi-signal candidates with
+inspectable evidence and score formulas, and a corrected candidate becomes a
+playable saved clip without any learned ranking.
+
+### Phase 3B.5 — Benchmarking, browser verification, and documentation
+
+1. Match approved ground truth and candidates using the versioned rules in
+   `BENCHMARK.md`; calculate per-category counts, precision, recall, F1, and
+   boundary/peak errors without hiding weak results or tiny samples.
+2. Add processing speed, peak memory where measurable, disk use, candidates per
+   hour, review minutes, useful-candidate rate, and useful-ground-truth discovery.
+3. Add filterable Benchmark Dashboard plus versioned JSON and Markdown reports.
+   Separate verified results, development estimates, unsupported capabilities,
+   and untested categories.
+4. Verify the required real-media, multi-track, no-reaction, menu/loading,
+   calibration, completed/cancelled/isolated-failure, corrected candidate, clip,
+   restart, cleanup, persistence, regression, and browser-console paths.
+5. Update `PLAN.md`, `AGENTS.md`, `README.md`, and `BENCHMARK.md`; run every
+   quality gate and commit the clean verified stage in small commits.
+
+**Exit condition:** a legally usable labeled dataset yields honest reproducible
+benchmark measurements and demonstrates whether candidate review saves time.
 
 ## Phase 3C — Personalized ranking and feedback learning
 
@@ -478,6 +570,18 @@ facts, benchmark claims are supported, and all quality gates pass.
 - FFmpeg-based duration, black/transition candidates, scene-change estimates,
   silence intervals, audio-energy samples, speech coverage/rate, approximate cut
   frequency, and high-level profile aggregation with displayed evidence.
+- Manual timestamp labels, byte-range range replay, versioned JSON interchange,
+  streaming video fingerprints, detector/job version persistence, cancellation,
+  restart reconciliation, and deterministic benchmark arithmetic.
+
+### Moderately reliable after calibration and benchmark validation
+
+- Temporally persistent scene changes, black transitions, sustained low motion,
+  relative creator/game audio peaks, silence, and major screen-state changes.
+- Timestamped transcript rule matches as supporting evidence, provided the
+  selected creator track and transcript are accurate.
+- Repeated-frame image differences inside a user-calibrated HUD region. These
+  indicate a region changed; they do not establish who caused an R6 event.
 
 ### Experimental and always labeled as estimates
 
@@ -489,6 +593,9 @@ facts, benchmark claims are supported, and all quality gates pass.
   or result-banner interpretation, and all video-only event classifications.
 - Reference similarity and Content Potential Score. They rank observable
   characteristics; they do not predict virality, views, or audience response.
+- Reaction, laughter, frustration, rage, funny-conversation, mistake,
+  explanation, possible-clutch, defuser, rapid-elimination, death/spectator,
+  round-result, and local-player attribution candidates.
 
 ### Not confirmable from general video-only analysis today
 
@@ -500,6 +607,9 @@ facts, benchmark claims are supported, and all quality gates pass.
   captions; the owner must upload a permitted file for full local analysis.
 - Guaranteed performance or a dependable prediction of virality. Human review,
   benchmarks, and post-performance data remain necessary.
+- Live Overwolf/telemetry capture on this Mac, teammate identity, speaker
+  identity, emotion diagnosis, or reliable local-player names from arbitrary
+  overlays. Phase 3B only prepares a versioned future telemetry import format.
 
 ## Phase 3 research basis
 
@@ -532,7 +642,8 @@ These remain outside the authorized Phase 3 scope.
 - Phase 3A foundation commit: `b14cc05`
 - Phase 3A local analysis/profile implementation commit: `8758f53`
 - Phase 3A: implementation and release verification complete on July 22, 2026
-- Next stage: Phase 3B local R6 moment detection (not started)
+- Verified Phase 3A checkpoint tag: `phase-3a-stable` → `6119de7`
+- Current active stage: Phase 3B.1 benchmark labeling and detector framework
 
 - Stable Phase 1 application — complete and preserved in Git commit `2099b2f`
 - Phase 2A: audio inventory and migration — complete
