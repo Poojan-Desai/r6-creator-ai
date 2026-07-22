@@ -427,22 +427,117 @@ automatic detection claim is displayed.
 
 ### Phase 3B.2 — General video, audio, and transcript detectors
 
-1. Add sampled FFmpeg scene, temporally consistent black-frame, downscaled
-   motion/action, and generic screen-state-change detectors. Never equate motion
-   with a kill.
-2. Generate separate normalized energy curves for the selected creator track
-   and game audio. Detect relative peaks, sustained loudness, overlap, silence,
-   and low-energy intervals without one universal raw-volume threshold.
-3. Add inspectable, editable transcript-pattern rules for reaction, tactical,
-   kill/death, outcome, defuser, clutch, mistake, setup, and payoff evidence.
-   Transcript words can support but never confirm a gameplay event.
-4. Persist structured events with raw values, thresholds, evidence, warnings,
-   versions, duration, and isolated detector errors. Complete runs keep results;
-   cancelled runs save no partial invalid event set.
+Phase 3B.2 produces broad, local, time-based signals. It does not infer a kill,
+death, round result, map location, operator, defuser state, clutch, or content
+performance from those signals. The verified `3922b2b` state is preserved by
+the annotated `phase-3b2m-stable` tag.
+
+#### Phase 3B.2.0 — Measurement contract and checkpoint
+
+1. Preserve Phase 3B.2-M, audit the existing registry/job/cancellation/restart
+   path, and version the signal and benchmark contracts before implementation.
+2. Prefer the bundled FFmpeg/FFprobe filters documented in ADR-006. Defer
+   OpenCV and optical flow until measured footage proves the sampled
+   frame-difference signal inadequate.
+3. Keep detector temporary/artifact cleanup rooted only under detector-owned
+   directories. Regression-test that map blueprints, previews, annotations,
+   imports/exports, versions, search, and confirmed project context are intact.
+
+#### Phase 3B.2.1 — Shared time-series storage and utilities
+
+1. Add additive `SignalCurve` and `SignalCurveChunk` storage plus per-run
+   performance fields. A curve records signal kind, units, source role/stream,
+   detector version, sample interval, aggregation method, exact configuration,
+   robust baseline statistics, and counts.
+2. Store bounded gzip-compressed JSON chunks instead of a SQLite row per frame.
+   Validate ordered/clamped timestamps and preserve spikes through configurable
+   maximum, mean, median, percentile, or event-preserving aggregation.
+3. Implement rolling-median, median-absolute-deviation, percentile, and local
+   relative-deviation helpers with plain-language formulas and deterministic
+   tests. Curves can be transactionally replaced, deleted, and regenerated.
+
+#### Phase 3B.2.2 — General video signals
+
+1. Add versioned FFmpeg scene-score extraction with minor/strong/probable-cut
+   event wording, temporal spacing, duplicate suppression, neighboring scores,
+   and no gameplay-event interpretation.
+2. Add a downscaled sampled frame-difference/action curve with spike,
+   sustained-high, and sustained-low ranges. Flag scene/black evidence that may
+   explain a visual spike. Optical flow remains deferred unless this measured
+   path proves insufficient.
+3. Add temporally consistent black, freeze/static, brightness, and broad visual
+   transition detectors. Output only transition/static/interruption candidates;
+   never label a loading, menu, death, spectator, scoreboard, or round screen as
+   confirmed.
+
+#### Phase 3B.2.3 — Separate audio signals
+
+1. Require an existing deliberate track-role choice. Store creator microphone,
+   game audio, mixed audio, and unknown roles separately; never choose a track
+   merely because it is louder and never transcribe a new track during analysis.
+2. Extract bounded FFmpeg RMS/peak loudness windows, normalize each track to its
+   own rolling/global baseline, and derive separate sudden-peak, sustained-loud,
+   silence, low-energy, clipping-warning, and overlap events.
+3. Handle quiet/loud/background-noise/clipped/silent/game-only/separate-track
+   fixtures, missing selections, cancellation, and no-audio recordings without
+   failing unrelated detectors.
+
+#### Phase 3B.2.4 — Transcript evidence and reaction candidates
+
+1. Add versioned local transcript rules with exact/phrase/group patterns,
+   context, negation and ambiguity handling. Persist matched line IDs/text,
+   timestamp, rule/version, exact match, surrounding context, confidence, and
+   warnings. Words support but never confirm gameplay facts or map location.
+2. Add advanced inspect/enable/disable/duplicate/edit/reset/export/import and
+   explicit rerun controls. Invalid patterns reject safely; historical detector
+   results retain their original rule version.
+3. Combine selected creator-track peaks with transcript evidence into possible
+   excitement/surprise/laughter/frustration/celebration or unclassified strong
+   vocal candidates. These are behavior/content cues, not emotion diagnoses;
+   audio-only results say their reaction type is uncertain.
+
+#### Phase 3B.2.5 — Signal Explorer, jobs, and honest evaluation
+
+1. Replace the framework-only project panel with detector/settings/track-role
+   controls, measurable work-unit progress, whole-job and per-detector
+   cancellation/retry/delete/rerun, isolated partial success, and persisted
+   processing/memory/disk/measurement counts.
+2. Add a responsive canvas-based synchronized Signal Explorer for video,
+   curves, events, transcript evidence, reaction candidates, and approved
+   labels. Support zoom/pan, track/filter controls, event detail, seek/replay,
+   transcript links, selected ranges, and manual-label creation without one DOM
+   element per sample.
+3. Evaluate only relevant approved labels under the Phase 3B.2 method in
+   `BENCHMARK.md`. Display sample counts and false positives; fewer than five
+   approved examples remains **Insufficient benchmark examples**.
+4. Verify real 20:38 footage, separate creator/game tracks, speech/no-audio,
+   black/static fixtures, cancellation, isolated failure/retry, settings rerun,
+   restart persistence, cleanup boundaries, map regressions, performance, and
+   browser console before the final documented commits.
 
 **Exit condition:** efficient local detectors produce reproducible general
-signals on real media, creator/game audio remain separate, failures are isolated,
-and cancellation/restart cleanup is verified.
+signals and inspectable compressed curves on real media, creator/game audio
+remain separate, broad events state their evidence/limits, failures are
+isolated, cancellation/restart cleanup is verified, the Signal Explorer remains
+responsive on the real 20:38 recording, benchmark results are honest, all Phase
+1–3B.2-M regressions pass, and the working tree is clean.
+
+### Phase 3B.2-O — Versioned R6 operator knowledge foundation
+
+This is a separately committed knowledge-management workstream. It may begin
+only without weakening the general detector milestones above. It stores the
+current official roster and versioned abilities/loadouts, keeps official
+specialties separate from community/user roles, represents conditional
+counters/synergies and user-verified map links, supports search/comparison and
+versioned import/export, and exposes only user-confirmed project operator
+context. It defines but does not implement future operator/ability detection.
+
+**Exit condition:** official current operator records and sources, historical
+versions, structured abilities/loadouts, roles/interactions, optional map links,
+search/comparison, confirmed project context, import/export, restart persistence,
+tests/build/browser verification, and a separate clean commit exist without any
+claim that footage recognition identifies an operator, weapon, gadget, or
+ability use.
 
 ### Phase 3B.2-M — Versioned R6 map knowledge foundation
 

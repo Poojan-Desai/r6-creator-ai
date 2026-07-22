@@ -202,3 +202,48 @@ and reopened after an application restart. That is a persistence/workflow
 result, not evidence that the application recognizes Oregon or any room from a
 video. All event-quality measurements remain **Not measured**, and the current
 benchmark result remains **Insufficient benchmark examples**.
+
+## Phase 3B.2 broad-signal evaluation method
+
+Method ID: `phase3b2-broad-signal-v1`.
+
+Phase 3B.2 evaluates observable signals only. It never compares a scene,
+motion, audio, silence, transcript, or reaction detector against kill, death,
+round, defuser, clutch, map, room, or operator labels as though the broad signal
+proved those events.
+
+Eligible comparisons are deliberately narrow:
+
+| Detector output                                           | Eligible approved label                                                                      | Match rule                                                                              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Sustained high visual activity                            | `HIGH_ACTION_GAMEPLAY`                                                                       | temporal IoU ≥ 0.30, or overlapping peaks within 2.0 s                                  |
+| Sustained low visual/audio activity                       | `QUIET_OR_LOW_INTEREST`                                                                      | temporal IoU ≥ 0.30; quiet tension remains a documented false-positive risk             |
+| Strong creator vocal event / supported reaction candidate | `LOUD_CREATOR_REACTION`                                                                      | overlapping range with peaks within 2.0 s                                               |
+| Broad visual transition                                   | `MENU` or `LOADING_SCREEN` only when the approved range marks the actual transition boundary | peak within 2.0 s of the reviewed boundary; this does not classify the resulting screen |
+
+Scene changes, black intervals, freeze/static intervals, creator/game peaks,
+silence ranges, and transcript-rule matches are also verified directly against
+small deterministic fixtures with exact expected ranges. Fixture correctness is
+a detector-behavior result, not an R6 gameplay-accuracy benchmark.
+
+For a legally usable video to count false positives, its relevant category must
+have been reviewed across the complete evaluation window. An event outside an
+approved positive range is a false positive only inside such a completely
+reviewed window; partially labeled footage is not silently treated as negative.
+Each automatic event and label may match at most once, assigned by highest IoU,
+then smallest peak error, then stable ID. Unmatched approved labels are false
+negatives. Report true/false counts, precision, recall, F1, median peak/start/end
+error, and the exact tolerance.
+
+Results are stored and filtered by detector ID/version, full settings hash,
+video and resolution, source track role/index where relevant, dataset version,
+and split. Development results are never promoted to verified results without a
+held-out verification split. Fewer than five approved positive examples for a
+detector/category pair displays **Insufficient benchmark examples** beside the
+sample count; no percentage is used as a quality claim.
+
+Required performance context includes source duration, wall time, source-time
+processed per wall second, peak resident memory where measurable, average CPU
+only when available without invasive permissions, temporary/permanent bytes,
+raw/aggregated measurements, stored chunks, and generated events. These are
+measurements on the current Mac, not universal speed promises.
