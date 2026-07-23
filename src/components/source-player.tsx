@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Play } from "lucide-react";
 
 export function SourcePlayer({
@@ -11,6 +11,25 @@ export function SourcePlayer({
   title: string;
 }) {
   const [failed, setFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const replayEndRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    function seek(event: Event) {
+      const detail = (
+        event as CustomEvent<{ time?: number; play?: boolean; end?: number }>
+      ).detail;
+      const video = videoRef.current;
+      if (!video || !Number.isFinite(detail?.time)) return;
+      video.currentTime = Math.max(0, detail.time ?? 0);
+      replayEndRef.current = Number.isFinite(detail.end)
+        ? (detail.end ?? null)
+        : null;
+      if (detail.play) void video.play();
+    }
+    window.addEventListener("r6-seek-source", seek);
+    return () => window.removeEventListener("r6-seek-source", seek);
+  }, []);
 
   if (failed) {
     return (
@@ -42,12 +61,22 @@ export function SourcePlayer({
 
   return (
     <video
+      ref={videoRef}
       id="source-recording-player"
       className="aspect-video w-full bg-black object-contain"
       controls
       preload="metadata"
       src={`/api/media/projects/${projectId}/source`}
       onError={() => setFailed(true)}
+      onTimeUpdate={(event) => {
+        if (
+          replayEndRef.current !== null &&
+          event.currentTarget.currentTime >= replayEndRef.current
+        ) {
+          event.currentTarget.pause();
+          replayEndRef.current = null;
+        }
+      }}
       aria-label={`Source recording: ${title}`}
     >
       Your browser does not support MP4 video playback.

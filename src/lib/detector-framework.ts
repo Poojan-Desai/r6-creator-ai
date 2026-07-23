@@ -62,6 +62,7 @@ export type DetectorDefinitionDto = {
   estimatedCost: "LOW" | "MEDIUM" | "HIGH";
   implementationState: string;
   enabled: boolean;
+  parameters: Record<string, number | boolean | string>;
 };
 
 export type DetectorRunDto = {
@@ -139,6 +140,62 @@ function parseJsonObject(value: string): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+export function validateDetectorParameters(
+  detector: LocalDetector,
+  input: Record<string, unknown>,
+) {
+  const result: Record<string, number | boolean | string> = {};
+  for (const [key, value] of Object.entries(input)) {
+    const schema = detector.parameters[key];
+    if (!schema) {
+      throw new AppError(
+        `“${key}” is not a setting for ${detector.name}.`,
+        400,
+        "DETECTOR_PARAMETER_UNKNOWN",
+      );
+    }
+    if (schema.type === "number") {
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new AppError(
+          `${schema.label} must be a number.`,
+          400,
+          "DETECTOR_PARAMETER_INVALID",
+        );
+      }
+      if (
+        (schema.minimum !== undefined && value < schema.minimum) ||
+        (schema.maximum !== undefined && value > schema.maximum)
+      ) {
+        throw new AppError(
+          `${schema.label} is outside its allowed range.`,
+          400,
+          "DETECTOR_PARAMETER_RANGE",
+        );
+      }
+      result[key] = value;
+    } else if (schema.type === "boolean") {
+      if (typeof value !== "boolean") {
+        throw new AppError(
+          `${schema.label} must be on or off.`,
+          400,
+          "DETECTOR_PARAMETER_INVALID",
+        );
+      }
+      result[key] = value;
+    } else {
+      if (typeof value !== "string" || value.length > 500) {
+        throw new AppError(
+          `${schema.label} must be short text.`,
+          400,
+          "DETECTOR_PARAMETER_INVALID",
+        );
+      }
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 function detectorSetVersion(
@@ -513,6 +570,12 @@ export async function getDetectorFrameworkState(
       estimatedCost: configuration.detectorDefinition.estimatedCost,
       implementationState: configuration.detectorDefinition.implementationState,
       enabled: configuration.enabled,
+      parameters: Object.fromEntries(
+        Object.entries(parseJsonObject(configuration.parametersJson)).filter(
+          (entry): entry is [string, number | boolean | string] =>
+            ["number", "boolean", "string"].includes(typeof entry[1]),
+        ),
+      ),
     })),
     jobs: jobs.map(serializeAnalysisJob),
   };
@@ -584,6 +647,27 @@ export async function startAnalysisJob(projectId: string) {
   );
 }
 
+export async function startSingleDetectorJob(
+  projectId: string,
+  detectorDefinitionId: string,
+) {
+  const configurations = await ensureProjectConfigurations(projectId);
+  const selected = configurations.find(
+    (configuration) =>
+      configuration.detectorDefinitionId === detectorDefinitionId,
+  );
+  if (!selected) {
+    throw new AppError(
+      "That detector is not available for this project.",
+      404,
+      "DETECTOR_NOT_FOUND",
+    );
+  }
+  return createJobFromConfigurations(projectId, [
+    { ...selected, enabled: true },
+  ]);
+}
+
 export async function updateDetectorConfiguration(
   projectId: string,
   detectorDefinitionId: string,
@@ -594,6 +678,7 @@ export async function updateDetectorConfiguration(
     where: {
       projectId_detectorDefinitionId: { projectId, detectorDefinitionId },
     },
+    include: { detectorDefinition: true },
   });
   if (!configuration) {
     throw new AppError(
@@ -602,11 +687,23 @@ export async function updateDetectorConfiguration(
       "DETECTOR_NOT_FOUND",
     );
   }
+  const detector = detectorRegistry.get(
+    configuration.detectorDefinition.stableId,
+    configuration.detectorDefinition.version,
+  );
+  if (!detector) {
+    throw new AppError(
+      "That pinned detector version is not installed.",
+      409,
+      "DETECTOR_VERSION_UNAVAILABLE",
+    );
+  }
+  const parameters = validateDetectorParameters(detector, input.parameters);
   await db.detectorConfiguration.update({
     where: { id: configuration.id },
     data: {
       enabled: input.enabled,
-      parametersJson: JSON.stringify(input.parameters),
+      parametersJson: JSON.stringify(parameters),
     },
   });
   return getDetectorFrameworkState(projectId);

@@ -100,6 +100,37 @@ export function BenchmarkLabeler({
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [draft.endSeconds, draft.startSeconds, playRange, setMark]);
 
+  useEffect(() => {
+    function useExplorerRange(event: Event) {
+      const detail = (
+        event as CustomEvent<{
+          startSeconds?: number;
+          peakSeconds?: number;
+          endSeconds?: number;
+        }>
+      ).detail;
+      if (
+        !Number.isFinite(detail?.startSeconds) ||
+        !Number.isFinite(detail?.peakSeconds) ||
+        !Number.isFinite(detail?.endSeconds)
+      ) {
+        return;
+      }
+      setDraft((current) => ({
+        ...current,
+        startSeconds: roundTime(detail.startSeconds ?? 0),
+        peakSeconds: roundTime(detail.peakSeconds ?? 0),
+        endSeconds: roundTime(detail.endSeconds ?? 0),
+      }));
+      setMessage(
+        "Signal Explorer range copied into a new manual benchmark label.",
+      );
+    }
+    window.addEventListener("r6-benchmark-range", useExplorerRange);
+    return () =>
+      window.removeEventListener("r6-benchmark-range", useExplorerRange);
+  }, []);
+
   async function createLabel() {
     setBusy(true);
     setError(null);
@@ -224,7 +255,11 @@ export function BenchmarkLabeler({
   const approvedCount = state.labels.filter((label) => label.approved).length;
 
   return (
-    <section className="mt-8" aria-labelledby="benchmark-labeler-title">
+    <section
+      id="benchmark-labeler"
+      className="mt-8 scroll-mt-6"
+      aria-labelledby="benchmark-labeler-title"
+    >
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="section-kicker">Phase 3B.1 · Human ground truth</p>

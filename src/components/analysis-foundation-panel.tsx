@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   FlaskConical,
   RefreshCw,
+  Save,
   Square,
   Trash2,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import type {
   DetectorFrameworkStateDto,
 } from "@/lib/detector-framework";
 import type { AudioTrackDto } from "@/lib/transcription";
+import { formatBytes } from "@/lib/format";
 
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 
@@ -123,12 +125,16 @@ export function AnalysisFoundationPanel({
     setBusy(`detector-${definitionId}`);
     setError(null);
     try {
+      const detector = state.detectors.find((item) => item.id === definitionId);
       const response = await fetch(
         `/api/projects/${projectId}/detectors/${definitionId}`,
         {
           method: "PATCH",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ enabled, parameters: {} }),
+          body: JSON.stringify({
+            enabled,
+            parameters: detector?.parameters ?? {},
+          }),
         },
       );
       const body = (await response.json().catch(() => null)) as {
@@ -136,7 +142,77 @@ export function AnalysisFoundationPanel({
       } | null;
       if (!response.ok || !body?.analysis) throw new Error(readError(body));
       setState(body.analysis);
-      setMessage(enabled ? "Framework check enabled." : "Detector disabled.");
+      setMessage(enabled ? "Local detector enabled." : "Detector disabled.");
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function setDetectorParameter(
+    definitionId: string,
+    key: string,
+    value: number | boolean | string,
+  ) {
+    setState((current) => ({
+      ...current,
+      detectors: current.detectors.map((detector) =>
+        detector.id === definitionId
+          ? {
+              ...detector,
+              parameters: { ...detector.parameters, [key]: value },
+            }
+          : detector,
+      ),
+    }));
+  }
+
+  async function saveDetectorSettings(definitionId: string) {
+    const detector = state.detectors.find((item) => item.id === definitionId);
+    if (!detector) return;
+    setBusy(`settings-${definitionId}`);
+    setError(null);
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/detectors/${definitionId}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            enabled: detector.enabled,
+            parameters: detector.parameters,
+          }),
+        },
+      );
+      const body = (await response.json().catch(() => null)) as {
+        analysis?: DetectorFrameworkStateDto;
+      } | null;
+      if (!response.ok || !body?.analysis) throw new Error(readError(body));
+      setState(body.analysis);
+      setMessage(
+        `${detector.name} settings saved. Existing historical runs were not changed.`,
+      );
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runSingleDetector(definitionId: string) {
+    setBusy(`run-${definitionId}`);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/detectors/${definitionId}/run`,
+        { method: "POST" },
+      );
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(readError(body));
+      setMessage("A version-pinned single-detector rerun was queued.");
+      await reload();
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -264,41 +340,125 @@ export function AnalysisFoundationPanel({
 
       <div className="mt-6 grid gap-3">
         {state.detectors.map((detector) => (
-          <label
+          <article
             key={detector.id}
-            className="flex flex-col gap-3 rounded-xl border border-white/8 bg-black/20 p-4 sm:flex-row sm:items-center"
+            className="rounded-xl border border-white/8 bg-black/20 p-4"
           >
-            <input
-              type="checkbox"
-              className="size-4 shrink-0 accent-[#b8ff2c]"
-              checked={detector.enabled}
-              disabled={busy === `detector-${detector.id}` || hasActiveJob}
-              onChange={(event) =>
-                void toggleDetector(detector.id, event.target.checked)
-              }
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold text-white">
-                {detector.name}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="flex min-w-0 flex-1 items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 accent-[#b8ff2c]"
+                  checked={detector.enabled}
+                  disabled={busy === `detector-${detector.id}` || hasActiveJob}
+                  onChange={(event) =>
+                    void toggleDetector(detector.id, event.target.checked)
+                  }
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-white">
+                    {detector.name}
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-slate-500">
+                    {detector.description}
+                  </span>
+                </span>
+              </label>
+              <span className="flex flex-wrap gap-2 text-[10px] font-bold tracking-wide uppercase">
+                <span className="rounded-full border border-white/8 px-2.5 py-1 text-slate-500">
+                  {detector.stableId}@{detector.version}
+                </span>
+                <span className="rounded-full border border-white/8 px-2.5 py-1 text-slate-500">
+                  {detector.estimatedCost} cost
+                </span>
+                <span className="rounded-full border border-sky-300/15 bg-sky-400/6 px-2.5 py-1 text-sky-200">
+                  {detector.implementationState === "ACTIVE"
+                    ? "Active local detector"
+                    : "Framework only"}
+                </span>
               </span>
-              <span className="mt-1 block text-xs leading-5 text-slate-500">
-                {detector.description}
-              </span>
-            </span>
-            <span className="flex flex-wrap gap-2 text-[10px] font-bold tracking-wide uppercase">
-              <span className="rounded-full border border-white/8 px-2.5 py-1 text-slate-500">
-                {detector.stableId}@{detector.version}
-              </span>
-              <span className="rounded-full border border-white/8 px-2.5 py-1 text-slate-500">
-                {detector.estimatedCost} cost
-              </span>
-              <span className="rounded-full border border-sky-300/15 bg-sky-400/6 px-2.5 py-1 text-sky-200">
-                {detector.implementationState === "ACTIVE"
-                  ? "Active local detector"
-                  : "Framework only"}
-              </span>
-            </span>
-          </label>
+            </div>
+            <details className="mt-3 border-t border-white/6 pt-3">
+              <summary className="cursor-pointer text-xs font-semibold text-slate-300">
+                Settings, work inputs, and rerun
+              </summary>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {parameterEntries(detector).length === 0 ? (
+                  <p className="text-xs text-slate-600">
+                    This detector has no adjustable settings.
+                  </p>
+                ) : (
+                  parameterEntries(detector).map(([key, schema]) => (
+                    <label key={key}>
+                      <span className="form-label">{schema.label}</span>
+                      {schema.type === "boolean" ? (
+                        <input
+                          className="mt-3 size-4 accent-[#b8ff2c]"
+                          type="checkbox"
+                          checked={Boolean(
+                            detector.parameters[key] ?? schema.defaultValue,
+                          )}
+                          disabled={hasActiveJob}
+                          onChange={(event) =>
+                            setDetectorParameter(
+                              detector.id,
+                              key,
+                              event.target.checked,
+                            )
+                          }
+                        />
+                      ) : (
+                        <input
+                          className="field mt-2"
+                          type={schema.type === "number" ? "number" : "text"}
+                          min={schema.minimum}
+                          max={schema.maximum}
+                          step={schema.type === "number" ? "any" : undefined}
+                          value={String(
+                            detector.parameters[key] ?? schema.defaultValue,
+                          )}
+                          disabled={hasActiveJob}
+                          onChange={(event) =>
+                            setDetectorParameter(
+                              detector.id,
+                              key,
+                              schema.type === "number"
+                                ? Number(event.target.value)
+                                : event.target.value,
+                            )
+                          }
+                        />
+                      )}
+                      <span className="mt-1 block text-[10px] leading-4 text-slate-600">
+                        {schema.description}
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={hasActiveJob || busy !== null}
+                  onClick={() => void saveDetectorSettings(detector.id)}
+                >
+                  <Save size={14} /> Save settings
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={hasActiveJob || busy !== null}
+                  onClick={() => void runSingleDetector(detector.id)}
+                >
+                  <RefreshCw size={14} /> Rerun only this detector
+                </button>
+                <span className="self-center text-[10px] text-slate-600">
+                  Inputs: {detector.requiredInputs.join(", ") || "none"}
+                </span>
+              </div>
+            </details>
+          </article>
         ))}
       </div>
 
@@ -393,9 +553,35 @@ function JobCard({
               key={run.id}
               className="mt-3 rounded-lg border border-white/6 bg-white/3 px-3 py-2 text-xs text-slate-400"
             >
-              <span className="font-semibold text-slate-200">{run.name}</span> ·{" "}
-              {run.detectorStableId}@{run.detectorVersion} · {run.status}
-              {run.errorMessage ? ` · ${run.errorMessage}` : ""}
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="font-semibold text-slate-200">{run.name}</span>
+                <span>
+                  · {run.detectorStableId}@{run.detectorVersion} · {run.status}
+                </span>
+              </div>
+              <p className="mt-1 text-[10px] leading-4 text-slate-600">
+                {run.processedSourceSeconds === null
+                  ? "No measured source work yet"
+                  : `${run.processedSourceSeconds.toFixed(1)} video/audio seconds processed`}
+                {run.processingDurationMs === null
+                  ? ""
+                  : ` · ${(run.processingDurationMs / 1_000).toFixed(2)}s wall time`}
+                {run.processingSpeedRatio === null
+                  ? ""
+                  : ` · ${run.processingSpeedRatio.toFixed(2)}× realtime`}
+                {run.peakMemoryBytes === null
+                  ? ""
+                  : ` · ${formatBytes(run.peakMemoryBytes)} peak process memory`}
+                {` · ${formatBytes(run.temporaryDiskUsageBytes)} temporary · ${formatBytes(run.permanentDataBytes)} stored`}
+              </p>
+              <p className="mt-1 text-[10px] leading-4 text-slate-600">
+                {run.rawMeasurementCount} raw measurements ·{" "}
+                {run.aggregatedMeasurementCount} stored measurements ·{" "}
+                {run.curveCount} curves · {run.generatedEventCount} events
+              </p>
+              {run.errorMessage && (
+                <p className="mt-1 text-red-200">{run.errorMessage}</p>
+              )}
             </div>
           ))}
           {job.warnings.map((warning) => (
@@ -438,6 +624,36 @@ function JobCard({
         </div>
       </div>
     </article>
+  );
+}
+
+type ParameterView = {
+  type: "number" | "boolean" | "string";
+  label: string;
+  description: string;
+  defaultValue: number | boolean | string;
+  minimum?: number;
+  maximum?: number;
+};
+
+function parameterEntries(
+  detector: DetectorFrameworkStateDto["detectors"][number],
+) {
+  return Object.entries(detector.parameterSchema).filter(
+    (entry): entry is [string, ParameterView] => {
+      const value = entry[1];
+      return Boolean(
+        value &&
+        typeof value === "object" &&
+        "type" in value &&
+        ["number", "boolean", "string"].includes(String(value.type)) &&
+        "label" in value &&
+        typeof value.label === "string" &&
+        "description" in value &&
+        typeof value.description === "string" &&
+        "defaultValue" in value,
+      );
+    },
   );
 }
 
