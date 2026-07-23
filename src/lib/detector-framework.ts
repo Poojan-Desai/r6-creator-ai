@@ -112,7 +112,7 @@ export type AnalysisJobDto = {
 };
 
 export type DetectorFrameworkStateDto = {
-  phase: "3B.1";
+  phase: "3B.2";
   automaticCandidatesAvailable: false;
   message: string;
   detectors: DetectorDefinitionDto[];
@@ -493,10 +493,10 @@ export async function getDetectorFrameworkState(
     take: 20,
   });
   return {
-    phase: "3B.1",
+    phase: "3B.2",
     automaticCandidatesAvailable: false,
     message:
-      "Phase 3B.1 provides labeling and job foundations only. Automatic candidate detectors begin in Phase 3B.2.",
+      "Phase 3B.2 produces broad local signal evidence. It does not confirm kills, deaths, rounds, maps, rooms, or highlights.",
     detectors: configurations.map((configuration) => ({
       id: configuration.detectorDefinition.id,
       configurationId: configuration.id,

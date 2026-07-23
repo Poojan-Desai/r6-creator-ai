@@ -14,17 +14,21 @@ import type {
   AnalysisJobDto,
   DetectorFrameworkStateDto,
 } from "@/lib/detector-framework";
+import type { AudioTrackDto } from "@/lib/transcription";
 
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 
 export function AnalysisFoundationPanel({
   projectId,
   initialState,
+  initialAudioTracks,
 }: {
   projectId: string;
   initialState: DetectorFrameworkStateDto;
+  initialAudioTracks: AudioTrackDto[];
 }) {
   const [state, setState] = useState(initialState);
+  const [audioTracks, setAudioTracks] = useState(initialAudioTracks);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,8 +73,45 @@ export function AnalysisFoundationPanel({
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) throw new Error(readError(body));
-      setMessage("Local framework check started.");
+      setMessage("Local signal analysis started.");
       await reload();
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function updateTrackRole(
+    trackId: string,
+    analysisRole: AudioTrackDto["analysisRole"],
+  ) {
+    setBusy(`track-${trackId}`);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/audio-tracks/${trackId}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ analysisRole }),
+        },
+      );
+      const body = (await response.json().catch(() => null)) as {
+        track?: AudioTrackDto;
+      } | null;
+      if (!response.ok || !body?.track) throw new Error(readError(body));
+      setAudioTracks((current) =>
+        current.map((track) =>
+          track.id === body.track?.id ? body.track : track,
+        ),
+      );
+      setMessage(
+        analysisRole
+          ? "Audio role confirmed for local analysis."
+          : "Audio role cleared. This track will not be analyzed.",
+      );
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -137,16 +178,16 @@ export function AnalysisFoundationPanel({
     <section className="panel mt-8 p-5 sm:p-6" aria-labelledby="analysis-title">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="section-kicker">Phase 3B.1 · Detector framework</p>
+          <p className="section-kicker">Phase 3B.2 · General local signals</p>
           <h2
             id="analysis-title"
             className="font-display mt-1 text-3xl font-extrabold tracking-tight text-white uppercase"
           >
-            Analysis jobs, without false claims
+            Evidence-first local analysis
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            {state.message} The check below validates versioning, progress,
-            retry, deletion, failure isolation, restart recovery, and cleanup.
+            {state.message} Each result keeps its detector version,
+            measurements, thresholds, evidence, and limitations.
           </p>
         </div>
         <button
@@ -156,7 +197,7 @@ export function AnalysisFoundationPanel({
           onClick={() => void startFrameworkCheck()}
         >
           <FlaskConical size={16} />
-          {hasActiveJob ? "Framework check running" : "Run framework check"}
+          {hasActiveJob ? "Local analysis running" : "Run local analysis"}
         </button>
       </div>
 
@@ -164,11 +205,61 @@ export function AnalysisFoundationPanel({
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 shrink-0" size={17} />
           <p>
-            This stage does not detect kills, deaths, reactions, or candidate
-            moments. Scene, audio, and transcript detectors begin in Phase 3B.2,
-            after this labeling foundation is verified.
+            General motion, audio, and transcript patterns are supporting
+            signals only. R6 HUD and screen-state evidence starts in Phase 3B.3;
+            candidate fusion starts in Phase 3B.4.
           </p>
         </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-white/8 bg-black/20 p-4">
+        <h3 className="text-sm font-bold text-white">Confirm audio roles</h3>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          Track labels are recommendations only. A track is analyzed only after
+          you confirm its role. Teammate audio is never selected automatically.
+        </p>
+        {audioTracks.length === 0 ? (
+          <p className="mt-3 rounded-lg border border-dashed border-white/10 p-3 text-xs text-slate-500">
+            This recording has no audio. Video detectors can still run.
+          </p>
+        ) : (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {audioTracks.map((track) => (
+              <label
+                key={track.id}
+                className="rounded-lg border border-white/8 p-3"
+              >
+                <span className="block text-xs font-semibold text-slate-200">
+                  Stream {track.streamIndex}
+                  {track.title ? ` · ${track.title}` : ""}
+                </span>
+                <span className="mt-1 block text-[11px] text-slate-600">
+                  {track.codecName} · {track.channels} channel
+                  {track.channels === 1 ? "" : "s"}
+                </span>
+                <select
+                  className="field mt-2"
+                  aria-label={`Analysis role for audio stream ${track.streamIndex}`}
+                  value={track.analysisRole ?? ""}
+                  disabled={hasActiveJob || busy === `track-${track.id}`}
+                  onChange={(event) =>
+                    void updateTrackRole(
+                      track.id,
+                      (event.target.value ||
+                        null) as AudioTrackDto["analysisRole"],
+                    )
+                  }
+                >
+                  <option value="">Do not analyze</option>
+                  <option value="CREATOR_MICROPHONE">Creator microphone</option>
+                  <option value="GAME_AUDIO">Game audio</option>
+                  <option value="MIXED_AUDIO">Mixed audio</option>
+                  <option value="UNKNOWN">Unknown</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-6 grid gap-3">
@@ -202,7 +293,9 @@ export function AnalysisFoundationPanel({
                 {detector.estimatedCost} cost
               </span>
               <span className="rounded-full border border-sky-300/15 bg-sky-400/6 px-2.5 py-1 text-sky-200">
-                Framework only
+                {detector.implementationState === "ACTIVE"
+                  ? "Active local detector"
+                  : "Framework only"}
               </span>
             </span>
           </label>
@@ -240,7 +333,7 @@ export function AnalysisFoundationPanel({
         </div>
         {state.jobs.length === 0 ? (
           <p className="rounded-xl border border-dashed border-white/10 p-5 text-sm text-slate-500">
-            No framework jobs yet. Manual benchmark labeling works
+            No local analysis jobs yet. Manual benchmark labeling works
             independently.
           </p>
         ) : (

@@ -1,8 +1,13 @@
+import { generalAudioDetectors } from "@/lib/detectors/audio-detectors";
 import { mediaIntegrityDetector } from "@/lib/detectors/built-ins";
 import { detectorRegistry } from "@/lib/detectors/registry";
 import { generalVideoDetectors } from "@/lib/detectors/video-detectors";
 
-for (const detector of [mediaIntegrityDetector, ...generalVideoDetectors]) {
+for (const detector of [
+  mediaIntegrityDetector,
+  ...generalVideoDetectors,
+  ...generalAudioDetectors,
+]) {
   if (!detectorRegistry.get(detector.stableId, detector.version)) {
     detectorRegistry.register(detector);
   }

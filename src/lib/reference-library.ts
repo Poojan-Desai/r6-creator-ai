@@ -62,7 +62,10 @@ export const referenceFeatureUpdateSchema = z.object({
   correctionNote: z.string().trim().max(500).optional().default(""),
 });
 
-export type ReferenceAudioTrackDto = AudioTrackDto;
+export type ReferenceAudioTrackDto = Omit<
+  AudioTrackDto,
+  "analysisRole" | "roleConfirmedAt"
+>;
 
 export type ReferenceFeatureDto = {
   id: string;

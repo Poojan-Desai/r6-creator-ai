@@ -5,6 +5,7 @@ import { mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 import type {
+  AudioTrackRole,
   AudioTrack,
   TranscriptSegment,
   TranscriptionJob,
@@ -54,6 +55,8 @@ export type AudioTrackDto = {
   isDefault: boolean;
   preferenceScore: number;
   preferenceReason: string | null;
+  analysisRole: AudioTrackRole | null;
+  roleConfirmedAt: string | null;
 };
 
 export type TranscriptSegmentDto = {
@@ -127,7 +130,34 @@ export function serializeAudioTrack(track: AudioTrack): AudioTrackDto {
     isDefault: track.isDefault,
     preferenceScore: track.preferenceScore,
     preferenceReason: track.preferenceReason,
+    analysisRole: track.analysisRole,
+    roleConfirmedAt: track.roleConfirmedAt?.toISOString() ?? null,
   };
+}
+
+export async function updateAudioTrackRole(input: {
+  projectId: string;
+  audioTrackId: string;
+  analysisRole: AudioTrackRole | null;
+}) {
+  const track = await db.audioTrack.findUnique({
+    where: { id: input.audioTrackId },
+  });
+  if (!track || track.projectId !== input.projectId) {
+    throw new AppError(
+      "That audio track does not belong to this project.",
+      404,
+      "AUDIO_TRACK_NOT_FOUND",
+    );
+  }
+  const updated = await db.audioTrack.update({
+    where: { id: track.id },
+    data: {
+      analysisRole: input.analysisRole,
+      roleConfirmedAt: input.analysisRole ? new Date() : null,
+    },
+  });
+  return serializeAudioTrack(updated);
 }
 
 export function serializeTranscriptionJob(
@@ -165,7 +195,9 @@ export function serializeTranscriptSegment(
   };
 }
 
-export function getRecommendedTrackId(tracks: AudioTrackDto[]) {
+export function getRecommendedTrackId(
+  tracks: Array<{ id: string; preferenceScore: number }>,
+) {
   if (tracks.length === 1) return tracks[0]?.id ?? null;
   const sorted = [...tracks].sort(
     (left, right) => right.preferenceScore - left.preferenceScore,

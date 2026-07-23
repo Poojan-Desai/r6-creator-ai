@@ -82,9 +82,9 @@ class MetadataStreamCollector {
   }
 }
 
-export async function runFfmpegVideoMetadata(input: {
+async function runFfmpegMetadataProcess(input: {
   context: DetectorRunContext;
-  filterGraph: string;
+  mediaArguments: string[];
   stage: string;
 }) {
   if (!appConfig.ffmpegPath) {
@@ -99,11 +99,7 @@ export async function runFfmpegVideoMetadata(input: {
     "error",
     "-i",
     context.project.sourcePath,
-    "-map",
-    "0:v:0",
-    "-vf",
-    input.filterGraph,
-    "-an",
+    ...input.mediaArguments,
     "-progress",
     "pipe:2",
     "-nostats",
@@ -120,6 +116,7 @@ export async function runFfmpegVideoMetadata(input: {
   let diagnostics = "";
   let processedSeconds = 0;
   let lastReported = -1;
+  let progressQueue = Promise.resolve();
   child.stdout.setEncoding("utf8");
   child.stderr.setEncoding("utf8");
   child.stdout.on("data", (chunk: string) => metadata.push(chunk));
@@ -142,7 +139,9 @@ export async function runFfmpegVideoMetadata(input: {
       );
       if (progress >= lastReported + 2) {
         lastReported = progress;
-        void context.reportProgress({ progress, stage: input.stage });
+        progressQueue = progressQueue
+          .then(() => context.reportProgress({ progress, stage: input.stage }))
+          .catch(() => undefined);
       }
     }
   });
@@ -166,6 +165,7 @@ export async function runFfmpegVideoMetadata(input: {
         `FFmpeg signal analysis failed${message ? `: ${message}` : "."}`,
       );
     }
+    await progressQueue;
     await context.reportProgress({ progress: 99, stage: input.stage });
     return {
       records: metadata.finish(),
@@ -177,4 +177,38 @@ export async function runFfmpegVideoMetadata(input: {
   } finally {
     unregister();
   }
+}
+
+export function runFfmpegVideoMetadata(input: {
+  context: DetectorRunContext;
+  filterGraph: string;
+  stage: string;
+}) {
+  return runFfmpegMetadataProcess({
+    context: input.context,
+    stage: input.stage,
+    mediaArguments: ["-map", "0:v:0", "-vf", input.filterGraph, "-an"],
+  });
+}
+
+export function runFfmpegAudioMetadata(input: {
+  context: DetectorRunContext;
+  streamIndex: number;
+  filterGraph: string;
+  stage: string;
+}) {
+  if (!Number.isSafeInteger(input.streamIndex) || input.streamIndex < 0) {
+    throw new Error("The selected audio stream index is invalid.");
+  }
+  return runFfmpegMetadataProcess({
+    context: input.context,
+    stage: input.stage,
+    mediaArguments: [
+      "-map",
+      `0:${input.streamIndex}`,
+      "-af",
+      input.filterGraph,
+      "-vn",
+    ],
+  });
 }

@@ -1,3 +1,5 @@
+import type { DetectorSourceSignal } from "@prisma/client";
+
 import type { DetectorEventResult } from "@/lib/detectors/types";
 import {
   clamp,
@@ -150,7 +152,7 @@ export function buildVideoEvent(input: {
   confidence: number;
   supportingEvidence: string[];
   conflictingEvidence?: string[];
-  sourceSignal: "VIDEO" | "FRAME_DIFFERENCE" | "MOTION";
+  sourceSignal: DetectorSourceSignal;
   rawMeasurements: Record<string, unknown>;
   thresholds: Record<string, unknown>;
   warningMessages?: string[];

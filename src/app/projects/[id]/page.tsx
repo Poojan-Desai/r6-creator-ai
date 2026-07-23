@@ -159,6 +159,7 @@ export default async function ProjectPage({ params }: Props) {
         <AnalysisFoundationPanel
           projectId={project.id}
           initialState={analysis}
+          initialAudioTracks={transcription.audioTracks}
         />
 
         <ProjectMapContext projectId={project.id} initialState={mapContext} />

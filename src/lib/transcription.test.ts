@@ -22,6 +22,8 @@ function track(id: string, preferenceScore: number): AudioTrackDto {
     isDefault: false,
     preferenceScore,
     preferenceReason: null,
+    analysisRole: null,
+    roleConfirmedAt: null,
   };
 }
 

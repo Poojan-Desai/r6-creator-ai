@@ -358,6 +358,8 @@ model AudioTrack {
   isDefault         Boolean            @default(false)
   preferenceScore   Int                @default(0)
   preferenceReason  String?
+  analysisRole      AudioTrackRole?
+  roleConfirmedAt   DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   transcriptionJobs TranscriptionJob[]

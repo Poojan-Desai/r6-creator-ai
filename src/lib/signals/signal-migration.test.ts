@@ -87,6 +87,18 @@ describe("Phase 3B.2 signal-curve migration", () => {
       migrationRoot,
       "20260723015420_phase3b2_signal_event_types",
     );
+    applyMigration(
+      databasePath,
+      migrationRoot,
+      "20260723021024_phase3b2_audio_track_roles",
+    );
+    execFileSync("sqlite3", [databasePath], {
+      input: `
+        UPDATE AudioTrack
+        SET analysisRole = 'CREATOR_MICROPHONE', roleConfirmedAt = CURRENT_TIMESTAMP
+        WHERE id = 'creator-track';
+      `,
+    });
 
     let client = new PrismaClient({ datasourceUrl: databaseUrl });
     const payload = gzipSync(
@@ -163,7 +175,11 @@ describe("Phase 3B.2 signal-curve migration", () => {
     expect(savedCurve).toMatchObject({
       stableId: "creator.loudness",
       sourceTrackRole: "CREATOR_MICROPHONE",
-      audioTrack: { streamIndex: 2 },
+      audioTrack: {
+        streamIndex: 2,
+        analysisRole: "CREATOR_MICROPHONE",
+        roleConfirmedAt: expect.any(Date),
+      },
     });
     expect(savedCurve?.chunks).toHaveLength(1);
     expect(event).toMatchObject({
