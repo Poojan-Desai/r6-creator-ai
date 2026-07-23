@@ -79,6 +79,7 @@ describe("Phase 3B.1 additive migration", () => {
       "20260723015420_phase3b2_signal_event_types",
       "20260723021024_phase3b2_audio_track_roles",
       "20260723023746_phase3b2_transcript_rules",
+      "20260723091818_phase3b2_benchmark_review_scope",
     ]) {
       applyMigration(databasePath, migrationRoot, name);
     }
@@ -108,6 +109,13 @@ describe("Phase 3B.1 additive migration", () => {
       detectorStableId: "fixture.detector",
       detectorVersion: "1.0.0",
     });
+    const benchmarkColumns = execFileSync(
+      "sqlite3",
+      [databasePath, "PRAGMA table_info(BenchmarkDatasetProject);"],
+      { encoding: "utf8" },
+    );
+    expect(benchmarkColumns).toContain("fullyReviewedCategoriesJson");
+    expect(benchmarkColumns).toContain("humanReviewMinutes");
     await client.$disconnect();
   });
 });

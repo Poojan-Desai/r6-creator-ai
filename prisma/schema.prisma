@@ -680,17 +680,19 @@ model BenchmarkDataset {
 }
 
 model BenchmarkDatasetProject {
-  datasetId          String
-  projectId          String
-  dataset            BenchmarkDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
-  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  videoFingerprint   String
-  durationSeconds    Float
-  width              Int
-  height             Int
-  recordingType      String           @default("UNSPECIFIED")
-  labelSchemaVersion String           @default("r6-creator-benchmark-labels/v1")
-  addedAt            DateTime         @default(now())
+  datasetId                   String
+  projectId                   String
+  dataset                     BenchmarkDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  project                     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  videoFingerprint            String
+  durationSeconds             Float
+  width                       Int
+  height                      Int
+  recordingType               String           @default("UNSPECIFIED")
+  labelSchemaVersion          String           @default("r6-creator-benchmark-labels/v1")
+  fullyReviewedCategoriesJson String           @default("[]")
+  humanReviewMinutes          Float?
+  addedAt                     DateTime         @default(now())
 
   @@id([datasetId, projectId])
   @@index([projectId])

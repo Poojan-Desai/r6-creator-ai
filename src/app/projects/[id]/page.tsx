@@ -17,6 +17,7 @@ import { ClipStation } from "@/components/clip-station";
 import { ContentWorkbench } from "@/components/content-workbench";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ProjectMapContext } from "@/components/project-map-context";
+import { ProjectBenchmarkPanel } from "@/components/project-benchmark-panel";
 import { SignalExplorer } from "@/components/signal-explorer";
 import { SourcePlayer } from "@/components/source-player";
 import { TranscriptionStudio } from "@/components/transcription-studio";
@@ -24,6 +25,7 @@ import { formatBytes } from "@/lib/format";
 import { getDetectorFrameworkState } from "@/lib/detector-framework";
 import { getGroundTruthState } from "@/lib/ground-truth";
 import { getProjectMapContextState } from "@/lib/map-knowledge/service";
+import { getProjectBenchmarkState } from "@/lib/phase3b2-benchmark";
 import { findProjectDetail } from "@/lib/projects";
 import { getSignalExplorerState } from "@/lib/signal-explorer";
 import { formatDuration } from "@/lib/time";
@@ -43,13 +45,14 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
   const project = await findProjectDetail(id);
   if (!project) notFound();
-  const [transcription, groundTruth, analysis, mapContext, signals] =
+  const [transcription, groundTruth, analysis, mapContext, signals, benchmark] =
     await Promise.all([
       getTranscriptionState(id),
       getGroundTruthState(id),
       getDetectorFrameworkState(id),
       getProjectMapContextState(id),
       getSignalExplorerState(id),
+      getProjectBenchmarkState(id),
     ]);
   const confirmedContext = (() => {
     const context = mapContext.context;
@@ -184,6 +187,11 @@ export default async function ProjectPage({ params }: Props) {
           projectId={project.id}
           initialState={signals}
           confirmedMapContext={confirmedContext}
+        />
+
+        <ProjectBenchmarkPanel
+          projectId={project.id}
+          initialState={benchmark}
         />
 
         <ProjectMapContext projectId={project.id} initialState={mapContext} />
