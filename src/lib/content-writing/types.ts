@@ -25,6 +25,16 @@ export type ContentSuggestionContext = {
   endSeconds: number;
   durationSeconds: number;
   transcript: string;
+  verifiedOperatorContext?: {
+    provenance: "USER_CONFIRMED";
+    operator: string;
+    operatorVersion: string | null;
+    side: "UNKNOWN" | "ATTACK" | "DEFENSE";
+    verifiedGeneralAbility: string | null;
+    userProvidedAction: string | null;
+    userProvidedResult: string | null;
+    unknowns: string[];
+  } | null;
 };
 
 export interface ContentSuggestionProvider {

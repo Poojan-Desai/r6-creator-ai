@@ -6,6 +6,7 @@ import {
 } from "@/lib/content-writing";
 import { db } from "@/lib/db";
 import { apiError } from "@/lib/errors";
+import { getVerifiedOperatorWritingContext } from "@/lib/operator-knowledge/service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,19 +37,22 @@ export async function POST(request: Request, { params }: Context) {
       );
     }
 
-    const transcript = await db.transcriptionJob.findFirst({
-      where: { projectId: clip.projectId, status: "COMPLETED" },
-      orderBy: { createdAt: "desc" },
-      include: {
-        segments: {
-          where: {
-            startSeconds: { lt: clip.endSeconds },
-            endSeconds: { gt: clip.startSeconds },
+    const [transcript, verifiedOperatorContext] = await Promise.all([
+      db.transcriptionJob.findFirst({
+        where: { projectId: clip.projectId, status: "COMPLETED" },
+        orderBy: { createdAt: "desc" },
+        include: {
+          segments: {
+            where: {
+              startSeconds: { lt: clip.endSeconds },
+              endSeconds: { gt: clip.startSeconds },
+            },
+            orderBy: { segmentOrder: "asc" },
           },
-          orderBy: { segmentOrder: "asc" },
         },
-      },
-    });
+      }),
+      getVerifiedOperatorWritingContext(clip.projectId),
+    ]);
     if (!transcript) {
       return Response.json(
         {
@@ -87,6 +91,7 @@ export async function POST(request: Request, { params }: Context) {
         endSeconds: clip.endSeconds,
         durationSeconds: clip.durationSeconds,
         transcript: transcriptText,
+        verifiedOperatorContext,
       },
       tone,
     );

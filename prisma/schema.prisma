@@ -338,6 +338,70 @@ enum MapUpdateCheckStatus {
   CANCELLED
 }
 
+enum OperatorSide {
+  ATTACKER
+  DEFENDER
+}
+
+enum OperatorKnowledgeSource {
+  OFFICIAL
+  USER_ENTERED
+  COMMUNITY_DERIVED
+  INFERRED
+  UNVERIFIED
+}
+
+enum OperatorKnowledgeStatus {
+  CURRENT
+  HISTORICAL
+  POSSIBLY_OUTDATED
+  NEEDS_VERIFICATION
+  TEMPORARILY_UNAVAILABLE
+  UNVERIFIED
+}
+
+enum OperatorRoleSource {
+  OFFICIAL_SPECIALTY
+  COMMUNITY_ROLE
+  USER_ASSIGNED
+  INFERRED_TACTICAL_ROLE
+}
+
+enum OperatorInteractionCategory {
+  HARD_COUNTER
+  SOFT_COUNTER
+  CONDITIONAL_COUNTER
+  SYNERGY
+  GADGET_DESTRUCTION
+  GADGET_DISABLEMENT
+  GADGET_CAPTURE
+  GADGET_REDIRECTION
+  GADGET_DETECTION
+  GADGET_AVOIDANCE
+  INTEL_DENIAL
+  PROJECTILE_INTERCEPTION
+  ELECTRONIC_DISRUPTION
+  MOVEMENT_RESTRICTION
+  VISION_DENIAL
+  AUDIO_MASKING
+  BREACH_SUPPORT
+  PLANT_DENIAL
+  HEALING_OR_RECOVERY
+  FORCED_REPOSITIONING
+}
+
+enum OperatorLoadoutSlot {
+  PRIMARY_WEAPON
+  SECONDARY_WEAPON
+  SECONDARY_GADGET
+}
+
+enum ProjectOperatorSide {
+  UNKNOWN
+  ATTACK
+  DEFENSE
+}
+
 model Project {
   id                     String                    @id @default(cuid())
   name                   String
@@ -369,6 +433,7 @@ model Project {
   telemetryImports       TelemetryImport[]
   mapContext             ProjectMapContext?
   signalExplorer         SignalExplorerPreference?
+  operatorContext        ProjectOperatorContext?
 
   @@index([createdAt])
 }
@@ -1138,9 +1203,9 @@ model TelemetryEvent {
 }
 
 model GameDataVersion {
-  id               String              @id @default(cuid())
-  stableId         String              @unique
-  game             String              @default("Rainbow Six Siege")
+  id               String                 @id @default(cuid())
+  stableId         String                 @unique
+  game             String                 @default("Rainbow Six Siege")
   year             Int
   seasonName       String
   seasonNumber     Int
@@ -1149,11 +1214,13 @@ model GameDataVersion {
   notes            String?
   sourceUrl        String
   sourceTitle      String
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
   mapVersions      MapVersion[]
   playlistStatuses MapPlaylistStatus[]
   updateChecks     MapUpdateCheck[]
+  operatorVersions OperatorVersion[]
+  operatorReviews  OperatorUpdateReview[]
 
   @@index([year, seasonNumber])
 }
@@ -1238,6 +1305,7 @@ model MapVersion {
   citations         MapSourceCitation[]
   editHistory       MapEditHistory[]
   projectContexts   ProjectMapContext[]
+  operatorLinks     OperatorMapLink[]
 
   @@unique([mapId, versionKey])
   @@index([mapId, knowledgeStatus])
@@ -1282,6 +1350,7 @@ model MapFloor {
   bombSites       MapBombSitePair[]
   blueprintAssets BlueprintAsset[]
   citations       MapSourceCitation[]
+  operatorLinks   OperatorMapLink[]
 
   @@unique([mapVersionId, displayName])
   @@index([mapVersionId, sortOrder])
@@ -1317,6 +1386,7 @@ model MapElement {
   bombSiteLinks           MapBombSiteElement[]
   citations               MapSourceCitation[]
   startingProjectContexts ProjectMapContext[]  @relation("ProjectStartingRoom")
+  operatorLinks           OperatorMapLink[]
 
   @@unique([mapVersionId, displayName, elementType])
   @@index([mapVersionId, elementType])
@@ -1387,6 +1457,7 @@ model MapBombSitePair {
   elementLinks    MapBombSiteElement[]
   citations       MapSourceCitation[]
   projectContexts ProjectMapContext[]
+  operatorLinks   OperatorMapLink[]
 
   @@unique([mapVersionId, displayName])
   @@index([mapVersionId, floorId])
@@ -1514,6 +1585,328 @@ model MapEditHistory {
 
   @@index([mapVersionId, createdAt])
   @@index([undoGroup])
+}
+
+model SiegeOperator {
+  id                  String                   @id @default(cuid())
+  stableId            String                   @unique
+  slug                String                   @unique
+  canonicalName       String
+  displayName         String
+  side                OperatorSide
+  squad               String?
+  releaseSeason       String?
+  operatorDataVersion String                   @default("y11s2-2026-07-22")
+  knowledgeStatus     OperatorKnowledgeStatus  @default(UNVERIFIED)
+  sourceType          OperatorKnowledgeSource  @default(OFFICIAL)
+  officialSourceUrl   String
+  officialSourceTitle String
+  retrievedAt         DateTime
+  lastVerifiedAt      DateTime
+  confidence          Float                    @default(1)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  aliases             OperatorAlias[]
+  versions            OperatorVersion[]
+  abilities           OperatorAbility[]
+  sourceInteractions  OperatorInteraction[]    @relation("OperatorInteractionSource")
+  targetInteractions  OperatorInteraction[]    @relation("OperatorInteractionTarget")
+  playerContexts      ProjectOperatorContext[] @relation("ProjectPlayerOperator")
+
+  @@index([displayName])
+  @@index([side, knowledgeStatus])
+}
+
+model OperatorAlias {
+  id             String                  @id @default(cuid())
+  operatorId     String
+  operator       SiegeOperator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  displayName    String
+  normalizedName String
+  sourceType     OperatorKnowledgeSource @default(USER_ENTERED)
+  confidence     Float                   @default(1)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@unique([operatorId, normalizedName])
+  @@index([normalizedName])
+}
+
+model OperatorVersion {
+  id                       String                   @id @default(cuid())
+  stableId                 String                   @unique
+  operatorId               String
+  operator                 SiegeOperator            @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  gameDataVersionId        String?
+  gameDataVersion          GameDataVersion?         @relation(fields: [gameDataVersionId], references: [id], onDelete: SetNull)
+  parentVersionId          String?
+  parentVersion            OperatorVersion?         @relation("OperatorVersionHistory", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions            OperatorVersion[]        @relation("OperatorVersionHistory")
+  versionKey               String
+  versionName              String
+  isCurrent                Boolean                  @default(false)
+  effectiveDate            DateTime?
+  squad                    String?
+  speed                    Int?
+  armorOrHealth            Int?
+  difficulty               Int?
+  officialSpecialtiesJson  String                   @default("[]")
+  officialAbilityName      String?
+  officialAbilitySummary   String?
+  plainLanguageExplanation String?
+  structuredAbilityJson    String                   @default("{}")
+  strengthsJson            String                   @default("[]")
+  limitationsJson          String                   @default("[]")
+  commonUsesJson           String                   @default("[]")
+  contentUsesJson          String                   @default("[]")
+  tacticalNotes            String?
+  knowledgeStatus          OperatorKnowledgeStatus  @default(UNVERIFIED)
+  sourceType               OperatorKnowledgeSource  @default(OFFICIAL)
+  sourceUrl                String
+  sourceTitle              String
+  confidence               Float                    @default(1)
+  lastVerifiedAt           DateTime
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  abilityVersions          OperatorAbilityVersion[]
+  roles                    OperatorRoleAssignment[]
+  loadout                  OperatorLoadoutItem[]
+  sourceInteractions       OperatorInteraction[]    @relation("OperatorVersionInteractionSource")
+  targetInteractions       OperatorInteraction[]    @relation("OperatorVersionInteractionTarget")
+  mapLinks                 OperatorMapLink[]
+  citations                OperatorSourceCitation[]
+  projectContexts          ProjectOperatorContext[]
+
+  @@unique([operatorId, versionKey])
+  @@index([operatorId, isCurrent])
+  @@index([knowledgeStatus])
+}
+
+model OperatorAbility {
+  id              String                   @id @default(cuid())
+  stableId        String                   @unique
+  operatorId      String
+  operator        SiegeOperator            @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  canonicalName   String
+  abilityType     String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  versions        OperatorAbilityVersion[]
+  targetRelations OperatorInteraction[]    @relation("OperatorInteractionTargetAbility")
+
+  @@unique([operatorId, canonicalName])
+}
+
+model OperatorAbilityVersion {
+  id                       String                  @id @default(cuid())
+  stableId                 String                  @unique
+  abilityId                String
+  ability                  OperatorAbility         @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+  operatorVersionId        String
+  operatorVersion          OperatorVersion         @relation(fields: [operatorVersionId], references: [id], onDelete: Cascade)
+  versionKey               String
+  deploymentMethod         String?
+  activationMethod         String?
+  validTargetsJson         String                  @default("[]")
+  effectsJson              String                  @default("{}")
+  limitationsJson          String                  @default("[]")
+  durationSeconds          Float?
+  rangeMeters              Float?
+  numberOfUses             Int?
+  cooldownSeconds          Float?
+  damage                   Float?
+  healing                  Float?
+  destructionMethod        String?
+  disableMethod            String?
+  counterConditionsJson    String                  @default("[]")
+  friendlyFireBehavior     String?
+  commonMisconceptionsJson String                  @default("[]")
+  sourceType               OperatorKnowledgeSource @default(OFFICIAL)
+  sourceUrl                String
+  sourceTitle              String
+  confidence               Float                   @default(1)
+  lastVerifiedAt           DateTime
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  @@unique([abilityId, operatorVersionId])
+  @@index([operatorVersionId])
+}
+
+model OperatorRoleAssignment {
+  id                String                  @id @default(cuid())
+  operatorVersionId String
+  operatorVersion   OperatorVersion         @relation(fields: [operatorVersionId], references: [id], onDelete: Cascade)
+  roleKey           String
+  displayName       String
+  roleSource        OperatorRoleSource
+  sourceType        OperatorKnowledgeSource
+  confidence        Float                   @default(1)
+  notes             String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@unique([operatorVersionId, roleKey, roleSource])
+  @@index([roleKey, roleSource])
+}
+
+model OperatorGadget {
+  id                 String                  @id @default(cuid())
+  stableId           String                  @unique
+  name               String
+  gadgetCategory     String
+  side               OperatorSide?
+  primaryPurpose     String?
+  deploymentBehavior String?
+  effectJson         String                  @default("{}")
+  counterMethodsJson String                  @default("[]")
+  tacticalUsesJson   String                  @default("[]")
+  visualCluesJson    String                  @default("[]")
+  audioCluesJson     String                  @default("[]")
+  sourceType         OperatorKnowledgeSource @default(UNVERIFIED)
+  sourceUrl          String?
+  sourceTitle        String?
+  versionKey         String
+  lastVerifiedAt     DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  loadoutItems       OperatorLoadoutItem[]
+  targetRelations    OperatorInteraction[]   @relation("OperatorInteractionTargetGadget")
+
+  @@unique([name, versionKey])
+  @@index([name])
+}
+
+model OperatorLoadoutItem {
+  id                String              @id @default(cuid())
+  operatorVersionId String
+  operatorVersion   OperatorVersion     @relation(fields: [operatorVersionId], references: [id], onDelete: Cascade)
+  slot              OperatorLoadoutSlot
+  displayName       String
+  weaponCategory    String?
+  gadgetId          String?
+  gadget            OperatorGadget?     @relation(fields: [gadgetId], references: [id], onDelete: SetNull)
+  sortOrder         Int                 @default(0)
+  createdAt         DateTime            @default(now())
+
+  @@unique([operatorVersionId, slot, displayName])
+  @@index([operatorVersionId, slot])
+}
+
+model OperatorInteraction {
+  id                      String                      @id @default(cuid())
+  stableId                String                      @unique
+  sourceOperatorId        String
+  sourceOperator          SiegeOperator               @relation("OperatorInteractionSource", fields: [sourceOperatorId], references: [id], onDelete: Cascade)
+  sourceOperatorVersionId String?
+  sourceOperatorVersion   OperatorVersion?            @relation("OperatorVersionInteractionSource", fields: [sourceOperatorVersionId], references: [id], onDelete: SetNull)
+  targetOperatorId        String?
+  targetOperator          SiegeOperator?              @relation("OperatorInteractionTarget", fields: [targetOperatorId], references: [id], onDelete: SetNull)
+  targetOperatorVersionId String?
+  targetOperatorVersion   OperatorVersion?            @relation("OperatorVersionInteractionTarget", fields: [targetOperatorVersionId], references: [id], onDelete: SetNull)
+  targetAbilityId         String?
+  targetAbility           OperatorAbility?            @relation("OperatorInteractionTargetAbility", fields: [targetAbilityId], references: [id], onDelete: SetNull)
+  targetGadgetId          String?
+  targetGadget            OperatorGadget?             @relation("OperatorInteractionTargetGadget", fields: [targetGadgetId], references: [id], onDelete: SetNull)
+  category                OperatorInteractionCategory
+  direction               String                      @default("SOURCE_TO_TARGET")
+  conditions              String
+  outcome                 String
+  limitations             String?
+  environmentRequirements String?
+  sourceType              OperatorKnowledgeSource
+  sourceUrl               String?
+  sourceTitle             String?
+  confidence              Float                       @default(1)
+  lastVerifiedAt          DateTime?
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
+
+  @@index([sourceOperatorId, category])
+  @@index([targetOperatorId, category])
+}
+
+model OperatorMapLink {
+  id                 String                  @id @default(cuid())
+  stableId           String                  @unique
+  operatorVersionId  String
+  operatorVersion    OperatorVersion         @relation(fields: [operatorVersionId], references: [id], onDelete: Cascade)
+  mapVersionId       String
+  mapVersion         MapVersion              @relation(fields: [mapVersionId], references: [id], onDelete: Cascade)
+  floorId            String?
+  floor              MapFloor?               @relation(fields: [floorId], references: [id], onDelete: SetNull)
+  roomId             String?
+  room               MapElement?             @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  bombSiteId         String?
+  bombSite           MapBombSitePair?        @relation(fields: [bombSiteId], references: [id], onDelete: SetNull)
+  tacticalPurpose    String
+  requiredConditions String?
+  notes              String?
+  sourceType         OperatorKnowledgeSource @default(USER_ENTERED)
+  sourceUrl          String?
+  sourceTitle        String?
+  confidence         Float                   @default(1)
+  lastVerifiedAt     DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([operatorVersionId, mapVersionId])
+  @@index([mapVersionId, bombSiteId])
+}
+
+model OperatorSourceCitation {
+  id                String                  @id @default(cuid())
+  stableId          String                  @unique
+  operatorVersionId String
+  operatorVersion   OperatorVersion         @relation(fields: [operatorVersionId], references: [id], onDelete: Cascade)
+  title             String
+  url               String
+  sourceType        OperatorKnowledgeSource
+  retrievedAt       DateTime
+  lastVerifiedAt    DateTime?
+  notes             String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@index([operatorVersionId])
+}
+
+model ProjectOperatorContext {
+  id                   String              @id @default(cuid())
+  projectId            String              @unique
+  project              Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  playerOperatorId     String?
+  playerOperator       SiegeOperator?      @relation("ProjectPlayerOperator", fields: [playerOperatorId], references: [id], onDelete: SetNull)
+  operatorVersionId    String?
+  operatorVersion      OperatorVersion?    @relation(fields: [operatorVersionId], references: [id], onDelete: SetNull)
+  teamOperatorIdsJson  String              @default("[]")
+  enemyOperatorIdsJson String              @default("[]")
+  side                 ProjectOperatorSide @default(UNKNOWN)
+  uniqueAbilityUsed    String?
+  secondaryGadgetUsed  String?
+  abilityUseTimestamp  Float?
+  abilityResult        String?
+  target               String?
+  abilitySucceeded     Boolean?
+  tacticalPurpose      String?
+  userNotes            String?
+  userConfirmed        Boolean             @default(false)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+}
+
+model OperatorUpdateReview {
+  id                  String           @id @default(cuid())
+  gameDataVersionId   String?
+  gameDataVersion     GameDataVersion? @relation(fields: [gameDataVersionId], references: [id], onDelete: SetNull)
+  sourceUrl           String
+  sourceTitle         String
+  retrievedAt         DateTime
+  proposedChangesJson String
+  status              String           @default("READY_FOR_MANUAL_REVIEW")
+  reviewedAt          DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 }
 
 model MapUpdateCheck {

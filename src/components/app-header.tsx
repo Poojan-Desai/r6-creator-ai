@@ -4,6 +4,7 @@ import {
   BookOpen,
   FolderOpen,
   Map,
+  Crosshair,
   ScrollText,
   SlidersHorizontal,
 } from "lucide-react";
@@ -25,6 +26,7 @@ export function AppHeader() {
           <NavItem href="/" icon={FolderOpen} label="Projects" />
           <NavItem href="/references" icon={BookOpen} label="References" />
           <NavItem href="/maps" icon={Map} label="Map knowledge" />
+          <NavItem href="/operators" icon={Crosshair} label="Operators" />
           <NavItem href="/benchmarks" icon={BarChart3} label="Benchmarks" />
           <NavItem
             href="/transcript-rules"

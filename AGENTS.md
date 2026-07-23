@@ -24,6 +24,10 @@ this repository.
   layouts, source citations, provenance, confidence, and normalized geometry.
   Never silently replace a map version or present personal/community callouts
   as official Ubisoft facts.
+- Phase 3B.2-O operator knowledge is versioned and provenance-labeled. Preserve
+  historical abilities/loadouts and keep official specialties separate from
+  community or personal roles. Never infer an operator, weapon, gadget, or
+  ability use from footage during Phase 3B.2.
 
 ## Required stack
 
@@ -124,6 +128,12 @@ layer. Do not silently skip checks.
 - Expose map facts to writing only after the user confirms the project context.
   The Phase 3B.2-M interface must not imply that footage recognition can locate
   the player on a map, floor, or room.
+- Expose operator facts to writing only after the user confirms project
+  operator context. Unknown ability outcomes, targets, and tactical effects
+  stay unknown; a documented ability does not prove it appeared in footage.
+- Do not commit Ubisoft operator artwork, voice lines, videos, or other large
+  copyrighted assets. The local operator catalog contains text facts and source
+  citations only.
 
 ## Detection and scoring integrity
 
@@ -173,6 +183,9 @@ layer. Do not silently skip checks.
   while keeping large media and temporary artifacts on disk.
 - A map rework, modernization, or large manual layout change creates a new
   `MapVersion`; do not overwrite or delete official/historical versions.
+- An operator remaster, loadout change, or substantial ability change creates a
+  new `OperatorVersion`/ability version. Packaged update review may propose
+  differences but must never overwrite saved operator knowledge automatically.
 
 ## UX and accessibility
 

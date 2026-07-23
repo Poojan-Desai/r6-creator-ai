@@ -532,12 +532,40 @@ counters/synergies and user-verified map links, supports search/comparison and
 versioned import/export, and exposes only user-confirmed project operator
 context. It defines but does not implement future operator/ability detection.
 
+Implementation boundary on July 22, 2026:
+
+1. The official Ubisoft directory retrieval contains 77 listed operators,
+   including Solid Snake and Denari, with attacker/defender side and official
+   specialties. Eleven representative operators have source-transcribed
+   structured abilities and current loadouts; every other listed operator is
+   visibly marked **detail needs verification** rather than filled from memory.
+2. Additive tables preserve operator/ability versions, loadouts, official and
+   nonofficial roles, gadgets, conditional interactions, map/bomb-site links,
+   citations, update reviews, and optional project context. Official facts and
+   user additions keep separate provenance/confidence.
+3. `/operators` supports local search and side/specialty/role/squad filters,
+   contextual comparison, single/full versioned JSON export, validated import,
+   packaged update review, and safe deletion of user facts. Detail pages expose
+   sources and never present an operator as recognized from video.
+4. Confirmed project operator fields may enter `ContentSuggestionContext` as
+   `USER_CONFIRMED`; unconfirmed context is excluded. A future detector result
+   interface exists, but no Phase 3B.2 detector implements it.
+
 **Exit condition:** official current operator records and sources, historical
 versions, structured abilities/loadouts, roles/interactions, optional map links,
 search/comparison, confirmed project context, import/export, restart persistence,
 tests/build/browser verification, and a separate clean commit exist without any
 claim that footage recognition identifies an operator, weapon, gadget, or
 ability use.
+
+Release verification on July 23, 2026 confirmed the 77-record catalog, 11
+source-transcribed detail records, search and insufficient-knowledge state,
+safe packaged update review, contextual comparison, alias/role/content editing,
+conditional counter and synergy entry, Oregon floor/room/bomb-site linking,
+safe deletion, single-record export/import, and confirmed synthetic-project
+context. Operator additions and existing map assets survived a complete server
+restart. Final quality-gate results and the separate commit are recorded after
+the gate completes.
 
 ### Phase 3B.2-M — Versioned R6 map knowledge foundation
 
@@ -803,7 +831,17 @@ These remain outside the authorized Phase 3 scope.
 - Phase 3B.1: implementation and verification complete on July 22, 2026
 - Phase 3B.2-M implementation commit: `4ed43ca`
 - Phase 3B.2-M: implementation and verification complete on July 22, 2026
-- Next detector stage: Phase 3B.2 general video/audio/transcript detectors
+- Phase 3B.2 signal architecture commit: `04f4222`
+- Phase 3B.2 chunked signal foundation commit: `53f525f`
+- Phase 3B.2 general video-detector commit: `956b13d`
+- Phase 3B.2 role-aware audio-detector commit: `d538db1`
+- Phase 3B.2 transcript-rule commit: `9731cf3`
+- Phase 3B.2 Signal Explorer commit: `ce404b9`
+- Phase 3B.2 broad-signal benchmark commit: `2fd7a66`
+- Phase 3B.2-O operator knowledge: implementation complete; release verification
+  complete; 77-record export/import round trip, 140 automated tests across 28
+  files, formatting, ESLint, strict TypeScript, and production build passed;
+  separate release commit pending
 
 - Stable Phase 1 application — complete and preserved in Git commit `2099b2f`
 - Phase 2A: audio inventory and migration — complete

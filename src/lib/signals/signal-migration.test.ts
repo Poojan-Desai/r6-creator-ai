@@ -102,6 +102,11 @@ describe("Phase 3B.2 signal-curve migration", () => {
       migrationRoot,
       "20260723091818_phase3b2_benchmark_review_scope",
     );
+    applyMigration(
+      databasePath,
+      migrationRoot,
+      "20260723094054_phase3b2o_operator_knowledge",
+    );
     execFileSync("sqlite3", [databasePath], {
       input: `
         UPDATE AudioTrack

@@ -2,11 +2,16 @@
 
 ## Current verified status
 
-**No Rainbow Six moment-detection benchmark results exist yet.** Phase 3B.1 now
-provides manual ground-truth labeling, versioned path-free JSON interchange,
-the additive benchmark schema, and a versioned detector-job framework. Its only
-registered check validates local media integrity and intentionally emits no
-events or candidate moments.
+**No Rainbow Six event-detection benchmark result exists yet.** Phase 3B.2 now
+provides broad scene, motion, brightness, black/static, audio-energy, silence,
+transcript-evidence, and reaction-candidate signals. These are observable local
+measurements, not kills, deaths, round results, map/room locations, operators,
+defuser events, clutches, highlights, or predictions of content performance.
+
+The broad-signal dashboard uses the versioned `phase3b2-broad-signal-v1`
+matching method below. With only one approved `MENU` range and no complete
+category-review confirmation, the current honest result remains **Insufficient
+benchmark examples** and false-positive precision remains **Not measured**.
 
 The application must not display or advertise “AI accurately detects R6
 highlights.” No precision, recall, approval-rate, processing-cost, or accuracy
@@ -74,7 +79,7 @@ creator reaction, funny conversation, rage/frustration, fail/mistake,
 educational explanation, quiet/low-interest, menu, scoreboard, replay,
 spectator screen, loading screen, other interesting, and other uninteresting.
 
-## Versioned candidate-matching rule (planned for Phase 3B.5)
+## Versioned candidate-matching rule (reserved for Phase 3B.5)
 
 Matching rule ID: `temporal-category-v1`.
 
@@ -203,6 +208,15 @@ result, not evidence that the application recognizes Oregon or any room from a
 video. All event-quality measurements remain **Not measured**, and the current
 benchmark result remains **Insufficient benchmark examples**.
 
+## Phase 3B.2-O operator-knowledge result boundary — July 22, 2026
+
+The operator catalog, versioned abilities/loadouts, conditional relationships,
+map links, search, comparison, import/export, and user-confirmed project context
+are knowledge-management features. They emit no detector events and do not
+change precision, recall, F1, timestamp error, or footage-review-savings
+measurements. “Operator listed” is intentionally different from “ability and
+loadout verified,” and operator detection remains unsupported.
+
 ## Phase 3B.2 broad-signal evaluation method
 
 Method ID: `phase3b2-broad-signal-v1`.
@@ -247,3 +261,43 @@ processed per wall second, peak resident memory where measurable, average CPU
 only when available without invasive permissions, temporary/permanent bytes,
 raw/aggregated measurements, stored chunks, and generated events. These are
 measurements on the current Mac, not universal speed promises.
+
+## Phase 3B.2 development run — July 23, 2026
+
+The owned 20:38.157, 1280×720, 29.97 fps gameplay recording completed all 12
+enabled local checks with zero detector failures. The selected completed run
+stored nine compressed curves and loaded 896 broad events in Signal Explorer.
+
+| Detector                     | Source seconds | Wall time | Stored measurements | Broad events |
+| ---------------------------- | -------------: | --------: | ------------------: | -----------: |
+| Scene change                 |         1238.2 |    8.24 s |                2476 |          379 |
+| Action intensity             |         1238.2 |    8.22 s |                2476 |          250 |
+| Black ratio + brightness     |         1238.2 |   16.99 s |                4952 |            8 |
+| Static similarity            |         1238.2 |    8.11 s |                2476 |           43 |
+| Mixed-audio loudness         |         1238.2 |    1.75 s |                4954 |            2 |
+| Relative mixed-audio peaks   |         1238.2 |    1.76 s |                2477 |           80 |
+| Relative mixed-audio silence |         1238.2 |    1.74 s |                2477 |            3 |
+| Broad transition fusion      |         1238.2 |    0.02 s |                   0 |          131 |
+
+Peak process memory reported by the development server ranged from about 791
+to 842 MB during this run. Per-detector temporary disk use was zero after
+completion, and the detector temporary root was empty after completion,
+cancellation, retry, and restart. These values include a development Next.js
+process and are not a production performance guarantee.
+
+The one approved `MENU` range did not match a broad transition candidate under
+`phase3b2-broad-signal-v1`: TP 0, FN 1, development recall 0.0%. Because the
+recording was not confirmed as completely reviewed for false-positive menu
+boundaries, 137 unmatched broad transition candidates were shown but not
+counted as false positives; precision remained **Not measured**. All five
+eligible dashboard categories displayed **Insufficient benchmark examples**.
+This tiny, poor result is intentionally visible and supports no R6 accuracy or
+footage-review-savings claim.
+
+Generated six-second fixtures also verified black/static/no-audio handling and
+separate creator/game audio roles. The no-audio run completed 12 checks with
+zero failures and readable zero-result audio warnings. The two-track run stored
+four role-separated loudness curves plus separate peak/silence curves. The real
+11-second Phase 2 speech project stored a transcript-evidence curve only after
+its actual transcript source was marked creator microphone. These are workflow
+and detector-behavior checks, not benchmark accuracy.

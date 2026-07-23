@@ -17,6 +17,7 @@ import { ClipStation } from "@/components/clip-station";
 import { ContentWorkbench } from "@/components/content-workbench";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { ProjectMapContext } from "@/components/project-map-context";
+import { ProjectOperatorContext } from "@/components/project-operator-context";
 import { ProjectBenchmarkPanel } from "@/components/project-benchmark-panel";
 import { SignalExplorer } from "@/components/signal-explorer";
 import { SourcePlayer } from "@/components/source-player";
@@ -25,6 +26,7 @@ import { formatBytes } from "@/lib/format";
 import { getDetectorFrameworkState } from "@/lib/detector-framework";
 import { getGroundTruthState } from "@/lib/ground-truth";
 import { getProjectMapContextState } from "@/lib/map-knowledge/service";
+import { getProjectOperatorContext } from "@/lib/operator-knowledge/service";
 import { getProjectBenchmarkState } from "@/lib/phase3b2-benchmark";
 import { findProjectDetail } from "@/lib/projects";
 import { getSignalExplorerState } from "@/lib/signal-explorer";
@@ -45,15 +47,23 @@ export default async function ProjectPage({ params }: Props) {
   const { id } = await params;
   const project = await findProjectDetail(id);
   if (!project) notFound();
-  const [transcription, groundTruth, analysis, mapContext, signals, benchmark] =
-    await Promise.all([
-      getTranscriptionState(id),
-      getGroundTruthState(id),
-      getDetectorFrameworkState(id),
-      getProjectMapContextState(id),
-      getSignalExplorerState(id),
-      getProjectBenchmarkState(id),
-    ]);
+  const [
+    transcription,
+    groundTruth,
+    analysis,
+    mapContext,
+    signals,
+    benchmark,
+    operatorContext,
+  ] = await Promise.all([
+    getTranscriptionState(id),
+    getGroundTruthState(id),
+    getDetectorFrameworkState(id),
+    getProjectMapContextState(id),
+    getSignalExplorerState(id),
+    getProjectBenchmarkState(id),
+    getProjectOperatorContext(id),
+  ]);
   const confirmedContext = (() => {
     const context = mapContext.context;
     if (!context?.userConfirmed) return null;
@@ -195,6 +205,11 @@ export default async function ProjectPage({ params }: Props) {
         />
 
         <ProjectMapContext projectId={project.id} initialState={mapContext} />
+
+        <ProjectOperatorContext
+          projectId={project.id}
+          initialState={operatorContext}
+        />
 
         <TranscriptionStudio
           projectId={project.id}

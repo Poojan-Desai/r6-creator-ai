@@ -5,16 +5,18 @@ gameplay recording into a saved project where you can inspect the video, cut
 clips, transcribe one chosen audio track, edit and search the timestamped
 transcript, and create a complete writing package from a clip.
 Phase 3A adds a permission-gated Reference Library and structured Creator Style
-Profiles. Phase 3B.1 adds manual benchmark labels and the safe background-job
-foundation needed before automatic detection is introduced. Phase 3B.2-M adds
-a local, versioned R6 map knowledge foundation with user-confirmed context; it
-does not locate a player from gameplay footage.
+Profiles. Phase 3B.1 adds manual benchmark labels and a safe background-job
+foundation. Phase 3B.2 adds local, explainable scene, motion, brightness,
+black/static, audio-energy, silence, transcript-evidence, and broad reaction
+signals. Phase 3B.2-M and 3B.2-O add versioned map and operator knowledge with
+user-confirmed context. None of these features claims to understand a kill,
+round outcome, room, or operator from general footage signals.
 
 You do not need to know how to code to use it. There is no login, subscription,
 cloud upload, paid AI key, or separate FFmpeg setup. Speech recognition uses the
 free `whisper.cpp` program and a local model on this Mac.
 
-## What works now (Phase 1 through Phase 3B.2-M)
+## What works now (Phase 1 through Phase 3B.2-O)
 
 - Streamed MP4 uploads with progress, type checks, and a 20 GB default limit
 - Saved local projects that remain after the app is closed
@@ -55,6 +57,17 @@ free `whisper.cpp` program and a local model on this Mac.
 - Version-pinned local detector definitions and persisted analysis jobs with
   progress, cancellation, retry, deletion, isolated errors, restart recovery,
   and temporary-file cleanup
+- Chunked compressed signal curves with transparent baselines, thresholds,
+  confidence, configuration, and detector versions
+- General local scene-change, action-intensity, brightness, black-interval,
+  freeze/static, and broad visual-transition detectors
+- Separate creator-microphone, game-audio, mixed, and unknown track roles with
+  per-track peaks, sustained loudness, silence, low energy, clipping warnings,
+  and overlap evidence
+- Versioned editable transcript evidence rules with negation/ambiguity handling
+  and broad reaction candidates that never diagnose emotion
+- A synchronized Signal Explorer and honest broad-signal Benchmark Dashboard;
+  tiny datasets say **Insufficient benchmark examples**
 - A source-cited catalog of 28 currently documented R6 maps: 27 official map
   guides plus the separately sourced Dual Front-only District record
 - Separate map existence, lifecycle, playlist availability, and historical
@@ -69,11 +82,19 @@ free `whisper.cpp` program and a local model on this Mac.
 - Manual project facts for map, map version, bomb site, side, starting room,
   important rooms, operator, and round result; writing may use them only after
   explicit confirmation
+- A source-cited 77-operator Ubisoft directory snapshot with versioned operator
+  and ability records, loadouts, official specialties, separate community/user
+  roles, conditional interactions, and optional map/bomb-site links
+- Operator search/filtering, contextual comparison, source inspection,
+  user-created fact deletion, packaged update review, and versioned single or
+  full-database JSON import/export
+- Optional project operator/team/enemy/ability context; only explicitly
+  confirmed facts may enter the writing-provider context
 
-Automatic Rainbow Six moment detection is not implemented yet. Phase 3B.1's
-framework check intentionally returns zero detector events and zero candidate
-moments. General video, audio, and transcript signals begin in Phase 3B.2. The
-app does not claim it can predict virality or guarantee views.
+Automatic Rainbow Six moment detection is not implemented yet. Phase 3B.2
+emits broad observable signals and broad reaction candidates, not candidate
+moments or confirmed gameplay events. The app does not claim it can predict
+virality or guarantee views.
 
 The map catalog does not mean every map is fully annotated. “Map listed,”
 “blueprint imported,” “rooms partially annotated,” “bomb sites entered,”
@@ -357,14 +378,47 @@ matching export and atomically replaces that project's labels. A different
 video, invalid timestamp, unknown category, or unsupported schema is rejected
 without partially changing the database.
 
-## Run the Phase 3B.1 framework check
+## Run local broad-signal analysis
 
-In the same project, find **Analysis jobs, without false claims** and click
-**Run framework check**. This verifies the selected project file, detector
-version persistence, job progress, warnings, retry, deletion, restart recovery,
-and cleanup. It does not analyze gameplay and cannot create candidate moments.
-That deliberate limitation is shown beside the control and in every completed
-job.
+In the same project, find **Local signal analysis**.
+
+1. Review each audio-track role. Explicitly mark a separate mic as **Creator
+   microphone** and game sound as **Game audio**; leave ambiguous tracks
+   **Unknown**.
+2. Enable only the measurements you need. Each detector explains its input,
+   estimated work, settings, version, and limits.
+3. Click **Run local signal analysis**. The request returns immediately and the
+   page shows detector-level progress while local FFmpeg work continues.
+4. Use **Cancel** to stop a job, or retry/delete an individual run without
+   removing successful unrelated results.
+5. Inspect completed curves and ranges in **Signal Explorer**. Clicking an
+   event or transcript marker seeks the source video to that time.
+6. Compare only eligible broad signals with approved manual labels. Confirm a
+   complete category review only after watching the whole evaluation window.
+
+Scene/motion/audio/transcript evidence cannot confirm a kill, death, round
+result, menu type, operator, map, room, clutch, or defuser event. Those require
+later calibrated detectors and evidence fusion.
+
+## Use the Operator Knowledge library
+
+Open **Operators** in the top navigation.
+
+- Search saved names, abilities, weapons/gadgets, roles, interactions, maps,
+  rooms, sites, or content ideas. A zero-result tactical query returns
+  **Insufficient verified operator knowledge** instead of inventing an answer.
+- Filter by attacker/defender, official specialty, tactical role, or squad.
+- Select two to four records to compare structured facts without declaring an
+  operator universally better.
+- On a detail page, inspect source/version data and add personal aliases, roles,
+  conditional interactions, content ideas, notes, or manually verified map
+  links. Personal facts stay labeled and can be deleted safely.
+- **Export JSON** backs up one operator. **Export all** backs up the catalog.
+  Import validates schemas, confidence, stable IDs, references, and private
+  paths; historical versions are not silently replaced.
+- On a project, use **Operator context** only for facts you know, check the
+  confirmation box, and save. The app does not recognize an operator, weapon,
+  gadget, or ability from a recording.
 
 ## Optional official YouTube metadata
 
@@ -405,8 +459,8 @@ Everything is below:
   completion, cancellation, or failure.
 - `detector-analysis-temp/` is temporary detector-job space and is cleaned after
   completion, cancellation, failure, deletion, or restart recovery.
-- `detector-artifacts/` is reserved for bounded detector evidence. The Phase
-  3B.1 framework check retains no gameplay frames or OCR crops.
+- `detector-artifacts/` is reserved for bounded detector evidence. Phase 3B.2
+  keeps curves in SQLite chunks and retains no OCR crops.
 - `map-knowledge/` stores imported blueprint originals and optimized local
   previews by map version. SQLite stores only their relative paths and hashes.
 - `map-blueprint-temp/` is bounded temporary ZIP/image import space and is
@@ -466,10 +520,10 @@ feature corrections, and style profiles are unaffected.
 
 ### A detector framework job says “Interrupted” after restart
 
-An active detector process cannot resume through an app restart. Phase 3B.1
-marks the job and detector run as interrupted, removes partial events and
-temporary files, and offers **Retry**. Completed jobs and manual benchmark
-labels are unaffected.
+An active detector process cannot resume through an app restart. The app marks
+the job and active detector run as interrupted, removes partial events/curves
+and temporary files, and offers **Retry**. Completed runs, manual labels, map
+assets, and operator knowledge are unaffected.
 
 ### YouTube metadata is unavailable
 
@@ -536,11 +590,11 @@ The detailed implementation and verification record is in
 [`PLAN.md`](./PLAN.md). Contributor safety rules are in
 [`AGENTS.md`](./AGENTS.md).
 
-## Deliberate limits through Phase 3B.2-M
+## Deliberate limits through Phase 3B.2-O
 
 - English local model only in the beginner setup
-- No automatic R6 moment detection, telemetry, calibrated HUD OCR, or event
-  accuracy claim yet
+- No automatic R6 candidate-moment fusion, telemetry, calibrated HUD OCR,
+  gameplay-event accuracy claim, or footage-review-savings claim yet
 - No voice cloning, teammate identification, or speaker voiceprints
 - No authentication, cloud storage, payments, social publishing, or team
   approvals
@@ -550,6 +604,8 @@ The detailed implementation and verification record is in
   sites, graph connectivity, or verified tactics
 - No automatic Ubisoft blueprint downloads or tactical-fact generation from a
   room name
+- No operator, weapon, ability, icon, or gadget recognition and no automatic
+  tactical outcome claim from a documented operator fact
 
 Phase 3B.2-M verification passed on July 22, 2026. The official Oregon blueprint
 ZIP imported through the bounded local route, preserved five originals, created
@@ -560,6 +616,24 @@ context also survived. Formatting, ESLint, strict TypeScript, the complete test
 suite (99 tests across 17 files), production build, browser regressions, and
 browser-console inspection passed. See `PLAN.md` for the exact evidence and
 `BENCHMARK.md` for the still intentionally empty R6 detection-accuracy result.
+
+Phase 3B.2 general-signal browser verification passed on July 23, 2026 for the
+owned 20:38 gameplay recording, generated black/static/no-audio and two-track
+creator/game fixtures, and the real Phase 2 speech/transcript project.
+Cancellation, retry, changed settings, single-detector rerun, honest benchmark
+calculation, restart persistence, and detector/map cleanup boundaries passed.
+The current benchmark remains insufficient: the one approved menu label was
+missed, 137 unmatched broad transitions remain unscored without a complete
+false-positive review, and precision is **Not measured**.
+
+Phase 3B.2-O browser verification confirmed the 77-operator list, explicit
+11-record detailed-data boundary, search/filter/insufficient states,
+comparison, conditional relationships, map/bomb-site links, safe deletion,
+JSON export/import, and user-confirmed test-project context across restart. The
+complete 77-record database export also passed a history-preserving import
+round trip and contained no private absolute paths. Formatting, ESLint, strict
+TypeScript, all 140 tests across 28 files, and the production build passed. The
+application still does not recognize operators or abilities from footage.
 
 `npm audit` reports no direct blueprint-parser advisory after updating `yauzl`
 to 3.4.0. It still reports three transitive findings inside the pinned Next.js

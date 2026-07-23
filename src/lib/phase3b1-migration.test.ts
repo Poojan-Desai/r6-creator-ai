@@ -80,6 +80,7 @@ describe("Phase 3B.1 additive migration", () => {
       "20260723021024_phase3b2_audio_track_roles",
       "20260723023746_phase3b2_transcript_rules",
       "20260723091818_phase3b2_benchmark_review_scope",
+      "20260723094054_phase3b2o_operator_knowledge",
     ]) {
       applyMigration(databasePath, migrationRoot, name);
     }
