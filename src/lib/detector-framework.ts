@@ -1062,8 +1062,8 @@ export async function runAnalysisJob(jobId: string) {
           progress: 100,
           stage:
             failedCount > 0
-              ? "Framework check complete with isolated detector failures"
-              : "Framework check complete",
+              ? "Local analysis complete with isolated detector failures"
+              : "Local analysis complete",
           currentDetectorStableId: null,
           completedDetectorCount: completedCount,
           failedDetectorCount: failedCount,

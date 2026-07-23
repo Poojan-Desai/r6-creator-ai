@@ -38,7 +38,7 @@ export const mediaIntegrityDetector: LocalDetector = {
     return {
       events: [],
       warnings: [
-        "Phase 3B.1 checks framework health only; automatic candidate detectors begin in Phase 3B.2.",
+        "The media-integrity check emits no signal events. Review the completed broad detectors separately.",
       ],
     };
   },
