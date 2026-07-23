@@ -159,6 +159,16 @@ export function validateDetectorEvent(
   event: DetectorEventResult,
   durationSeconds: number,
 ) {
+  if (!event.eventType && !event.category) {
+    throw new Error(
+      "Detector event must include an event type or benchmark category.",
+    );
+  }
+  if (event.eventType && !/^[A-Z][A-Z0-9_]{2,79}$/.test(event.eventType)) {
+    throw new Error(
+      "Detector event type must be a stable uppercase identifier.",
+    );
+  }
   const values = [
     event.startSeconds,
     event.peakSeconds,
@@ -794,7 +804,9 @@ export async function runAnalysisJob(jobId: string) {
             await transaction.detectorEvent.create({
               data: {
                 detectorRunId: run.id,
-                category: event.category,
+                eventType:
+                  event.eventType ?? `BENCHMARK_${String(event.category)}`,
+                category: event.category ?? null,
                 startSeconds: event.startSeconds,
                 peakSeconds: event.peakSeconds,
                 endSeconds: event.endSeconds,

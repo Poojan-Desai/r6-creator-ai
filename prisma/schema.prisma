@@ -884,7 +884,8 @@ model DetectorEvent {
   id                      String                   @id @default(cuid())
   detectorRunId           String
   detectorRun             DetectorRun              @relation(fields: [detectorRunId], references: [id], onDelete: Cascade)
-  category                GroundTruthCategory
+  eventType               String                   @default("LEGACY_GROUND_TRUTH_EVENT")
+  category                GroundTruthCategory?
   startSeconds            Float
   peakSeconds             Float
   endSeconds              Float
@@ -903,6 +904,7 @@ model DetectorEvent {
   candidateLinks          CandidateDetectorEvent[]
 
   @@index([detectorRunId, startSeconds])
+  @@index([eventType])
   @@index([category])
 }
 

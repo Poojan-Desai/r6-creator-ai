@@ -76,6 +76,17 @@ describe("Phase 3B.2 signal-curve migration", () => {
       migrationRoot,
       "20260722192333_phase3b2_signal_curves",
     );
+    execFileSync("sqlite3", [databasePath], {
+      input: `
+        INSERT INTO DetectorEvent (id, detectorRunId, category, startSeconds, peakSeconds, endSeconds, confidence, sourceSignal, processingDurationMs)
+        VALUES ('legacy-event', 'run', 'HIGH_ACTION_GAMEPLAY', 10, 11, 12, 0.8, 'MOTION', 100);
+      `,
+    });
+    applyMigration(
+      databasePath,
+      migrationRoot,
+      "20260723015420_phase3b2_signal_event_types",
+    );
 
     let client = new PrismaClient({ datasourceUrl: databaseUrl });
     const payload = gzipSync(
@@ -115,24 +126,33 @@ describe("Phase 3B.2 signal-curve migration", () => {
     await client.$disconnect();
 
     client = new PrismaClient({ datasourceUrl: databaseUrl });
-    const [project, reference, label, map, blueprint, context, savedCurve] =
-      await Promise.all([
-        client.project.findUnique({
-          where: { id: "stable-project" },
-          include: { contentDraft: true, signalExplorer: true },
-        }),
-        client.referenceVideo.findUnique({ where: { id: "stable-reference" } }),
-        client.groundTruthLabel.findUnique({ where: { id: "stable-label" } }),
-        client.siegeMap.findUnique({ where: { id: "stable-map" } }),
-        client.blueprintAsset.findUnique({ where: { id: "stable-blueprint" } }),
-        client.projectMapContext.findUnique({
-          where: { projectId: "stable-project" },
-        }),
-        client.signalCurve.findUnique({
-          where: { id: curve.id },
-          include: { chunks: true, audioTrack: true },
-        }),
-      ]);
+    const [
+      project,
+      reference,
+      label,
+      map,
+      blueprint,
+      context,
+      savedCurve,
+      event,
+    ] = await Promise.all([
+      client.project.findUnique({
+        where: { id: "stable-project" },
+        include: { contentDraft: true, signalExplorer: true },
+      }),
+      client.referenceVideo.findUnique({ where: { id: "stable-reference" } }),
+      client.groundTruthLabel.findUnique({ where: { id: "stable-label" } }),
+      client.siegeMap.findUnique({ where: { id: "stable-map" } }),
+      client.blueprintAsset.findUnique({ where: { id: "stable-blueprint" } }),
+      client.projectMapContext.findUnique({
+        where: { projectId: "stable-project" },
+      }),
+      client.signalCurve.findUnique({
+        where: { id: curve.id },
+        include: { chunks: true, audioTrack: true },
+      }),
+      client.detectorEvent.findUnique({ where: { id: "legacy-event" } }),
+    ]);
     expect(project?.contentDraft?.openingHook).toBe("Keep this hook");
     expect(project?.signalExplorer?.minimumConfidence).toBe(0.25);
     expect(reference?.permissionConfirmed).toBe(true);
@@ -146,6 +166,10 @@ describe("Phase 3B.2 signal-curve migration", () => {
       audioTrack: { streamIndex: 2 },
     });
     expect(savedCurve?.chunks).toHaveLength(1);
+    expect(event).toMatchObject({
+      eventType: "BENCHMARK_HIGH_ACTION_GAMEPLAY",
+      category: "HIGH_ACTION_GAMEPLAY",
+    });
     await client.signalCurve.delete({ where: { id: curve.id } });
     expect(
       await client.signalCurveChunk.count({

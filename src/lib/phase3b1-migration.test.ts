@@ -76,6 +76,7 @@ describe("Phase 3B.1 additive migration", () => {
       "20260722162308_phase3b2m_map_knowledge",
       "20260722162350_phase3b2m_map_lifecycle",
       "20260722192333_phase3b2_signal_curves",
+      "20260723015420_phase3b2_signal_event_types",
     ]) {
       applyMigration(databasePath, migrationRoot, name);
     }

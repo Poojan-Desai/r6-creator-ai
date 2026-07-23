@@ -49,7 +49,8 @@ export type DetectorEvidenceInput = {
 };
 
 export type DetectorEventResult = {
-  category: GroundTruthCategory;
+  eventType?: string;
+  category?: GroundTruthCategory | null;
   startSeconds: number;
   peakSeconds: number;
   endSeconds: number;
@@ -130,6 +131,7 @@ export type LocalDetector = {
   parameters: DetectorParameterSchema;
   enabledByDefault: boolean;
   estimatedCost: DetectorCost;
+  executionOrder?: number;
   implementationState: "ACTIVE" | "FRAMEWORK_ONLY";
   run: (context: DetectorRunContext) => Promise<DetectorRunOutput>;
   cleanup?: (context: DetectorRunContext) => Promise<void>;

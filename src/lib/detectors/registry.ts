@@ -19,11 +19,14 @@ export class DetectorRegistry {
   }
 
   list() {
-    return [...this.detectors.values()].sort((left, right) =>
-      `${left.stableId}@${left.version}`.localeCompare(
-        `${right.stableId}@${right.version}`,
-      ),
-    );
+    return [...this.detectors.values()].sort((left, right) => {
+      const order = (left.executionOrder ?? 50) - (right.executionOrder ?? 50);
+      return order !== 0
+        ? order
+        : `${left.stableId}@${left.version}`.localeCompare(
+            `${right.stableId}@${right.version}`,
+          );
+    });
   }
 
   listEnabled(parameters: Map<string, boolean> = new Map()) {

@@ -12,6 +12,7 @@ export const mediaIntegrityDetector: LocalDetector = {
   parameters: {},
   enabledByDefault: true,
   estimatedCost: "LOW",
+  executionOrder: 0,
   implementationState: "FRAMEWORK_ONLY",
   async run(context) {
     context.throwIfCancellationRequested();

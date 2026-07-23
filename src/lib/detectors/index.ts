@@ -1,13 +1,11 @@
 import { mediaIntegrityDetector } from "@/lib/detectors/built-ins";
 import { detectorRegistry } from "@/lib/detectors/registry";
+import { generalVideoDetectors } from "@/lib/detectors/video-detectors";
 
-if (
-  !detectorRegistry.get(
-    mediaIntegrityDetector.stableId,
-    mediaIntegrityDetector.version,
-  )
-) {
-  detectorRegistry.register(mediaIntegrityDetector);
+for (const detector of [mediaIntegrityDetector, ...generalVideoDetectors]) {
+  if (!detectorRegistry.get(detector.stableId, detector.version)) {
+    detectorRegistry.register(detector);
+  }
 }
 
 export { detectorRegistry } from "@/lib/detectors/registry";
