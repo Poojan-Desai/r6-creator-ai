@@ -1,9 +1,14 @@
 import type {
+  AudioTrackRole,
   DetectorCost,
   DetectorSourceSignal,
   GroundTruthCategory,
+  SignalAggregation,
+  SignalCurveKind,
 } from "@prisma/client";
 import type { ChildProcess } from "node:child_process";
+
+import type { TimeSeriesPoint } from "@/lib/signals/time-series";
 
 export const DETECTOR_INPUTS = [
   "VIDEO",
@@ -62,7 +67,33 @@ export type DetectorEventResult = {
 
 export type DetectorRunOutput = {
   events: DetectorEventResult[];
+  curves?: DetectorSignalCurveResult[];
   warnings: string[];
+  performance?: DetectorPerformanceResult;
+};
+
+export type DetectorSignalCurveResult = {
+  stableId: string;
+  audioTrackId?: string | null;
+  kind: SignalCurveKind;
+  displayName: string;
+  unit: string;
+  sourceSignal: DetectorSourceSignal;
+  sourceTrackRole?: AudioTrackRole | null;
+  sourceStreamIndex?: number | null;
+  sampleIntervalSeconds: number;
+  aggregation: SignalAggregation;
+  configuration: Record<string, unknown>;
+  statistics: Record<string, unknown>;
+  rawPointCount: number;
+  points: TimeSeriesPoint[];
+};
+
+export type DetectorPerformanceResult = {
+  processedSourceSeconds?: number;
+  peakMemoryBytes?: number;
+  averageCpuPercent?: number;
+  temporaryDiskUsageBytes?: number;
 };
 
 export type DetectorProgress = {

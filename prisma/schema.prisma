@@ -132,6 +132,34 @@ enum DetectorEvidenceKind {
   CONFLICTING
 }
 
+enum SignalAggregation {
+  MAXIMUM
+  MEAN
+  MEDIAN
+  PERCENTILE
+  EVENT_PRESERVING
+}
+
+enum SignalCurveKind {
+  SCENE_CHANGE_SCORE
+  FRAME_DIFFERENCE
+  ACTION_INTENSITY
+  BRIGHTNESS
+  BLACK_PIXEL_RATIO
+  STATIC_SIMILARITY
+  AUDIO_LOUDNESS
+  AUDIO_PEAK
+  SILENCE_STATE
+  TRANSCRIPT_EVIDENCE_DENSITY
+}
+
+enum AudioTrackRole {
+  CREATOR_MICROPHONE
+  GAME_AUDIO
+  MIXED_AUDIO
+  UNKNOWN
+}
+
 enum CandidateReviewDecision {
   USEFUL
   NOT_USEFUL
@@ -312,6 +340,7 @@ model Project {
   candidateMoments       CandidateMoment[]
   telemetryImports       TelemetryImport[]
   mapContext             ProjectMapContext?
+  signalExplorer         SignalExplorerPreference?
 
   @@index([createdAt])
 }
@@ -332,6 +361,7 @@ model AudioTrack {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   transcriptionJobs TranscriptionJob[]
+  signalCurves      SignalCurve[]
 
   @@unique([projectId, streamIndex])
   @@index([projectId, streamIndex])
@@ -749,31 +779,105 @@ model AnalysisJob {
 }
 
 model DetectorRun {
-  id                   String             @id @default(cuid())
-  analysisJobId        String
-  analysisJob          AnalysisJob        @relation(fields: [analysisJobId], references: [id], onDelete: Cascade)
-  detectorDefinitionId String
-  detectorDefinition   DetectorDefinition @relation(fields: [detectorDefinitionId], references: [id], onDelete: Restrict)
-  detectorStableId     String
-  detectorVersion      String
-  status               DetectorRunStatus  @default(QUEUED)
-  progress             Int                @default(0)
-  stage                String             @default("Waiting")
-  requiredInputsJson   String             @default("[]")
-  parametersJson       String             @default("{}")
-  processingDurationMs Int?
-  warningsJson         String             @default("[]")
-  errorMessage         String?
-  startedAt            DateTime?
-  completedAt          DateTime?
-  cancelRequestedAt    DateTime?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  events               DetectorEvent[]
+  id                         String             @id @default(cuid())
+  analysisJobId              String
+  analysisJob                AnalysisJob        @relation(fields: [analysisJobId], references: [id], onDelete: Cascade)
+  detectorDefinitionId       String
+  detectorDefinition         DetectorDefinition @relation(fields: [detectorDefinitionId], references: [id], onDelete: Restrict)
+  detectorStableId           String
+  detectorVersion            String
+  status                     DetectorRunStatus  @default(QUEUED)
+  progress                   Int                @default(0)
+  stage                      String             @default("Waiting")
+  requiredInputsJson         String             @default("[]")
+  parametersJson             String             @default("{}")
+  processingDurationMs       Int?
+  videoDurationSeconds       Float?
+  processedSourceSeconds     Float?
+  processingSpeedRatio       Float?
+  peakMemoryBytes            BigInt?
+  averageCpuPercent          Float?
+  temporaryDiskUsageBytes    BigInt             @default(0)
+  permanentDataBytes         BigInt             @default(0)
+  rawMeasurementCount        Int                @default(0)
+  aggregatedMeasurementCount Int                @default(0)
+  generatedEventCount        Int                @default(0)
+  curveChunkCount            Int                @default(0)
+  warningsJson               String             @default("[]")
+  errorMessage               String?
+  startedAt                  DateTime?
+  completedAt                DateTime?
+  cancelRequestedAt          DateTime?
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
+  events                     DetectorEvent[]
+  signalCurves               SignalCurve[]
 
   @@index([analysisJobId, createdAt])
   @@index([detectorStableId, detectorVersion])
   @@index([status])
+}
+
+model SignalCurve {
+  id                    String               @id @default(cuid())
+  detectorRunId         String
+  detectorRun           DetectorRun          @relation(fields: [detectorRunId], references: [id], onDelete: Cascade)
+  audioTrackId          String?
+  audioTrack            AudioTrack?          @relation(fields: [audioTrackId], references: [id], onDelete: SetNull)
+  stableId              String
+  kind                  SignalCurveKind
+  displayName           String
+  unit                  String
+  sourceSignal          DetectorSourceSignal
+  sourceTrackRole       AudioTrackRole?
+  sourceStreamIndex     Int?
+  sampleIntervalSeconds Float
+  aggregation           SignalAggregation
+  configurationJson     String               @default("{}")
+  statisticsJson        String               @default("{}")
+  rawPointCount         Int
+  storedPointCount      Int
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  chunks                SignalCurveChunk[]
+
+  @@unique([detectorRunId, stableId])
+  @@index([detectorRunId, kind])
+  @@index([audioTrackId])
+}
+
+model SignalCurveChunk {
+  id                       String      @id @default(cuid())
+  signalCurveId            String
+  signalCurve              SignalCurve @relation(fields: [signalCurveId], references: [id], onDelete: Cascade)
+  chunkIndex               Int
+  startSeconds             Float
+  endSeconds               Float
+  pointCount               Int
+  encoding                 String      @default("gzip-json-v1")
+  payload                  Bytes
+  rawSizeBytes             Int
+  compressedSizeBytes      Int
+  minimumNormalizedValue   Float?
+  maximumNormalizedValue   Float?
+  maximumAbsoluteDeviation Float?
+  createdAt                DateTime    @default(now())
+
+  @@unique([signalCurveId, chunkIndex])
+  @@index([signalCurveId, startSeconds, endSeconds])
+}
+
+model SignalExplorerPreference {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  visibleTracksJson   String   @default("[]")
+  hiddenDetectorsJson String   @default("[]")
+  minimumConfidence   Float    @default(0)
+  zoomStartSeconds    Float?
+  zoomEndSeconds      Float?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model DetectorEvent {

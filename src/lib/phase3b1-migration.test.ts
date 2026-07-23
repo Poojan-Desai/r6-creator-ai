@@ -60,44 +60,27 @@ describe("Phase 3B.1 additive migration", () => {
       migrationRoot,
       "20260722145757_phase3b1_benchmark_framework",
     );
-    let client = new PrismaClient({ datasourceUrl: databaseUrl });
-    await client.groundTruthLabel.create({
-      data: {
-        id: "ground-truth",
-        projectId: "stable-project",
-        category: "KILL",
-        startSeconds: 10,
-        peakSeconds: 11,
-        endSeconds: 12,
-        humanConfidence: 0.9,
-        approved: true,
-      },
+    execFileSync("sqlite3", [databasePath], {
+      input: `
+        INSERT INTO GroundTruthLabel (id, projectId, category, startSeconds, peakSeconds, endSeconds, humanConfidence, approved, updatedAt)
+        VALUES ('ground-truth', 'stable-project', 'KILL', 10, 11, 12, 0.9, 1, CURRENT_TIMESTAMP);
+        INSERT INTO DetectorDefinition (id, stableId, name, version, description, updatedAt)
+        VALUES ('fixture-definition', 'fixture.detector', 'Fixture detector', '1.0.0', 'Migration fixture', CURRENT_TIMESTAMP);
+        INSERT INTO AnalysisJob (id, projectId, detectorSetVersion, enabledDetectorCount, updatedAt)
+        VALUES ('fixture-job', 'stable-project', 'fixture-set-v1', 1, CURRENT_TIMESTAMP);
+        INSERT INTO DetectorRun (id, analysisJobId, detectorDefinitionId, detectorStableId, detectorVersion, updatedAt)
+        VALUES ('fixture-run', 'fixture-job', 'fixture-definition', 'fixture.detector', '1.0.0', CURRENT_TIMESTAMP);
+      `,
     });
-    const definition = await client.detectorDefinition.create({
-      data: {
-        stableId: "fixture.detector",
-        name: "Fixture detector",
-        version: "1.0.0",
-        description: "Migration fixture",
-      },
-    });
-    const job = await client.analysisJob.create({
-      data: {
-        projectId: "stable-project",
-        detectorSetVersion: "fixture-set-v1",
-        enabledDetectorCount: 1,
-        detectorRuns: {
-          create: {
-            detectorDefinitionId: definition.id,
-            detectorStableId: definition.stableId,
-            detectorVersion: definition.version,
-          },
-        },
-      },
-    });
-    await client.$disconnect();
+    for (const name of [
+      "20260722162308_phase3b2m_map_knowledge",
+      "20260722162350_phase3b2m_map_lifecycle",
+      "20260722192333_phase3b2_signal_curves",
+    ]) {
+      applyMigration(databasePath, migrationRoot, name);
+    }
 
-    client = new PrismaClient({ datasourceUrl: databaseUrl });
+    const client = new PrismaClient({ datasourceUrl: databaseUrl });
     const [project, reference, profile, label, savedJob] = await Promise.all([
       client.project.findUnique({
         where: { id: "stable-project" },
@@ -110,7 +93,7 @@ describe("Phase 3B.1 additive migration", () => {
       }),
       client.groundTruthLabel.findUnique({ where: { id: "ground-truth" } }),
       client.analysisJob.findUnique({
-        where: { id: job.id },
+        where: { id: "fixture-job" },
         include: { detectorRuns: { include: { detectorDefinition: true } } },
       }),
     ]);

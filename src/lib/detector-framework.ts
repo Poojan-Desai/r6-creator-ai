@@ -27,10 +27,11 @@ import type {
   LocalDetector,
 } from "@/lib/detectors";
 import { AppError } from "@/lib/errors";
+import { prepareSignalCurve } from "@/lib/signals/storage";
 
 const ACTIVE_JOB_STATUSES: LocalAnalysisStatus[] = ["QUEUED", "RUNNING"];
 const ACTIVE_RUN_STATUSES: DetectorRunStatus[] = ["QUEUED", "RUNNING"];
-const ANALYSIS_VERSION = "phase3b-framework-v1";
+const ANALYSIS_VERSION = "phase3b2-signals-v1";
 
 type ActiveAnalysisController = {
   cancelRequested: boolean;
@@ -72,6 +73,18 @@ export type DetectorRunDto = {
   progress: number;
   stage: string;
   processingDurationMs: number | null;
+  videoDurationSeconds: number | null;
+  processedSourceSeconds: number | null;
+  processingSpeedRatio: number | null;
+  peakMemoryBytes: number | null;
+  averageCpuPercent: number | null;
+  temporaryDiskUsageBytes: number;
+  permanentDataBytes: number;
+  rawMeasurementCount: number;
+  aggregatedMeasurementCount: number;
+  generatedEventCount: number;
+  curveCount: number;
+  curveChunkCount: number;
   warnings: string[];
   errorMessage: string | null;
   eventCount: number;
@@ -282,7 +295,7 @@ async function ensureProjectConfigurations(projectId: string) {
 function serializeDetectorRun(
   run: DetectorRun & {
     detectorDefinition: DetectorDefinition;
-    _count: { events: number };
+    _count: { events: number; signalCurves: number };
   },
 ): DetectorRunDto {
   return {
@@ -294,6 +307,19 @@ function serializeDetectorRun(
     progress: run.progress,
     stage: run.stage,
     processingDurationMs: run.processingDurationMs,
+    videoDurationSeconds: run.videoDurationSeconds,
+    processedSourceSeconds: run.processedSourceSeconds,
+    processingSpeedRatio: run.processingSpeedRatio,
+    peakMemoryBytes:
+      run.peakMemoryBytes === null ? null : Number(run.peakMemoryBytes),
+    averageCpuPercent: run.averageCpuPercent,
+    temporaryDiskUsageBytes: Number(run.temporaryDiskUsageBytes),
+    permanentDataBytes: Number(run.permanentDataBytes),
+    rawMeasurementCount: run.rawMeasurementCount,
+    aggregatedMeasurementCount: run.aggregatedMeasurementCount,
+    generatedEventCount: run.generatedEventCount,
+    curveCount: run._count.signalCurves,
+    curveChunkCount: run.curveChunkCount,
     warnings: parseJsonArray(run.warningsJson),
     errorMessage: run.errorMessage,
     eventCount: run._count.events,
@@ -305,7 +331,7 @@ function serializeAnalysisJob(
     detectorRuns: Array<
       DetectorRun & {
         detectorDefinition: DetectorDefinition;
-        _count: { events: number };
+        _count: { events: number; signalCurves: number };
       }
     >;
   },
@@ -357,7 +383,20 @@ export async function reconcileInterruptedAnalysisJobs() {
     const ids = cancelled.map(({ id }) => id);
     await db.$transaction([
       db.detectorEvent.deleteMany({
-        where: { detectorRun: { analysisJobId: { in: ids } } },
+        where: {
+          detectorRun: {
+            analysisJobId: { in: ids },
+            status: { in: ACTIVE_RUN_STATUSES },
+          },
+        },
+      }),
+      db.signalCurve.deleteMany({
+        where: {
+          detectorRun: {
+            analysisJobId: { in: ids },
+            status: { in: ACTIVE_RUN_STATUSES },
+          },
+        },
       }),
       db.detectorRun.updateMany({
         where: {
@@ -381,7 +420,20 @@ export async function reconcileInterruptedAnalysisJobs() {
     const ids = interrupted.map(({ id }) => id);
     await db.$transaction([
       db.detectorEvent.deleteMany({
-        where: { detectorRun: { analysisJobId: { in: ids } } },
+        where: {
+          detectorRun: {
+            analysisJobId: { in: ids },
+            status: { in: ACTIVE_RUN_STATUSES },
+          },
+        },
+      }),
+      db.signalCurve.deleteMany({
+        where: {
+          detectorRun: {
+            analysisJobId: { in: ids },
+            status: { in: ACTIVE_RUN_STATUSES },
+          },
+        },
       }),
       db.detectorRun.updateMany({
         where: {
@@ -422,7 +474,7 @@ export async function getDetectorFrameworkState(
       detectorRuns: {
         include: {
           detectorDefinition: true,
-          _count: { select: { events: true } },
+          _count: { select: { events: true, signalCurves: true } },
         },
         orderBy: { createdAt: "asc" },
       },
@@ -486,6 +538,7 @@ async function createJobFromConfigurations(
   const job = await db.analysisJob.create({
     data: {
       projectId,
+      analysisVersion: ANALYSIS_VERSION,
       detectorSetVersion: setVersion,
       enabledDetectorCount: enabled.length,
       estimatedWorkUnits: enabled.reduce(
@@ -608,6 +661,7 @@ export async function runAnalysisJob(jobId: string) {
       const runTemporaryDirectory = path.join(temporaryDirectory, run.id);
       await mkdir(runTemporaryDirectory, { recursive: true });
       const started = performance.now();
+      const startingMemoryBytes = process.memoryUsage().rss;
       await db.$transaction([
         db.detectorRun.update({
           where: { id: run.id },
@@ -684,8 +738,56 @@ export async function runAnalysisJob(jobId: string) {
           0,
           Math.round(performance.now() - started),
         );
+        const curveIds = new Set<string>();
+        const preparedCurves = (output.curves ?? []).map((curve) => {
+          if (curveIds.has(curve.stableId)) {
+            throw new Error(
+              `Detector returned duplicate signal curve ${curve.stableId}.`,
+            );
+          }
+          curveIds.add(curve.stableId);
+          return prepareSignalCurve(
+            { ...curve, detectorRunId: run.id },
+            job.project.durationSeconds,
+          );
+        });
+        const processedSourceSeconds =
+          output.performance?.processedSourceSeconds;
+        if (
+          processedSourceSeconds !== undefined &&
+          (!Number.isFinite(processedSourceSeconds) ||
+            processedSourceSeconds < 0 ||
+            processedSourceSeconds > job.project.durationSeconds + 0.001)
+        ) {
+          throw new Error("Detector reported invalid processed source time.");
+        }
+        const measuredPeakMemoryBytes = Math.max(
+          startingMemoryBytes,
+          process.memoryUsage().rss,
+          output.performance?.peakMemoryBytes ?? 0,
+        );
+        const wallSeconds = processingDurationMs / 1_000;
+        const rawMeasurementCount = preparedCurves.reduce(
+          (total, prepared) => total + prepared.curve.rawPointCount,
+          0,
+        );
+        const aggregatedMeasurementCount = preparedCurves.reduce(
+          (total, prepared) => total + prepared.curve.storedPointCount,
+          0,
+        );
+        const curveChunkCount = preparedCurves.reduce(
+          (total, prepared) => total + prepared.chunks.length,
+          0,
+        );
+        const permanentDataBytes = preparedCurves.reduce(
+          (total, prepared) => total + prepared.permanentDataBytes,
+          0,
+        );
         await db.$transaction(async (transaction) => {
           await transaction.detectorEvent.deleteMany({
+            where: { detectorRunId: run.id },
+          });
+          await transaction.signalCurve.deleteMany({
             where: { detectorRunId: run.id },
           });
           for (const event of output.events) {
@@ -726,6 +828,28 @@ export async function runAnalysisJob(jobId: string) {
               },
             });
           }
+          for (const prepared of preparedCurves) {
+            await transaction.signalCurve.create({
+              data: {
+                ...prepared.curve,
+                chunks: {
+                  create: prepared.chunks.map((chunk) => ({
+                    chunkIndex: chunk.chunkIndex,
+                    startSeconds: chunk.startSeconds,
+                    endSeconds: chunk.endSeconds,
+                    pointCount: chunk.pointCount,
+                    encoding: chunk.encoding,
+                    payload: chunk.payload,
+                    rawSizeBytes: chunk.rawSizeBytes,
+                    compressedSizeBytes: chunk.compressedSizeBytes,
+                    minimumNormalizedValue: chunk.minimumNormalizedValue,
+                    maximumNormalizedValue: chunk.maximumNormalizedValue,
+                    maximumAbsoluteDeviation: chunk.maximumAbsoluteDeviation,
+                  })),
+                },
+              },
+            });
+          }
           await transaction.detectorRun.update({
             where: { id: run.id },
             data: {
@@ -733,6 +857,22 @@ export async function runAnalysisJob(jobId: string) {
               progress: 100,
               stage: "Detector complete",
               processingDurationMs,
+              videoDurationSeconds: job.project.durationSeconds,
+              processedSourceSeconds: processedSourceSeconds ?? null,
+              processingSpeedRatio:
+                processedSourceSeconds !== undefined && wallSeconds > 0
+                  ? processedSourceSeconds / wallSeconds
+                  : null,
+              peakMemoryBytes: BigInt(measuredPeakMemoryBytes),
+              averageCpuPercent: output.performance?.averageCpuPercent ?? null,
+              temporaryDiskUsageBytes: BigInt(
+                output.performance?.temporaryDiskUsageBytes ?? 0,
+              ),
+              permanentDataBytes: BigInt(permanentDataBytes),
+              rawMeasurementCount,
+              aggregatedMeasurementCount,
+              generatedEventCount: output.events.length,
+              curveChunkCount,
               warningsJson: JSON.stringify(output.warnings),
               completedAt: new Date(),
             },
@@ -783,6 +923,9 @@ export async function runAnalysisJob(jobId: string) {
       const now = new Date();
       await db.$transaction([
         db.detectorEvent.deleteMany({
+          where: { detectorRun: { analysisJobId: jobId } },
+        }),
+        db.signalCurve.deleteMany({
           where: { detectorRun: { analysisJobId: jobId } },
         }),
         db.candidateMoment.deleteMany({ where: { analysisJobId: jobId } }),
@@ -865,17 +1008,22 @@ export async function cancelAnalysisJob(jobId: string) {
   const now = new Date();
   const controller = activeControllers.get(jobId);
   if (!controller) {
-    await db.detectorEvent.deleteMany({
-      where: { detectorRun: { analysisJobId: jobId } },
-    });
-    return db.analysisJob.update({
-      where: { id: jobId },
-      data: {
-        status: "CANCELLED",
-        stage: "Cancelled",
-        cancelRequestedAt: now,
-        completedAt: now,
-      },
+    return db.$transaction(async (transaction) => {
+      await transaction.detectorEvent.deleteMany({
+        where: { detectorRun: { analysisJobId: jobId } },
+      });
+      await transaction.signalCurve.deleteMany({
+        where: { detectorRun: { analysisJobId: jobId } },
+      });
+      return transaction.analysisJob.update({
+        where: { id: jobId },
+        data: {
+          status: "CANCELLED",
+          stage: "Cancelled",
+          cancelRequestedAt: now,
+          completedAt: now,
+        },
+      });
     });
   }
   controller.cancelRequested = true;
