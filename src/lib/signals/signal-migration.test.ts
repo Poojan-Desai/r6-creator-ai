@@ -92,11 +92,22 @@ describe("Phase 3B.2 signal-curve migration", () => {
       migrationRoot,
       "20260723021024_phase3b2_audio_track_roles",
     );
+    applyMigration(
+      databasePath,
+      migrationRoot,
+      "20260723023746_phase3b2_transcript_rules",
+    );
     execFileSync("sqlite3", [databasePath], {
       input: `
         UPDATE AudioTrack
         SET analysisRole = 'CREATOR_MICROPHONE', roleConfirmedAt = CURRENT_TIMESTAMP
         WHERE id = 'creator-track';
+        INSERT INTO TranscriptRule (id, stableId, name, description, category, enabled, isDefault, currentVersion, updatedAt)
+        VALUES ('rule', 'fixture.rule', 'Fixture rule', 'Preserved versioned fixture', 'SURPRISE', 1, 0, 2, CURRENT_TIMESTAMP);
+        INSERT INTO TranscriptRuleVersion (id, ruleId, version, patternJson, confidence, source)
+        VALUES
+          ('rule-v1', 'rule', 1, '{"schemaVersion":"r6-transcript-pattern/v1","phrases":["wait"],"regexes":[],"negations":[],"ambiguousPhrases":[],"contextBeforeLines":1,"contextAfterLines":1,"repetitionBoost":true}', 0.5, 'USER'),
+          ('rule-v2', 'rule', 2, '{"schemaVersion":"r6-transcript-pattern/v1","phrases":["no way"],"regexes":[],"negations":[],"ambiguousPhrases":["no way"],"contextBeforeLines":1,"contextAfterLines":1,"repetitionBoost":true}', 0.6, 'USER');
       `,
     });
 
@@ -147,6 +158,7 @@ describe("Phase 3B.2 signal-curve migration", () => {
       context,
       savedCurve,
       event,
+      rule,
     ] = await Promise.all([
       client.project.findUnique({
         where: { id: "stable-project" },
@@ -164,6 +176,10 @@ describe("Phase 3B.2 signal-curve migration", () => {
         include: { chunks: true, audioTrack: true },
       }),
       client.detectorEvent.findUnique({ where: { id: "legacy-event" } }),
+      client.transcriptRule.findUnique({
+        where: { id: "rule" },
+        include: { versions: { orderBy: { version: "asc" } } },
+      }),
     ]);
     expect(project?.contentDraft?.openingHook).toBe("Keep this hook");
     expect(project?.signalExplorer?.minimumConfidence).toBe(0.25);
@@ -186,6 +202,8 @@ describe("Phase 3B.2 signal-curve migration", () => {
       eventType: "BENCHMARK_HIGH_ACTION_GAMEPLAY",
       category: "HIGH_ACTION_GAMEPLAY",
     });
+    expect(rule).toMatchObject({ currentVersion: 2, enabled: true });
+    expect(rule?.versions.map((version) => version.version)).toEqual([1, 2]);
     await client.signalCurve.delete({ where: { id: curve.id } });
     expect(
       await client.signalCurveChunk.count({

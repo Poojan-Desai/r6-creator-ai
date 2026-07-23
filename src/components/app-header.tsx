@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { BookOpen, FolderOpen, Map, SlidersHorizontal } from "lucide-react";
+import {
+  BookOpen,
+  FolderOpen,
+  Map,
+  ScrollText,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 
@@ -18,6 +24,11 @@ export function AppHeader() {
           <NavItem href="/" icon={FolderOpen} label="Projects" />
           <NavItem href="/references" icon={BookOpen} label="References" />
           <NavItem href="/maps" icon={Map} label="Map knowledge" />
+          <NavItem
+            href="/transcript-rules"
+            icon={ScrollText}
+            label="Transcript rules"
+          />
           <NavItem
             href="/style-profiles"
             icon={SlidersHorizontal}

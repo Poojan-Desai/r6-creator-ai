@@ -160,6 +160,34 @@ enum AudioTrackRole {
   UNKNOWN
 }
 
+enum TranscriptEvidenceCategory {
+  SURPRISE
+  EXCITEMENT
+  LAUGHTER
+  FRUSTRATION
+  CELEBRATION
+  TACTICAL_EXPLANATION
+  KILL_RELATED_LANGUAGE
+  DEATH_RELATED_LANGUAGE
+  WIN_RELATED_LANGUAGE
+  LOSS_RELATED_LANGUAGE
+  CLUTCH_RELATED_LANGUAGE
+  DEFUSER_RELATED_LANGUAGE
+  MISTAKE_OR_FAIL_LANGUAGE
+  STORY_SETUP
+  STORY_PAYOFF
+  DIRECT_AUDIENCE_ADDRESS
+  QUESTION_OR_SUSPENSE_SETUP
+  MAP_RELATED_LANGUAGE
+  ROOM_OR_CALLOUT_LANGUAGE
+}
+
+enum TranscriptRuleSource {
+  DEFAULT
+  USER
+  IMPORTED
+}
+
 enum CandidateReviewDecision {
   USEFUL
   NOT_USEFUL
@@ -880,6 +908,37 @@ model SignalExplorerPreference {
   zoomEndSeconds      Float?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+model TranscriptRule {
+  id             String                     @id @default(cuid())
+  stableId       String                     @unique
+  name           String
+  description    String
+  category       TranscriptEvidenceCategory
+  enabled        Boolean                    @default(true)
+  isDefault      Boolean                    @default(false)
+  currentVersion Int                        @default(1)
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  versions       TranscriptRuleVersion[]
+
+  @@index([category, enabled])
+}
+
+model TranscriptRuleVersion {
+  id          String               @id @default(cuid())
+  ruleId      String
+  rule        TranscriptRule       @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  version     Int
+  patternJson String
+  confidence  Float                @default(0.6)
+  source      TranscriptRuleSource @default(USER)
+  changeNote  String?
+  createdAt   DateTime             @default(now())
+
+  @@unique([ruleId, version])
+  @@index([ruleId, version])
 }
 
 model DetectorEvent {
