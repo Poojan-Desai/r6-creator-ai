@@ -33,7 +33,7 @@ additive dependencies rather than work to rebuild.
 
 ### U1 — Unified project and input workflow
 
-Status: **active**.
+Status: **verified July 31, 2026**.
 
 Build an additive unified workspace around existing records instead of making
 the required-video `Project` model nullable or creating fake media:
@@ -68,9 +68,20 @@ workflow is understandable without editing code, the browser is warning-free,
 the database passes integrity and foreign-key checks, the complete validation
 suite passes, and the focused U1 commit is clean.
 
+Verified result: all three input modes saved exact typed input links and
+survived a complete server restart. A combined project was created through the
+browser with an existing 20-minute recording, the verified nine-round replay,
+a Creator Style Profile, privacy-safe player selection, explicit audio
+selection, user-confirmed context, and separate content/coaching instructions.
+The unified dashboard reopened every setting, exposed later stages honestly,
+and produced no browser console warnings or errors. Temporary verification
+projects were deleted without deleting any source record or file. Formatting,
+ESLint, strict TypeScript, 169 tests across 33 files, the production build,
+SQLite integrity, foreign keys, and Phase 1–replay regressions passed.
+
 ### U2 — Replay/video synchronization
 
-Status: not started; begins only after U1 is verified.
+Status: **active; begins from the clean U1 checkpoint**.
 
 Add versioned, non-destructive synchronization with manual anchors, multiple
 automatic candidate offsets, per-round adjustments, drift correction, visual

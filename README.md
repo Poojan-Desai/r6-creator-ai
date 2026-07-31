@@ -1,10 +1,13 @@
 # R6 Creator AI
 
-R6 Creator AI is a private web app that runs on your own Mac. Its primary input
-is now a completed Rainbow Six Siege Match Replay (`.rec` files or a replay
-ZIP). It stores inspectable match evidence locally and shows which fields were
-recovered, partial, empty, or unsupported. An MP4 remains optional for original
-pixels, audio, transcription, playable clips, and video analysis.
+R6 Creator AI is a private web app that runs on your own Mac. It now has one
+shared **Creator Studio + Coaching Lab** project workflow. A gameplay MP4 is the
+primary visual source for original pixels, audio, transcription, playable
+clips, editing, and visible coaching observations. A completed Rainbow Six
+Siege Match Replay (`.rec` files or a replay ZIP) is optional structured
+evidence. The app shows which replay fields were recovered, partial, empty, or
+unsupported instead of pretending replay files contain gameplay video or
+audio.
 Phase 3A adds a permission-gated Reference Library and structured Creator Style
 Profiles. Phase 3B.1 adds manual benchmark labels and a safe background-job
 foundation. Phase 3B.2 adds local, explainable scene, motion, brightness,
@@ -19,7 +22,23 @@ free `whisper.cpp` program and a local model on this Mac.
 
 ## What works now
 
-- Replay-first navigation and a streamed local Match Replay library
+- A guided unified-project workflow for choosing the output goal, input mode,
+  optional structural reference, focus areas, content instructions, and
+  coaching goals
+- Recording-only, Match-Replay-only, and combined recording-plus-replay
+  projects without copying or changing their source records
+- Optional additional recordings, permitted local/YouTube references, Creator
+  Style Profiles, stable privacy-safe replay player selection, and an explicit
+  audio-track selection
+- Optional user-confirmed map, map version, bomb site, attack/defense,
+  operator, operator version, and round-result context
+- A shared project dashboard with Inputs, Synchronization, Transcript,
+  Candidate moments, Story plan and script, Editor, Voiceover, Coaching, and
+  Exports sections
+- Honest stage boundaries: only project setup and input linking are complete in
+  U1; later sections say planned, not configured, not connected, or unavailable
+  instead of displaying fake results
+- Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection
 - Replay magic-byte, duplicate, archive-traversal, symbolic-link, entry-count,
   expanded-size, compression-ratio, and app-root path safety
@@ -210,6 +229,38 @@ Wait until Terminal says the app is ready, then open:
 Keep the Terminal window open while using the app.
 
 ## Using the app
+
+### Create a unified Creator Studio / Coaching Lab project
+
+1. Open [http://localhost:3000](http://localhost:3000).
+2. Click **Create unified project**.
+3. Under **What are you creating?**, enter a project name and choose:
+   **Short clip**, **YouTube Short**, **TikTok**, **Long-form YouTube video**,
+   **Match recap**, **Coaching report**, or **Both content and coaching**.
+4. Under **What are you uploading?**, choose:
+   **Screen recording only**, **Match Replay only**, or
+   **Both — recommended**.
+5. Choose the recording and/or replay already saved in the app. If you need a
+   new source, use **Upload another recording** or
+   **Import another Match Replay**, then return to project creation.
+6. Optionally choose a Creator Style Profile, legal YouTube reference, or
+   permitted local reference. References guide high-level structure and pacing;
+   they do not authorize copying another creator's wording or protected work.
+7. Select focus areas and write content instructions or coaching goals in plain
+   language.
+8. Optionally choose your privacy-safe replay player and the creator audio
+   track. An ambiguous multi-track recording is never silently treated as the
+   creator microphone.
+9. Optionally enter map/operator context. Check the confirmation only when you
+   personally supplied and verified those facts.
+10. Click **Create unified project**. The dashboard saves everything locally
+    and links back to the existing video, replay, and reference workspaces.
+
+Creating the project does not start analysis, send data to a service, or alter
+the source files. In combined mode, the dashboard says
+**U2 · Not configured** until video/replay synchronization is actually built
+and saved. Replay-only projects have no gameplay preview, audio, transcript, or
+playable clip source because `.rec` files do not contain them.
 
 ### Import and inspect a Match Replay
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Sparkles,
   BarChart3,
   BookOpen,
   Archive,
@@ -24,8 +25,9 @@ export function AppHeader() {
           <BrandMark />
         </Link>
         <nav className="flex flex-wrap items-center gap-2" aria-label="Main">
+          <NavItem href="/studio" icon={Sparkles} label="Creator Studio" />
+          <NavItem href="/" icon={FolderOpen} label="Sources" />
           <NavItem href="/replays" icon={Archive} label="Match Replays" />
-          <NavItem href="/" icon={FolderOpen} label="Video projects" />
           <NavItem href="/references" icon={BookOpen} label="References" />
           <NavItem href="/maps" icon={Map} label="Map knowledge" />
           <NavItem href="/operators" icon={Crosshair} label="Operators" />

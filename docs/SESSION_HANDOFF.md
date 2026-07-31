@@ -6,7 +6,8 @@ Branch `codex/phase-3` preserves the replay R2 foundation at tag
 `replay-r2-foundation-stable` (`0730820`) and the verified real-parser
 correction at tag `real-replay-foundation-stable` (commit `93d1b62`). The
 authoritative active sequence is now U1–U8 for one unified Creator Studio and
-Coaching Lab. U1 is active.
+Coaching Lab. U1 is verified. U2 replay/video synchronization is the active
+stage.
 
 A consistent pre-migration backup exists at
 `data/backups/r6-creator.pre-unified-u1-20260731.db`. It passed SQLite integrity
@@ -38,6 +39,32 @@ and foreign-key checks. It is private runtime data and must not be committed.
 - Parsed all nine real rounds through the application route with the corrected
   provider.
 
+## Completed in U1
+
+- Updated the authoritative roadmap from replay-first to one recording-first
+  Creator Studio and Coaching Lab with optional structured replay evidence.
+- Added checked-in additive migration
+  `20260731075246_unified_project_foundation`.
+- Added `StudioProject` plus typed recording, replay, and reference input links
+  without making existing required-video `Project` fields nullable.
+- Added strict recording-only, replay-only, combined-mode, reference-type,
+  permission, player, audio, map/version/site, and operator/version validation.
+- Added guided create/edit/delete APIs and screens plus a unified project
+  library and dashboard.
+- Made Creator Studio the primary navigation and home workflow while preserving
+  all source libraries and legacy workspaces.
+- Created a combined project through the browser with a real existing recording
+  and parsed replay, reopened the saved settings, restarted the server, and
+  confirmed the project persisted with no console warnings or errors.
+- Verified recording-only and replay-only persistence through the API and
+  removed all temporary U1 verification records afterward. No source record or
+  file was deleted.
+- Verified SQLite integrity and foreign keys before and after the migration and
+  restart. Legacy row counts matched the private pre-U1 backup.
+- Passed formatting, ESLint, strict TypeScript, 169 tests across 33 files, the
+  production build, and final browser regressions with no console warnings or
+  errors.
+
 ## Verified real result
 
 - Provider version `source-e6c2ca80+compat-1-2026-07-31`
@@ -68,8 +95,9 @@ views, or virality claim follows from replay parsing.
 
 ## Exact next action
 
-Finish the U1 plan/documentation checkpoint, then add the unified project schema
-and migration. Use an additive `StudioProject` plus normalized input links so
-existing required-video `Project` rows remain unchanged and replay-only
-workspaces require no fake media. Keep the existing development server running;
-do not restart it.
+Begin U2 with the additive synchronization data model and manual alignment
+workflow. Preserve recording observations, replay facts, alignment inferences,
+confidence, multiple anchors, drift, per-round adjustments, and immutable
+versions separately. Do not treat a single uncertain anchor as confirmed
+synchronization and do not alter either source. Keep the development server
+running except for the brief controlled pause required by a production build.
