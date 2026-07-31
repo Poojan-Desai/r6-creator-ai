@@ -49,6 +49,47 @@ enum StudioInputKind {
   YOUTUBE_REFERENCE
 }
 
+enum SynchronizationStatus {
+  DRAFT
+  VERIFIED
+  SUPERSEDED
+}
+
+enum SynchronizationAnchorKind {
+  ROUND_START
+  ROUND_END
+  KILL
+  DEATH
+  HEADSHOT
+  DEFUSER_PLANT
+  DEFUSER_DISABLE
+  SCORE_CHANGE
+  TIMER_STATE
+  MATCH_RESULT
+  LOADING_TRANSITION
+  DEATH_SCREEN_TRANSITION
+  AUDIO_PEAK
+  TRANSCRIPT_PHRASE
+  OTHER
+}
+
+enum SynchronizationAnchorSource {
+  MANUAL
+  AUTOMATIC_SUGGESTION
+}
+
+enum SynchronizationAnchorMatchStatus {
+  MATCHED
+  UNMATCHED
+  REJECTED
+}
+
+enum SynchronizationCandidateStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 enum ClipStatus {
   PROCESSING
   READY
@@ -2116,37 +2157,38 @@ model ReplayPackage {
 }
 
 model StudioProject {
-  id                     String               @id @default(cuid())
+  id                     String                       @id @default(cuid())
   name                   String
-  status                 StudioProjectStatus  @default(DRAFT)
+  status                 StudioProjectStatus          @default(DRAFT)
   outputGoal             StudioOutputGoal
   inputMode              StudioInputMode
-  referenceMode          StudioReferenceMode  @default(NONE)
-  focusAreasJson         String               @default("[]")
+  referenceMode          StudioReferenceMode          @default(NONE)
+  focusAreasJson         String                       @default("[]")
   contentInstructions    String?
   coachingGoals          String?
   selectedPlayerStableId String?
   selectedPlayerAlias    String?
   selectedAudioTrackId   String?
-  selectedAudioTrack     AudioTrack?          @relation(fields: [selectedAudioTrackId], references: [id], onDelete: SetNull)
+  selectedAudioTrack     AudioTrack?                  @relation(fields: [selectedAudioTrackId], references: [id], onDelete: SetNull)
   styleProfileId         String?
-  styleProfile           CreatorStyleProfile? @relation(fields: [styleProfileId], references: [id], onDelete: SetNull)
+  styleProfile           CreatorStyleProfile?         @relation(fields: [styleProfileId], references: [id], onDelete: SetNull)
   mapId                  String?
-  map                    SiegeMap?            @relation(fields: [mapId], references: [id], onDelete: SetNull)
+  map                    SiegeMap?                    @relation(fields: [mapId], references: [id], onDelete: SetNull)
   mapVersionId           String?
-  mapVersion             MapVersion?          @relation(fields: [mapVersionId], references: [id], onDelete: SetNull)
+  mapVersion             MapVersion?                  @relation(fields: [mapVersionId], references: [id], onDelete: SetNull)
   bombSiteId             String?
-  bombSite               MapBombSitePair?     @relation(fields: [bombSiteId], references: [id], onDelete: SetNull)
-  side                   MapSide              @default(UNKNOWN)
+  bombSite               MapBombSitePair?             @relation(fields: [bombSiteId], references: [id], onDelete: SetNull)
+  side                   MapSide                      @default(UNKNOWN)
   operatorId             String?
-  operator               SiegeOperator?       @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  operator               SiegeOperator?               @relation(fields: [operatorId], references: [id], onDelete: SetNull)
   operatorVersionId      String?
-  operatorVersion        OperatorVersion?     @relation(fields: [operatorVersionId], references: [id], onDelete: SetNull)
+  operatorVersion        OperatorVersion?             @relation(fields: [operatorVersionId], references: [id], onDelete: SetNull)
   roundResult            String?
-  contextUserConfirmed   Boolean              @default(false)
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  contextUserConfirmed   Boolean                      @default(false)
+  createdAt              DateTime                     @default(now())
+  updatedAt              DateTime                     @updatedAt
   inputs                 StudioProjectInput[]
+  synchronizations       ReplayVideoSynchronization[]
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2175,6 +2217,109 @@ model StudioProjectInput {
   @@index([videoProjectId])
   @@index([replayPackageId])
   @@index([referenceVideoId])
+}
+
+model ReplayVideoSynchronization {
+  id                         String                           @id @default(cuid())
+  studioProjectId            String
+  studioProject              StudioProject                    @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  version                    Int
+  status                     SynchronizationStatus            @default(DRAFT)
+  basedOnVersionId           String?
+  basedOnVersion             ReplayVideoSynchronization?      @relation("SynchronizationVersions", fields: [basedOnVersionId], references: [id], onDelete: SetNull)
+  derivedVersions            ReplayVideoSynchronization[]     @relation("SynchronizationVersions")
+  mappingAlgorithmVersion    String                           @default("u2-linear-sync-v1")
+  offsetSeconds              Float                            @default(0)
+  slope                      Float                            @default(1)
+  driftSecondsPerHour        Float                            @default(0)
+  rootMeanSquareErrorSeconds Float?
+  confidence                 Float                            @default(0)
+  confidenceLabel            String                           @default("Unavailable")
+  supportingEvidenceJson     String                           @default("[]")
+  conflictingEvidenceJson    String                           @default("[]")
+  missingEvidenceJson        String                           @default("[]")
+  notes                      String?
+  userVerifiedAt             DateTime?
+  createdAt                  DateTime                         @default(now())
+  updatedAt                  DateTime                         @updatedAt
+  anchors                    ReplayVideoSyncAnchor[]
+  roundAdjustments           ReplayVideoSyncRoundAdjustment[]
+  offsetCandidates           ReplayVideoSyncOffsetCandidate[]
+
+  @@unique([studioProjectId, version])
+  @@index([studioProjectId, status, version])
+  @@index([basedOnVersionId])
+}
+
+model ReplayVideoSyncAnchor {
+  id                      String                           @id @default(cuid())
+  synchronizationId       String
+  synchronization         ReplayVideoSynchronization       @relation(fields: [synchronizationId], references: [id], onDelete: Cascade)
+  kind                    SynchronizationAnchorKind
+  source                  SynchronizationAnchorSource      @default(MANUAL)
+  matchStatus             SynchronizationAnchorMatchStatus @default(MATCHED)
+  label                   String
+  videoTimestampSeconds   Float
+  replayTimestampSeconds  Float
+  replayRoundIndex        Int?
+  replayRoundStableId     String?
+  replayEventStableId     String?
+  replayEventCategory     String?
+  videoObservationJson    String                           @default("{}")
+  replayFactJson          String                           @default("{}")
+  alignmentInferenceJson  String                           @default("{}")
+  supportingEvidenceJson  String                           @default("[]")
+  conflictingEvidenceJson String                           @default("[]")
+  missingEvidenceJson     String                           @default("[]")
+  confidence              Float                            @default(0.5)
+  userConfirmed           Boolean                          @default(false)
+  residualSeconds         Float?
+  sortOrder               Int                              @default(0)
+  createdAt               DateTime                         @default(now())
+  updatedAt               DateTime                         @updatedAt
+
+  @@index([synchronizationId, sortOrder])
+  @@index([replayRoundIndex, replayTimestampSeconds])
+  @@index([replayEventStableId])
+}
+
+model ReplayVideoSyncRoundAdjustment {
+  id                String                     @id @default(cuid())
+  synchronizationId String
+  synchronization   ReplayVideoSynchronization @relation(fields: [synchronizationId], references: [id], onDelete: Cascade)
+  replayRoundIndex  Int
+  adjustmentSeconds Float
+  reason            String?
+  confidence        Float                      @default(0.5)
+  userConfirmed     Boolean                    @default(false)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([synchronizationId, replayRoundIndex])
+  @@index([synchronizationId, replayRoundIndex])
+}
+
+model ReplayVideoSyncOffsetCandidate {
+  id                        String                         @id @default(cuid())
+  synchronizationId         String
+  synchronization           ReplayVideoSynchronization     @relation(fields: [synchronizationId], references: [id], onDelete: Cascade)
+  rank                      Int
+  status                    SynchronizationCandidateStatus @default(PENDING)
+  offsetSeconds             Float
+  slope                     Float                          @default(1)
+  driftSecondsPerHour       Float                          @default(0)
+  confidence                Float
+  compatiblePairCount       Int
+  distinctEvidenceTypeCount Int
+  supportingEvidenceJson    String                         @default("[]")
+  conflictingEvidenceJson   String                         @default("[]")
+  missingEvidenceJson       String                         @default("[]")
+  algorithmVersion          String                         @default("u2-offset-cluster-v1")
+  createdAt                 DateTime                       @default(now())
+  updatedAt                 DateTime                       @updatedAt
+
+  @@unique([synchronizationId, rank])
+  @@index([synchronizationId, status, rank])
 }
 
 model ReplayFile {

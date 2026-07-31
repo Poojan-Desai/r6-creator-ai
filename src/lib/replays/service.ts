@@ -210,6 +210,9 @@ export function serializeReplayPackage(replay: ReplayWithDetail) {
             roundIndex: round.roundIndex,
             side: round.side,
             site: round.site,
+            startSeconds: round.startSeconds,
+            endSeconds: round.endSeconds,
+            durationSeconds: round.durationSeconds,
             winner: round.winner,
             winCondition: round.winCondition,
             confidenceStatus: round.confidenceStatus,
@@ -225,6 +228,7 @@ export function serializeReplayPackage(replay: ReplayWithDetail) {
           events: replay.canonicalMatch.events.map((event) => ({
             id: event.id,
             category: event.category,
+            timestampSeconds: event.timestampSeconds,
             roundIndex: event.round?.roundIndex ?? null,
             actorAlias: event.actorPlayer?.privacyAlias ?? null,
             targetAlias: event.targetPlayer?.privacyAlias ?? null,
