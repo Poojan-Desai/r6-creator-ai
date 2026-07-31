@@ -12,6 +12,43 @@ enum ProjectStatus {
   ERROR
 }
 
+enum StudioProjectStatus {
+  DRAFT
+  READY
+  ARCHIVED
+}
+
+enum StudioOutputGoal {
+  SHORT_CLIP
+  YOUTUBE_SHORT
+  TIKTOK
+  LONG_FORM_YOUTUBE
+  MATCH_RECAP
+  COACHING_REPORT
+  CONTENT_AND_COACHING
+}
+
+enum StudioInputMode {
+  SCREEN_RECORDING_ONLY
+  MATCH_REPLAY_ONLY
+  SCREEN_RECORDING_AND_REPLAY
+}
+
+enum StudioReferenceMode {
+  NONE
+  STYLE_PROFILE
+  YOUTUBE_REFERENCE
+  LOCAL_REFERENCE
+}
+
+enum StudioInputKind {
+  PRIMARY_RECORDING
+  ADDITIONAL_RECORDING
+  MATCH_REPLAY
+  LOCAL_REFERENCE
+  YOUTUBE_REFERENCE
+}
+
 enum ClipStatus {
   PROCESSING
   READY
@@ -545,6 +582,7 @@ model Project {
   operatorContext        ProjectOperatorContext?
   replayPackages         ReplayPackage[]
   canonicalMatches       CanonicalMatch[]
+  studioInputs           StudioProjectInput[]
 
   @@index([createdAt])
 }
@@ -568,6 +606,7 @@ model AudioTrack {
   updatedAt         DateTime           @updatedAt
   transcriptionJobs TranscriptionJob[]
   signalCurves      SignalCurve[]
+  studioProjects    StudioProject[]
 
   @@unique([projectId, streamIndex])
   @@index([projectId, streamIndex])
@@ -674,6 +713,7 @@ model ReferenceVideo {
   audioTracks           ReferenceAudioTrack[]
   styleAnalyses         ReferenceStyleAnalysis[]
   profileLinks          StyleProfileReference[]
+  studioInputs          StudioProjectInput[]
 
   @@index([referenceType, createdAt])
   @@index([contentCategory])
@@ -790,6 +830,7 @@ model CreatorStyleProfile {
   features                    StyleProfileFeature[]
   analysisJobs                AnalysisJob[]
   candidateMoments            CandidateMoment[]
+  studioProjects              StudioProject[]
 
   @@index([createdAt])
 }
@@ -1364,6 +1405,7 @@ model SiegeMap {
   citations                  MapSourceCitation[]
   calloutPreference          MapCalloutPreference?
   projectContexts            ProjectMapContext[]
+  studioProjects             StudioProject[]
 
   @@index([name])
   @@index([knowledgeStatus])
@@ -1417,6 +1459,7 @@ model MapVersion {
   editHistory       MapEditHistory[]
   projectContexts   ProjectMapContext[]
   operatorLinks     OperatorMapLink[]
+  studioProjects    StudioProject[]
 
   @@unique([mapId, versionKey])
   @@index([mapId, knowledgeStatus])
@@ -1569,6 +1612,7 @@ model MapBombSitePair {
   citations       MapSourceCitation[]
   projectContexts ProjectMapContext[]
   operatorLinks   OperatorMapLink[]
+  studioProjects  StudioProject[]
 
   @@unique([mapVersionId, displayName])
   @@index([mapVersionId, floorId])
@@ -1723,6 +1767,7 @@ model SiegeOperator {
   sourceInteractions  OperatorInteraction[]    @relation("OperatorInteractionSource")
   targetInteractions  OperatorInteraction[]    @relation("OperatorInteractionTarget")
   playerContexts      ProjectOperatorContext[] @relation("ProjectPlayerOperator")
+  studioProjects      StudioProject[]
 
   @@index([displayName])
   @@index([side, knowledgeStatus])
@@ -1787,6 +1832,7 @@ model OperatorVersion {
   mapLinks                 OperatorMapLink[]
   citations                OperatorSourceCitation[]
   projectContexts          ProjectOperatorContext[]
+  studioProjects           StudioProject[]
 
   @@unique([operatorId, versionKey])
   @@index([operatorId, isCurrent])
@@ -2062,10 +2108,73 @@ model ReplayPackage {
   providerRuns              ReplayProviderRun[]
   capabilities              ReplayCapability[]
   canonicalMatch            CanonicalMatch?
+  studioInputs              StudioProjectInput[]
 
   @@index([createdAt])
   @@index([status])
   @@index([projectId])
+}
+
+model StudioProject {
+  id                     String               @id @default(cuid())
+  name                   String
+  status                 StudioProjectStatus  @default(DRAFT)
+  outputGoal             StudioOutputGoal
+  inputMode              StudioInputMode
+  referenceMode          StudioReferenceMode  @default(NONE)
+  focusAreasJson         String               @default("[]")
+  contentInstructions    String?
+  coachingGoals          String?
+  selectedPlayerStableId String?
+  selectedPlayerAlias    String?
+  selectedAudioTrackId   String?
+  selectedAudioTrack     AudioTrack?          @relation(fields: [selectedAudioTrackId], references: [id], onDelete: SetNull)
+  styleProfileId         String?
+  styleProfile           CreatorStyleProfile? @relation(fields: [styleProfileId], references: [id], onDelete: SetNull)
+  mapId                  String?
+  map                    SiegeMap?            @relation(fields: [mapId], references: [id], onDelete: SetNull)
+  mapVersionId           String?
+  mapVersion             MapVersion?          @relation(fields: [mapVersionId], references: [id], onDelete: SetNull)
+  bombSiteId             String?
+  bombSite               MapBombSitePair?     @relation(fields: [bombSiteId], references: [id], onDelete: SetNull)
+  side                   MapSide              @default(UNKNOWN)
+  operatorId             String?
+  operator               SiegeOperator?       @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  operatorVersionId      String?
+  operatorVersion        OperatorVersion?     @relation(fields: [operatorVersionId], references: [id], onDelete: SetNull)
+  roundResult            String?
+  contextUserConfirmed   Boolean              @default(false)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  inputs                 StudioProjectInput[]
+
+  @@index([createdAt])
+  @@index([status, updatedAt])
+  @@index([selectedAudioTrackId])
+  @@index([styleProfileId])
+  @@index([mapId, mapVersionId])
+  @@index([operatorId, operatorVersionId])
+}
+
+model StudioProjectInput {
+  id               String          @id @default(cuid())
+  studioProjectId  String
+  studioProject    StudioProject   @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  kind             StudioInputKind
+  videoProjectId   String?
+  videoProject     Project?        @relation(fields: [videoProjectId], references: [id], onDelete: Cascade)
+  replayPackageId  String?
+  replayPackage    ReplayPackage?  @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
+  referenceVideoId String?
+  referenceVideo   ReferenceVideo? @relation(fields: [referenceVideoId], references: [id], onDelete: Cascade)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([studioProjectId, kind, sortOrder])
+  @@index([videoProjectId])
+  @@index([replayPackageId])
+  @@index([referenceVideoId])
 }
 
 model ReplayFile {
