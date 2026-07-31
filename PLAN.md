@@ -8,6 +8,12 @@ creator profiles, evidence-backed candidate moments, and original content
 packages. Phase 1 and Phase 2 remain intact. Local processing remains the
 default, and the core workflow must continue working without a paid API.
 
+The Personal Version 1 direction is now **Match Replay first**. Completed `.rec`
+round files or a replay ZIP are the primary evidence input. Gameplay MP4 remains
+fully supported as optional evidence for original pixels, audio, transcription,
+manual clipping, and video-only detectors. See `MASTER_ROADMAP.md` and
+`STATUS.md` for the authoritative execution order and current checkpoint.
+
 The longer ClutchScript business plan informs the product direction. Phase 3 is
 deliberately split into independently testable stages. It first measures
 high-level characteristics from permitted references, then generates local R6
@@ -59,6 +65,12 @@ Runtime files are ignored by Git and live in one configurable directory:
 ```text
 data/
 ├── r6-creator.db
+├── replays/
+│   └── <replay-package-id>/rounds/round-001.rec
+├── replay-import-temp/
+├── replay-parser-outputs/
+├── tools/
+│   └── replay-parsers/r6-dissect
 ├── models/
 │   └── whisper/ggml-base.en.bin
 ├── references/
@@ -74,6 +86,46 @@ data/
 ```
 
 SQLite stores only metadata and file paths. MP4 bytes never go into SQLite.
+
+## Replay-first Phase R1/R2 checkpoint
+
+### R1 — provider audit and real-replay proof
+
+1. Audit `redraskal/r6-dissect` and `wnc-replay/replay-tool` at exact commits,
+   including source, dependencies, tests, license, network/filesystem behavior,
+   Apple Silicon build, and actual fixture execution.
+2. Integrate only a provider whose license and observed behavior are acceptable.
+3. Build the selected provider from reviewed source into project-owned storage,
+   fingerprint the executable, and run it with bounded output, timeout,
+   cancellation, direct child-process termination, and schema validation.
+4. Run the same providers against a user-approved real replay before claiming
+   R1 complete. A public fixture verifies wiring only.
+
+Current result: both candidates built. `r6-dissect` is MIT and integrated. The
+WNC checkout has no license file and remains audit-only. No approved user replay
+was found, so real-replay proof and current-version compatibility remain pending.
+
+### R2 — secure import and canonical evidence
+
+1. Stream individual `.rec` files or one ZIP into a unique temporary directory.
+2. Validate extension/MIME, replay magic, per-file/package limits, ZIP paths,
+   links, entry count, expanded size, compression ratio, duplicates, and
+   project association.
+3. Require a lawful-possession confirmation and default to privacy aliases.
+4. Store app-owned replay/package fingerprints, parser runs, per-field
+   capabilities, canonical matches, rounds, players, events, and evidence.
+5. Keep direct observation, inference, conflict, missing evidence, confidence,
+   validation state, provider identity, and version separate.
+6. Run parsing outside the request, persist progress/error/cancellation, recover
+   interrupted jobs after restart, sanitize retained JSON, and clean temporary
+   output.
+7. Display populated, partial, empty, and unsupported capabilities, then provide
+   explicit package deletion.
+8. Make Match Replays the primary navigation/home action while preserving all
+   existing MP4 workflows.
+
+R2 may be checkpointed after the full validation gate, but R3 cannot begin until
+the real-replay R1 gate is satisfied.
 
 ## Phase 3 score vocabulary
 

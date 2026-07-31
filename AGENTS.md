@@ -28,6 +28,13 @@ this repository.
   historical abilities/loadouts and keep official specialties separate from
   community or personal roles. Never infer an operator, weapon, gadget, or
   ability use from footage during Phase 3B.2.
+- Personal Version 1 is Match-Replay-first. Preserve optional MP4 upload and
+  every completed workflow, but treat completed `.rec`/folder/ZIP replay import
+  as the primary input. Follow `MASTER_ROADMAP.md` in order and do not start R3
+  until a user-approved real replay satisfies the R1 execution gate.
+- A public/upstream fixture verifies integration only. Never describe it as a
+  real-user replay, current-version compatibility proof, or reconstruction
+  benchmark.
 
 ## Required stack
 
@@ -107,6 +114,15 @@ layer. Do not silently skip checks.
 - Never scrape or automatically download map blueprints. Import only a ZIP or
   image chosen through a visible user action; reject archive traversal, links,
   compression bombs, misleading image bytes, and out-of-root paths.
+- Stream replay uploads into unique app-owned temporary directories. Accept
+  only completed `.rec` files or one ZIP, verify replay magic, fingerprints,
+  archive paths/links/count/expanded size/compression ratio, and reject
+  duplicates before committing the package.
+- Build replay parsers from reviewed, pinned source into app-owned storage when
+  licensing permits. Run them directly without a shell, with bounded output,
+  timeout, cancellation, schema validation, controlled working directory,
+  safe termination, and cleanup. Do not integrate or distribute the audited WNC
+  parser unless its license is clarified.
 
 ## Local data and privacy
 
@@ -155,6 +171,11 @@ layer. Do not silently skip checks.
 - Keep detector definitions version-pinned per run. A detector failure must be
   recorded and isolated; cancellation or restart must not retain partial event
   results or temporary files.
+- Keep replay-provider structures behind `ReplayParserProvider` adapters. Store
+  app-owned canonical facts with provider/version, evidence class, confidence,
+  validation state, conflicts, missing evidence, and user correction. Never
+  convert a round clock into an elapsed timeline or invent missing positions,
+  camera, health, weapon, shot, gadget, destruction, video, or audio data.
 
 ## Background media-analysis jobs
 

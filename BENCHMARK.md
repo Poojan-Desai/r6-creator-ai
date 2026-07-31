@@ -18,6 +18,28 @@ highlights.” No precision, recall, approval-rate, processing-cost, or accuracy
 claim is supported until Phase 3B has processed a legally usable, manually
 labeled evaluation set.
 
+## Replay-first benchmark boundary — July 30, 2026
+
+The replay import/provider/canonical-evidence workflow does not create a
+candidate-moment accuracy result. One public MIT Y9S1 parser fixture verified
+integration behavior: the app displayed Chalet/Bomb, 10 privacy-safe players,
+9 match-feedback records, and a 31-row populated/partial/empty/unsupported
+capability report after restart.
+
+That observation is **development fixture evidence**, not:
+
+- a real-user replay result,
+- a current-season compatibility result,
+- a position/timeline reconstruction result,
+- a candidate precision/recall result, or
+- proof that footage-review time is reduced.
+
+No approved real Match Replay was found in app-managed folders. Replay
+capability benchmarking remains pending until the pinned provider runs against
+an explicitly selected real package and important fields are checked against
+available replay playback or other direct evidence. Missing fields stay
+unavailable and do not receive estimated values.
+
 ## Score definitions
 
 - **Event confidence:** strength of repeated detector evidence for an event
