@@ -114,12 +114,12 @@ export function UploadPanel({ maxUploadBytes }: { maxUploadBytes: number }) {
       <div className="border-b border-white/8 px-6 py-5 sm:px-7">
         <div className="flex items-start justify-between gap-6">
           <div>
-            <p className="section-kicker">New project</p>
+            <p className="section-kicker">Optional supporting recording</p>
             <h2
               id="upload-title"
               className="font-display mt-1 text-3xl font-bold text-white uppercase"
             >
-              Bring in a recording
+              Add original gameplay video
             </h2>
           </div>
           <span className="hidden rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-400 sm:block">
@@ -144,7 +144,7 @@ export function UploadPanel({ maxUploadBytes }: { maxUploadBytes: number }) {
               <UploadCloud aria-hidden="true" size={30} />
             </span>
             <span className="font-display mt-5 text-2xl font-bold text-white uppercase">
-              Drop your gameplay here
+              Drop an optional MP4 here
             </span>
             <span className="mt-2 max-w-md text-sm leading-6 text-slate-400">
               Or click to choose one MP4. The recording stays on this computer

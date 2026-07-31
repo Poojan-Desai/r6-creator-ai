@@ -40,4 +40,7 @@ export const appConfig = {
   ),
   whisperModelName: process.env.WHISPER_MODEL_NAME?.trim() || "base.en",
   youtubeDataApiKey: process.env.YOUTUBE_DATA_API_KEY?.trim() || null,
+  r6DissectPath:
+    process.env.R6_DISSECT_PATH?.trim() ||
+    path.join(dataRoot, "tools", "replay-parsers", "r6-dissect"),
 };

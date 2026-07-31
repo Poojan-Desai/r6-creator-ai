@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   BarChart3,
   BookOpen,
+  Archive,
   FolderOpen,
   Map,
   Crosshair,
@@ -23,7 +24,8 @@ export function AppHeader() {
           <BrandMark />
         </Link>
         <nav className="flex flex-wrap items-center gap-2" aria-label="Main">
-          <NavItem href="/" icon={FolderOpen} label="Projects" />
+          <NavItem href="/replays" icon={Archive} label="Match Replays" />
+          <NavItem href="/" icon={FolderOpen} label="Video projects" />
           <NavItem href="/references" icon={BookOpen} label="References" />
           <NavItem href="/maps" icon={Map} label="Map knowledge" />
           <NavItem href="/operators" icon={Crosshair} label="Operators" />

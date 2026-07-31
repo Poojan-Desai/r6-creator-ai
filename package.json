@@ -17,7 +17,8 @@
     "db:migrate": "prisma migrate dev",
     "db:setup": "node scripts/prepare-data.mjs && prisma generate && prisma migrate deploy",
     "db:studio": "prisma studio",
-    "transcription:setup": "node scripts/setup-transcription.mjs"
+    "transcription:setup": "node scripts/setup-transcription.mjs",
+    "replay:setup": "node scripts/setup-replay-parser.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

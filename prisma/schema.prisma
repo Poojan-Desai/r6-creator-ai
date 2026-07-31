@@ -402,6 +402,98 @@ enum ProjectOperatorSide {
   DEFENSE
 }
 
+enum ReplayPackageStatus {
+  IMPORTING
+  READY
+  PARSING
+  PARTIALLY_PARSED
+  PARSED
+  UNSUPPORTED_REPLAY
+  ERROR
+}
+
+enum ReplayPrivacyMode {
+  PRESERVE_LOCAL
+  ALIASES
+  HASHED
+  REDACTED
+}
+
+enum ReplayRetentionPreference {
+  KEEP_EVERYTHING
+  KEEP_PARSED_DELETE_RAW
+  KEEP_FINAL_OUTPUTS
+  DELETE_TEMPORARY
+  CUSTOM
+}
+
+enum ReplayProviderRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
+enum ReplayCapabilityState {
+  AVAILABLE_VERIFIED
+  AVAILABLE_UNVERIFIED
+  EXPERIMENTAL
+  PARTIALLY_AVAILABLE
+  EMPTY_IN_REPLAY
+  UNSUPPORTED_PROVIDER
+  UNSUPPORTED_REPLAY_VERSION
+  PARSER_ERROR
+  SEMANTICS_UNCERTAIN
+}
+
+enum CanonicalEvidenceClass {
+  STABLE_REPLAY_FIELD
+  EXPERIMENTAL_REPLAY_FIELD
+  VIDEO_VISUAL_DETECTION
+  AUDIO_DETECTION
+  OCR
+  IMPORTED_POV_VIDEO
+  USER_CONFIRMED_FACT
+  USER_CORRECTED_FACT
+  DERIVED_TACTICAL_INFERENCE
+}
+
+enum CanonicalConfidenceStatus {
+  VERIFIED
+  HIGH
+  MODERATE
+  LOW
+  UNKNOWN
+}
+
+enum CanonicalValidationStatus {
+  VALIDATED
+  UNVERIFIED
+  EXPERIMENTAL
+  CONFLICTING
+  USER_CONFIRMED
+  USER_CORRECTED
+}
+
+enum CanonicalEventCategory {
+  ROUND_START
+  ROUND_END
+  MATCH_END
+  KILL
+  DEATH
+  HEADSHOT
+  DBNO
+  FINISH
+  ASSIST
+  OBJECTIVE_LOCATE
+  DEFUSER_PLANT
+  DEFUSER_DISABLE
+  PLAYER_DISCONNECT
+  PLAYER_RECONNECT
+  OTHER
+}
+
 model Project {
   id                     String                    @id @default(cuid())
   name                   String
@@ -434,6 +526,8 @@ model Project {
   mapContext             ProjectMapContext?
   signalExplorer         SignalExplorerPreference?
   operatorContext        ProjectOperatorContext?
+  replayPackages         ReplayPackage[]
+  canonicalMatches       CanonicalMatch[]
 
   @@index([createdAt])
 }
@@ -1921,4 +2015,249 @@ model MapUpdateCheck {
   completedAt       DateTime?
 
   @@index([gameDataVersionId, requestedAt])
+}
+
+model ReplayPackage {
+  id                        String                    @id
+  projectId                 String?
+  project                   Project?                  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  displayName               String
+  status                    ReplayPackageStatus       @default(IMPORTING)
+  permissionConfirmed       Boolean                   @default(false)
+  permissionConfirmedAt     DateTime?
+  privacyMode               ReplayPrivacyMode         @default(ALIASES)
+  retentionPreference       ReplayRetentionPreference @default(KEEP_EVERYTHING)
+  notes                     String?
+  sourceKind                String
+  sourceArchiveRelativePath String?                   @unique
+  fileCount                 Int                       @default(0)
+  roundFileCount            Int                       @default(0)
+  totalSizeBytes            BigInt                    @default(0)
+  packageFingerprintSha256  String                    @unique
+  detectedReplayVersion     String?
+  detectedGameVersion       String?
+  activeProviderId          String?
+  activeProviderVersion     String?
+  errorMessage              String?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  files                     ReplayFile[]
+  providerRuns              ReplayProviderRun[]
+  capabilities              ReplayCapability[]
+  canonicalMatch            CanonicalMatch?
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([projectId])
+}
+
+model ReplayFile {
+  id                String        @id
+  replayPackageId   String
+  replayPackage     ReplayPackage @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
+  stableFileId      String
+  safeDisplayName   String
+  relativePath      String        @unique
+  fileSizeBytes     BigInt
+  fingerprintSha256 String
+  roundIndex        Int?
+  detectedVersion   String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([replayPackageId, stableFileId])
+  @@unique([replayPackageId, fingerprintSha256])
+  @@index([replayPackageId, roundIndex])
+}
+
+model ReplayProviderRun {
+  id                    String                  @id
+  replayPackageId       String
+  replayPackage         ReplayPackage           @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
+  providerId            String
+  providerVersion       String
+  providerCommit        String
+  status                ReplayProviderRunStatus @default(QUEUED)
+  progress              Int                     @default(0)
+  stage                 String                  @default("Waiting to start")
+  rawOutputRelativePath String?                 @unique
+  stdoutPreview         String?
+  stderrPreview         String?
+  warningsJson          String                  @default("[]")
+  errorMessage          String?
+  cancelRequestedAt     DateTime?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  processingDurationMs  Int?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  @@index([replayPackageId, createdAt])
+  @@index([status])
+  @@index([providerId, providerVersion])
+}
+
+model ReplayCapability {
+  id              String                @id
+  replayPackageId String
+  replayPackage   ReplayPackage         @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
+  capabilityKey   String
+  displayName     String
+  state           ReplayCapabilityState
+  providerId      String?
+  providerVersion String?
+  evidenceSummary String
+  missingReason   String?
+  populatedCount  Int?
+  confidence      Float?
+  lastEvaluatedAt DateTime              @default(now())
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@unique([replayPackageId, capabilityKey])
+  @@index([replayPackageId, state])
+}
+
+model CanonicalMatch {
+  id                      String                    @id
+  stableId                String                    @unique
+  replayPackageId         String                    @unique
+  replayPackage           ReplayPackage             @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
+  videoProjectId          String?
+  videoProject            Project?                  @relation(fields: [videoProjectId], references: [id], onDelete: SetNull)
+  replayLocalMatchId      String?
+  gameVersion             String?
+  matchTimestamp          DateTime?
+  mapName                 String?
+  gameMode                String?
+  matchType               String?
+  recordingPlayerStableId String?
+  finalScoreSummary       String?
+  finalResult             String?
+  sourceProviderId        String
+  sourceProviderVersion   String
+  confidenceStatus        CanonicalConfidenceStatus @default(UNKNOWN)
+  validationStatus        CanonicalValidationStatus @default(UNVERIFIED)
+  conflictingEvidenceJson String                    @default("[]")
+  missingEvidenceJson     String                    @default("[]")
+  userCorrectionJson      String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  rounds                  CanonicalRound[]
+  players                 CanonicalPlayer[]
+  events                  CanonicalEvent[]
+
+  @@index([videoProjectId])
+  @@index([mapName, gameMode])
+}
+
+model CanonicalRound {
+  id                      String                    @id
+  stableId                String                    @unique
+  matchId                 String
+  match                   CanonicalMatch            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  roundIndex              Int
+  side                    String?
+  site                    String?
+  startSeconds            Float?
+  endSeconds              Float?
+  durationSeconds         Float?
+  scoreBefore             String?
+  scoreAfter              String?
+  winner                  String?
+  winCondition            String?
+  overtimeState           String?
+  sourceProviderId        String
+  sourceProviderVersion   String
+  confidenceStatus        CanonicalConfidenceStatus @default(UNKNOWN)
+  validationStatus        CanonicalValidationStatus @default(UNVERIFIED)
+  conflictingEvidenceJson String                    @default("[]")
+  missingEvidenceJson     String                    @default("[]")
+  userCorrectionJson      String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  events                  CanonicalEvent[]
+
+  @@unique([matchId, roundIndex])
+  @@index([matchId, startSeconds])
+}
+
+model CanonicalPlayer {
+  id                      String                    @id
+  stableId                String                    @unique
+  matchId                 String
+  match                   CanonicalMatch            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  replayLocalPlayerId     String
+  privacyAlias            String
+  localDisplayName        String?
+  profileHash             String?
+  teamIndex               Int?
+  side                    String?
+  operatorName            String?
+  isRecordingPlayer       Boolean                   @default(false)
+  sourceProviderId        String
+  sourceProviderVersion   String
+  confidenceStatus        CanonicalConfidenceStatus @default(UNKNOWN)
+  validationStatus        CanonicalValidationStatus @default(UNVERIFIED)
+  conflictingEvidenceJson String                    @default("[]")
+  missingEvidenceJson     String                    @default("[]")
+  userCorrectionJson      String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  actedEvents             CanonicalEvent[]          @relation("CanonicalEventActor")
+  targetEvents            CanonicalEvent[]          @relation("CanonicalEventTarget")
+
+  @@unique([matchId, replayLocalPlayerId])
+  @@index([matchId, teamIndex])
+}
+
+model CanonicalEvent {
+  id                      String                    @id
+  stableId                String                    @unique
+  matchId                 String
+  match                   CanonicalMatch            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  roundId                 String?
+  round                   CanonicalRound?           @relation(fields: [roundId], references: [id], onDelete: SetNull)
+  category                CanonicalEventCategory
+  timestampSeconds        Float?
+  actorPlayerId           String?
+  actorPlayer             CanonicalPlayer?          @relation("CanonicalEventActor", fields: [actorPlayerId], references: [id], onDelete: SetNull)
+  targetPlayerId          String?
+  targetPlayer            CanonicalPlayer?          @relation("CanonicalEventTarget", fields: [targetPlayerId], references: [id], onDelete: SetNull)
+  directObservationJson   String
+  inferenceJson           String                    @default("{}")
+  confidenceStatus        CanonicalConfidenceStatus @default(UNKNOWN)
+  validationStatus        CanonicalValidationStatus @default(UNVERIFIED)
+  conflictingEvidenceJson String                    @default("[]")
+  missingEvidenceJson     String                    @default("[]")
+  userCorrectionJson      String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  evidence                CanonicalEvidence[]
+
+  @@index([matchId, timestampSeconds])
+  @@index([roundId, timestampSeconds])
+  @@index([category])
+}
+
+model CanonicalEvidence {
+  id                      String                    @id
+  eventId                 String
+  event                   CanonicalEvent            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  evidenceClass           CanonicalEvidenceClass
+  sourceProviderId        String
+  sourceProviderVersion   String
+  sourceFileStableId      String?
+  sourceReference         String
+  directObservationJson   String
+  inferenceJson           String                    @default("{}")
+  confidenceStatus        CanonicalConfidenceStatus @default(UNKNOWN)
+  validationStatus        CanonicalValidationStatus @default(UNVERIFIED)
+  conflictingEvidenceJson String                    @default("[]")
+  missingEvidenceJson     String                    @default("[]")
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  @@index([eventId, evidenceClass])
+  @@index([sourceProviderId, sourceProviderVersion])
 }

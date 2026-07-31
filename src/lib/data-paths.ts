@@ -17,6 +17,10 @@ export const dataPaths = {
   detectorArtifacts: path.join(appConfig.dataRoot, "detector-artifacts"),
   mapKnowledge: path.join(appConfig.dataRoot, "map-knowledge"),
   mapBlueprintTemp: path.join(appConfig.dataRoot, "map-blueprint-temp"),
+  replays: path.join(appConfig.dataRoot, "replays"),
+  replayImportTemp: path.join(appConfig.dataRoot, "replay-import-temp"),
+  replayParserOutputs: path.join(appConfig.dataRoot, "replay-parser-outputs"),
+  replayTools: path.join(appConfig.dataRoot, "tools", "replay-parsers"),
   models: path.join(appConfig.dataRoot, "models"),
   transcriptionTemp: path.join(appConfig.dataRoot, "transcription-temp"),
 };
@@ -32,6 +36,10 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.detectorArtifacts, { recursive: true }),
     mkdir(dataPaths.mapKnowledge, { recursive: true }),
     mkdir(dataPaths.mapBlueprintTemp, { recursive: true }),
+    mkdir(dataPaths.replays, { recursive: true }),
+    mkdir(dataPaths.replayImportTemp, { recursive: true }),
+    mkdir(dataPaths.replayParserOutputs, { recursive: true }),
+    mkdir(dataPaths.replayTools, { recursive: true }),
     mkdir(dataPaths.models, { recursive: true }),
     mkdir(dataPaths.transcriptionTemp, { recursive: true }),
   ]);
@@ -91,4 +99,16 @@ export function mapVersionAssetDirectory(mapVersionId: string) {
 
 export function mapBlueprintImportDirectory(importId: string) {
   return path.join(dataPaths.mapBlueprintTemp, importId);
+}
+
+export function replayPackageDirectory(replayPackageId: string) {
+  return path.join(dataPaths.replays, replayPackageId);
+}
+
+export function replayImportDirectory(importId: string) {
+  return path.join(dataPaths.replayImportTemp, importId);
+}
+
+export function replayProviderOutputDirectory(providerRunId: string) {
+  return path.join(dataPaths.replayParserOutputs, providerRunId);
 }

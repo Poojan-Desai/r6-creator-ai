@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowUpRight,
+  Archive,
   Clock3,
   Film,
   FolderOpen,
@@ -22,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   await ensureDataDirectories();
-  const [toolHealth, projectsResult] = await Promise.all([
+  const [toolHealth, projectsResult, replayCount] = await Promise.all([
     getVideoToolHealth(),
     db.project
       .findMany({
@@ -34,6 +35,7 @@ export default async function HomePage() {
         error: false,
       }))
       .catch(() => ({ projects: [], error: true })),
+    db.replayPackage.count().catch(() => 0),
   ]);
   const projects = projectsResult.projects;
   const totalClips = projects.reduce(
@@ -61,16 +63,24 @@ export default async function HomePage() {
               <span className="block text-[#b8ff2c]">Build the story.</span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">
-              Turn long Rainbow Six recordings into organized clip
-              packages—without sending your footage to a cloud service.
+              Start with completed Rainbow Six Match Replay files for
+              inspectable match evidence. Add the original MP4 only when you
+              need pixels, audio, transcript, or playable clips.
             </p>
+            <Link
+              href="/replays"
+              className="primary-button mt-6 inline-flex normal-case no-underline"
+            >
+              <Archive size={18} /> Import Match Replay
+              <ArrowUpRight size={17} />
+            </Link>
           </div>
 
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <DashboardStat
               icon={FolderOpen}
-              value={String(projects.length).padStart(2, "0")}
-              label="Projects"
+              value={String(replayCount).padStart(2, "0")}
+              label="Replays"
             />
             <DashboardStat
               icon={Film}
@@ -97,7 +107,29 @@ export default async function HomePage() {
         )}
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
-          <UploadPanel maxUploadBytes={appConfig.maxUploadBytes} />
+          <div className="space-y-6">
+            <Link
+              href="/replays"
+              className="panel group block p-6 no-underline sm:p-7"
+            >
+              <div className="flex items-start justify-between gap-5">
+                <span className="grid size-12 place-items-center rounded-xl bg-[#b8ff2c]/10 text-[#b8ff2c]">
+                  <Archive size={24} />
+                </span>
+                <ArrowUpRight className="text-slate-600 group-hover:text-[#b8ff2c]" />
+              </div>
+              <p className="section-kicker mt-6">Recommended starting point</p>
+              <h2 className="font-display mt-2 text-3xl font-bold text-white uppercase">
+                Import a completed Match Replay
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+                Save a replay folder, individual .rec round files, or one ZIP.
+                Parsing remains local and runs only after you explicitly start
+                it.
+              </p>
+            </Link>
+            <UploadPanel maxUploadBytes={appConfig.maxUploadBytes} />
+          </div>
 
           <aside className="panel h-fit p-6 sm:p-7">
             <p className="section-kicker">First-pass workflow</p>
@@ -108,23 +140,23 @@ export default async function HomePage() {
               {[
                 [
                   "01",
-                  "Upload privately",
-                  "Your MP4 is copied into this app’s local data folder.",
+                  "Import replay evidence",
+                  "Start with completed .rec files from the game’s Match Replay folder.",
                 ],
                 [
                   "02",
-                  "Choose the voice",
-                  "Select one audio track and create an editable local transcript.",
+                  "Inspect capabilities",
+                  "See exactly which fields are populated, partial, empty, or unsupported.",
                 ],
                 [
                   "03",
-                  "Mark the moment",
-                  "Choose exact start and end times while watching the recording.",
+                  "Add video if needed",
+                  "Attach an MP4 for original pixels, audio, transcript, and playable clips.",
                 ],
                 [
                   "04",
-                  "Shape the post",
-                  "Draft the hook, script, title, caption, thumbnail text, and edit notes.",
+                  "Build with evidence",
+                  "Keep direct observations, inferences, and unknowns visibly separate.",
                 ],
               ].map(([number, title, description]) => (
                 <li key={number} className="flex gap-4">
@@ -157,7 +189,7 @@ export default async function HomePage() {
                 id="projects-title"
                 className="font-display mt-1 text-4xl font-bold text-white uppercase"
               >
-                Saved projects
+                Saved video projects
               </h2>
             </div>
             <p className="hidden text-sm text-slate-500 sm:block">
