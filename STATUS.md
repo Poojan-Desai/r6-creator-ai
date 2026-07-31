@@ -3,7 +3,7 @@
 - **Current branch:** `codex/phase-3`
 - **Latest verified commit:** `eb9b11f` — secure Match Replay evidence
   foundation
-- **Latest stable tag:** `phase-3b2o-stable`
+- **Latest stable tag:** `replay-r2-foundation-stable` at `0730820`
 - **Current phase:** Replay-first Phase R1/R2 checkpoint
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0

@@ -5,7 +5,8 @@
 Branch `codex/phase-3` began from verified commit `612912f`; tag
 `phase-3b2o-stable` preserves it. Commit `eb9b11f` contains the verified
 replay-first R2 implementation. R3 must not start until the R1 real-user replay
-gate is satisfied.
+gate is satisfied. Tag `replay-r2-foundation-stable` preserves the verified
+checkpoint documentation at `0730820`.
 
 ## Completed in this session
 
