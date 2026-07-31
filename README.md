@@ -1,9 +1,10 @@
 # R6 Creator AI
 
-R6 Creator AI is a private web app that runs on your own Mac. It turns an MP4
-gameplay recording into a saved project where you can inspect the video, cut
-clips, transcribe one chosen audio track, edit and search the timestamped
-transcript, and create a complete writing package from a clip.
+R6 Creator AI is a private web app that runs on your own Mac. Its primary input
+is now a completed Rainbow Six Siege Match Replay (`.rec` files or a replay
+ZIP). It stores inspectable match evidence locally and shows which fields were
+recovered, partial, empty, or unsupported. An MP4 remains optional for original
+pixels, audio, transcription, playable clips, and video analysis.
 Phase 3A adds a permission-gated Reference Library and structured Creator Style
 Profiles. Phase 3B.1 adds manual benchmark labels and a safe background-job
 foundation. Phase 3B.2 adds local, explainable scene, motion, brightness,
@@ -16,7 +17,25 @@ You do not need to know how to code to use it. There is no login, subscription,
 cloud upload, paid AI key, or separate FFmpeg setup. Speech recognition uses the
 free `whisper.cpp` program and a local model on this Mac.
 
-## What works now (Phase 1 through Phase 3B.2-O)
+## What works now
+
+- Replay-first navigation and a streamed local Match Replay library
+- Individual `.rec`, multiple round-file, folder, and one-ZIP selection
+- Replay magic-byte, duplicate, archive-traversal, symbolic-link, entry-count,
+  expanded-size, compression-ratio, and app-root path safety
+- Required lawful-possession confirmation plus private player aliases by default
+- A pinned MIT parser built from reviewed source without global installation
+- Background parsing with progress, cancellation, timeout, retry, restart
+  reconciliation, schema validation, and temporary-file cleanup
+- App-owned canonical match, round, privacy-safe player, event, and evidence
+  records persisted in SQLite
+- An honest capability matrix separating verified, unverified, partial, empty,
+  and unsupported fields
+- Explicit deletion of an app-managed replay package and parsed output
+- Public-fixture browser verification with 10 aliased players and 9 feedback
+  records across restart; real-user replay proof is still required
+
+Existing Phase 1 through Phase 3B.2-O features remain available:
 
 - Streamed MP4 uploads with progress, type checks, and a 20 GB default limit
 - Saved local projects that remain after the app is closed
@@ -159,7 +178,22 @@ If Terminal says Homebrew is missing, install it from
 [brew.sh](https://brew.sh/), then run `npm run transcription:setup` again. No
 OpenAI account or API key is used.
 
-### 6. Start R6 Creator AI
+### 6. Prepare the local Match Replay parser
+
+Copy and run:
+
+```bash
+npm run replay:setup
+```
+
+This checks out one exact MIT-licensed `r6-dissect` source commit, verifies the
+license, builds it inside `./data/tools/replay-parsers`, records the binary
+SHA-256, and removes the temporary source/build cache. On an Apple Silicon Mac,
+the script downloads and verifies a project-local Go toolchain only when a
+compatible `go` command is unavailable. It does not modify your shell profile
+or install a global executable.
+
+### 7. Start R6 Creator AI
 
 Copy and run:
 
@@ -175,7 +209,30 @@ Keep the Terminal window open while using the app.
 
 ## Using the app
 
-### Upload a recording
+### Import and inspect a Match Replay
+
+1. Open **Match Replays** in the top navigation.
+2. Click **Choose replay folder** for a completed replay folder, or **Choose
+   files or ZIP** for individual `.rec` round files or one ZIP.
+3. Give the package a readable name.
+4. Keep **Private aliases** selected unless you deliberately want real player
+   names preserved only on this Mac.
+5. Confirm you created or lawfully possess the replay, then click **Import Match
+   Replay**.
+6. Review the receipt and press **Run local parser**.
+7. Keep the page open or continue using the app. **Cancel** stops the local
+   process and discards partial canonical output.
+8. Inspect the capability matrix, privacy-safe roster, rounds, and direct
+   match-feedback evidence.
+
+Import does not parse automatically and nothing is uploaded. The active
+provider is verified only on its upstream Y8S1–Y9S1 fixtures until a real
+current replay is supplied. Match Replay files do not contain original gameplay
+pixels or audio. The provider also does not expose validated positions,
+orientation, health, weapons, shots, gadgets, destruction, or virtual POV; the
+UI shows those fields as unavailable.
+
+### Add an optional gameplay recording
 
 1. On the home dashboard, drag an MP4 onto the upload area or click it.
 2. Check or change the project name.
@@ -448,8 +505,12 @@ Everything is below:
 /Users/poojandesai/Documents/Codex/2026-07-21/i/data
 ```
 
-- `r6-creator.db` stores project, clip, audio-track, transcript, job, and writing
-  metadata.
+- `r6-creator.db` stores project, replay, canonical evidence, clip, audio-track,
+  transcript, job, and writing metadata.
+- `replays/` stores app-owned `.rec` round files and an original source ZIP when
+  one was imported.
+- `replay-parser-outputs/` stores only privacy-sanitized provider JSON.
+- `tools/replay-parsers/` stores the locally built parser and build manifest.
 - `uploads/` stores the app’s local source recordings.
 - `clips/` stores generated MP4 clips.
 - `models/whisper/` stores the free local speech model.
@@ -498,6 +559,32 @@ Stop the app and run:
 npm run transcription:setup
 npm run dev
 ```
+
+### “The reviewed replay parser has not been built locally”
+
+Stop the app and run:
+
+```bash
+npm run replay:setup
+npm run dev
+```
+
+If setup cannot reach GitHub or the official Go download, check the Mac’s
+internet connection and retry. Normal replay parsing is offline after setup.
+
+### A replay says unsupported, partial, or empty
+
+Rainbow Six replay formats change. “Empty” means the provider understands a
+field but this replay did not populate it. “Unsupported” means the active
+provider does not expose it. “Partial” or “unverified” means evidence exists but
+the app will not present a stronger conclusion. Keep the original replay and
+retry after a compatible provider update; missing movement is never invented.
+
+### Replay parsing stops after the app restarts
+
+An operating-system child process cannot resume across a full app restart. The
+app marks it interrupted, removes partial parser output, preserves the imported
+round files, and offers **Retry local parse**.
 
 ### Transcription stops after the app restarts
 
@@ -590,7 +677,7 @@ The detailed implementation and verification record is in
 [`PLAN.md`](./PLAN.md). Contributor safety rules are in
 [`AGENTS.md`](./AGENTS.md).
 
-## Deliberate limits through Phase 3B.2-O
+## Deliberate current limits
 
 - English local model only in the beginner setup
 - No automatic R6 candidate-moment fusion, telemetry, calibrated HUD OCR,
@@ -606,6 +693,13 @@ The detailed implementation and verification record is in
   room name
 - No operator, weapon, ability, icon, or gadget recognition and no automatic
   tactical outcome claim from a documented operator fact
+- No claim that the parser supports the current Siege replay version until a
+  real current replay is executed
+- No position/orientation, ten-player movement timeline, reconstructed player
+  POV, replay-only tactical video, or replay-derived playable MP4 yet
+- No original pixels or audio inside `.rec` Match Replay files
+- No integration of the audited WNC parser because its checkout has no license
+  file
 
 Phase 3B.2-M verification passed on July 22, 2026. The official Oregon blueprint
 ZIP imported through the bounded local route, preserved five originals, created
