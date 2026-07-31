@@ -1,14 +1,16 @@
 # R6 Creator AI — Current Status
 
 - **Current branch:** `codex/phase-3`
-- **Preserved replay checkpoint:** `replay-r2-foundation-stable` at `0730820`
-- **Correction baseline:** `faafab6`
-- **Current phase:** Replay-first Phase R1/R2 validation and parser correction
+- **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
+  and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
+- **Current phase:** U1 — unified project and input workflow
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
   gate
-- **Current active task:** Finish and commit the independently verified current
-  replay-parser correction; do not begin another product phase
+- **Current active task:** Add an additive unified Creator Studio / Coaching Lab
+  project wrapper, guided creation workflow, shared dashboard, migrations,
+  tests, and browser verification without changing existing media or replay
+  records
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
   reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
   plus the reviewed `compat-1` operator-roster patch
@@ -44,6 +46,15 @@
   also preserved the prior match.
 - **Automated validation:** Formatting, ESLint, strict TypeScript, 161 tests
   across 31 files, and the warning-free production build passed on July 31, 2026.
+- **Pre-U1 safety:** The Git tree was clean before work. A consistent private
+  SQLite backup was created at
+  `data/backups/r6-creator.pre-unified-u1-20260731.db`; integrity was `ok` and
+  the foreign-key check returned no violations.
+- **Authoritative direction:** The gameplay screen recording is the primary
+  visual source, Match Replay is optional structured evidence, and a permitted
+  reference is optional structural guidance. Replay-only workspaces remain
+  supported without pretending that replay data contains gameplay pixels or
+  audio.
 
 ## Latest real replay verification
 

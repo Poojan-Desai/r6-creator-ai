@@ -2,10 +2,15 @@
 
 ## Resume point
 
-Branch `codex/phase-3` preserves the replay-first R2 foundation at tag
-`replay-r2-foundation-stable` (`0730820`) and its documentation checkpoint at
-`faafab6`. The real-parser correction is a separate commit after that point.
-Do not begin another development phase without an explicit request.
+Branch `codex/phase-3` preserves the replay R2 foundation at tag
+`replay-r2-foundation-stable` (`0730820`) and the verified real-parser
+correction at tag `real-replay-foundation-stable` (commit `93d1b62`). The
+authoritative active sequence is now U1–U8 for one unified Creator Studio and
+Coaching Lab. U1 is active.
+
+A consistent pre-migration backup exists at
+`data/backups/r6-creator.pre-unified-u1-20260731.db`. It passed SQLite integrity
+and foreign-key checks. It is private runtime data and must not be committed.
 
 ## Completed in this correction
 
@@ -63,5 +68,8 @@ views, or virality claim follows from replay parsing.
 
 ## Exact next action
 
-Keep the development server running for user inspection. Await the user's next
-explicit phase or correction request; do not start new feature work.
+Finish the U1 plan/documentation checkpoint, then add the unified project schema
+and migration. Use an additive `StudioProject` plus normalized input links so
+existing required-video `Project` rows remain unchanged and replay-only
+workspaces require no fake media. Keep the existing development server running;
+do not restart it.

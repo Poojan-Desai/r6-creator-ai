@@ -1,5 +1,149 @@
 # R6 Creator AI — Implementation Plan
 
+## Authoritative Personal Version 1 direction
+
+The authoritative execution sequence is now the unified **Creator Studio +
+Coaching Lab** plan. It supersedes the earlier replay-first direction where the
+two conflict. The application remains one local product, and both workspaces
+share the existing media, replay, transcript, reference, map, operator,
+evidence, job, storage, and export foundations.
+
+The primary visual input is an owned gameplay screen recording. A Match Replay
+is optional structured evidence and must never be presented as though it
+contains original gameplay pixels or audio. The supported project modes are:
+
+1. screen recording only;
+2. Match Replay only;
+3. screen recording plus Match Replay (recommended when both exist);
+4. screen recording plus a permitted structural reference; and
+5. screen recording plus replay plus a permitted structural reference.
+
+References may influence high-level pacing, structure, energy, timing, and
+content category only. The application must not copy another creator's script,
+jokes, catchphrases, captions, branding, title, thumbnail, music, or distinctive
+wording.
+
+The verified replay parser at commit `93d1b62` is preserved by the annotated
+tag `real-replay-foundation-stable`. A consistent private SQLite backup was
+created before unified-project migrations. Existing Phase 1, Phase 2, Phase 3A,
+Phase 3B foundations, map/operator knowledge, and real replay results remain
+additive dependencies rather than work to rebuild.
+
+## Unified execution sequence
+
+### U1 — Unified project and input workflow
+
+Status: **active**.
+
+Build an additive unified workspace around existing records instead of making
+the required-video `Project` model nullable or creating fake media:
+
+1. Add a `StudioProject` record for the user's goal, input mode, reference
+   choice, focus areas, free-form instructions, coaching goals, selected player,
+   selected creator-audio track, and user-confirmed map/operator context.
+2. Add normalized `StudioProjectInput` links for one primary gameplay recording,
+   optional additional recordings, one replay package, and one permitted local
+   or YouTube reference. Validate that each input kind points to exactly one
+   compatible existing record.
+3. Link an optional Creator Style Profile without copying protected expression.
+4. Preserve replay-only support without implying that a replay supplies
+   playable footage. Store a stable privacy-safe player identifier and alias
+   snapshot because parser refreshes may replace canonical player row IDs.
+5. Add an accessible guided creation flow asking what the user is creating,
+   what they are providing, which reference to use, what to focus on, and any
+   natural-language instructions.
+6. Add a unified project dashboard with honest sections for Inputs,
+   Synchronization, Transcript, Candidate moments, Story plan, Script, Editor,
+   Coaching, and Exports. Later-stage sections must say that they are planned or
+   awaiting inputs; an empty interface must never be shown as completed work.
+7. Keep existing upload, replay import, reference, video project, clipping,
+   transcription, benchmarking, map, and operator routes working.
+8. Test request validation, incompatible input combinations, persistence,
+   deletion behavior, migration from the verified database, browser navigation,
+   restart persistence, and all legacy regressions.
+
+U1 is complete only when screen-recording-only, replay-only, and combined
+workspaces can be saved and reopened, existing data is unchanged, the guided
+workflow is understandable without editing code, the browser is warning-free,
+the database passes integrity and foreign-key checks, the complete validation
+suite passes, and the focused U1 commit is clean.
+
+### U2 — Replay/video synchronization
+
+Status: not started; begins only after U1 is verified.
+
+Add versioned, non-destructive synchronization with manual anchors, multiple
+automatic candidate offsets, per-round adjustments, drift correction, visual
+verification, confidence, and separate observation/replay-fact/inference
+records. A single uncertain anchor cannot establish synchronization. The user
+must be able to align a video timestamp to a replay event, add a second point,
+preview the mapping, correct it, and save a new version without changing either
+source.
+
+### U3 — Short-form Creator Studio
+
+Status: not started.
+
+Build evidence-backed candidates, human review, an editable story plan,
+original scripts, voiceover integration, proxy previews, deterministic FFmpeg
+editing, and real MP4 exports for 9:16, 16:9, 1:1, and 4:5 outputs. Support
+15/30/45/60/90-second and custom targets. Keep Event Confidence, Content
+Potential Score, and Style Similarity separate, inspectable, and explicitly not
+predictions of views.
+
+### U4 — 20–30 minute Long-Form Studio
+
+Status: not started.
+
+Plan and render approximately 20-, 25-, 30-minute, or custom videos from one or
+more recordings. Store premise, teaser, chapters, selected matches/rounds,
+transitions, retention beat, climax, ending, title/thumbnail concepts,
+description, and chapter timestamps with reasons. Use preview proxies and
+explicit full-resolution export; never invent missing angles or replay pixels.
+
+### U5 — Voiceover Studio
+
+Status: not started.
+
+Extend the verified local creator-track transcription foundation with
+record/import/take management, waveform/timeline placement, trimming, gain,
+fades, retakes, preview, and deterministic mixdown. Do not identify speakers,
+make voiceprints, clone voices, or transcribe unselected teammate audio.
+
+### U6 — Coaching Lab
+
+Status: not started.
+
+Produce evidence-backed reviews using visible recording observations and
+supported replay facts. Separate observed facts, replay facts, inferences,
+conflicts, and unknowns. Never claim exact room/position, intent, line of sight,
+player count, or mechanical cause when the available evidence cannot establish
+it. Reports remain inspectable and local.
+
+### U7 — Evidence fusion and progress tracking
+
+Status: not started.
+
+Unify evidence provenance, confidence, conflicts, workflow progress, job
+recovery, content/coaching status, and explicit user corrections. Retain the
+verified detector/scoring vocabulary and show unsupported capabilities as
+unsupported rather than silently filling gaps.
+
+### U8 — End-to-end export, testing, and release
+
+Status: not started.
+
+Verify complete real-media Creator Studio and Coaching Lab paths, playable media
+exports, report exports, cancellation, restart recovery, storage cleanup,
+database preservation, browser console cleanliness, beginner documentation, and
+a release tag. Interface-only or fixture-only proof does not complete Personal
+Version 1.
+
+After each U stage, run targeted tests plus `npm run format:check`,
+`npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`; verify
+SQLite integrity and foreign keys; exercise the relevant browser path; update
+`STATUS.md` and `docs/SESSION_HANDOFF.md`; and make one focused Git commit.
+
 ## Product goal
 
 Build a private, local-first web application that turns owned or permitted
@@ -8,10 +152,10 @@ creator profiles, evidence-backed candidate moments, and original content
 packages. Phase 1 and Phase 2 remain intact. Local processing remains the
 default, and the core workflow must continue working without a paid API.
 
-The Personal Version 1 direction is now **Match Replay first**. Completed `.rec`
-round files or a replay ZIP are the primary evidence input. Gameplay MP4 remains
-fully supported as optional evidence for original pixels, audio, transcription,
-manual clipping, and video-only detectors. See `MASTER_ROADMAP.md` and
+The Personal Version 1 direction is now **recording-first with optional replay
+evidence**. Gameplay MP4 supplies original pixels, audio, transcription,
+editing, exports, and visible coaching observations. Completed `.rec` rounds or
+a replay ZIP may add structured match facts. See `MASTER_ROADMAP.md` and
 `STATUS.md` for the authoritative execution order and current checkpoint.
 
 The longer ClutchScript business plan informs the product direction. Phase 3 is
@@ -87,7 +231,7 @@ data/
 
 SQLite stores only metadata and file paths. MP4 bytes never go into SQLite.
 
-## Replay-first Phase R1/R2 checkpoint
+## Preserved replay Phase R1/R2 checkpoint
 
 ### R1 — provider audit and real-replay proof
 
@@ -130,9 +274,11 @@ package and provider version; it is not universal current-version support.
 8. Make Match Replays the primary navigation/home action while preserving all
    existing MP4 workflows.
 
-R2 is checkpointed at `replay-r2-foundation-stable`. The R1 real execution gate
-is satisfied for the exact verified package. Beginning R3 still requires an
-explicit active-phase decision; this correction does not begin another phase.
+R2 is checkpointed at `replay-r2-foundation-stable`. The corrected current
+replay proof is checkpointed at `real-replay-foundation-stable`. The R1 real
+execution gate is satisfied for the exact verified package. The old standalone
+R3 sequence is replaced by U1–U8; replay reconstruction capabilities remain
+bounded by the same measured provider limitations.
 
 ## Phase 3 score vocabulary
 

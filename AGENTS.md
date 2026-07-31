@@ -28,10 +28,18 @@ this repository.
   historical abilities/loadouts and keep official specialties separate from
   community or personal roles. Never infer an operator, weapon, gadget, or
   ability use from footage during Phase 3B.2.
-- Personal Version 1 is Match-Replay-first. Preserve optional MP4 upload and
-  every completed workflow, but treat completed `.rec`/folder/ZIP replay import
-  as the primary input. Follow `MASTER_ROADMAP.md` in order and do not start R3
-  until a user-approved real replay satisfies the R1 execution gate.
+- Personal Version 1 is one unified Creator Studio and Coaching Lab. Gameplay
+  MP4 is the primary visual source; Match Replay is optional structured
+  evidence; a permitted reference is optional structural guidance. Preserve
+  every completed workflow and follow U1–U8 in `MASTER_ROADMAP.md` in order.
+- Implement U1 as an additive unified workspace around existing video, replay,
+  reference, profile, map, operator, audio, and player records. Do not make the
+  required-video `Project` fields nullable and do not create fake video rows for
+  replay-only workspaces.
+- Replay-only mode may produce structured reports or animated evidence recaps,
+  but must never imply that `.rec` files contain original gameplay pixels or
+  audio. Combined mode uses recording pixels/audio and replay facts only after
+  an explicit, versioned synchronization exists.
 - A public/upstream fixture verifies integration only. Never describe it as a
   real-user replay, current-version compatibility proof, or reconstruction
   benchmark.
