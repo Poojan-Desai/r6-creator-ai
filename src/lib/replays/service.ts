@@ -14,7 +14,24 @@ import { reconcileInterruptedReplayJobs } from "@/lib/replays/jobs";
 
 const replayInclude = Prisma.validator<Prisma.ReplayPackageInclude>()({
   files: { orderBy: { roundIndex: "asc" as const } },
-  providerRuns: { orderBy: { createdAt: "desc" as const }, take: 20 },
+  providerRuns: {
+    orderBy: { createdAt: "desc" as const },
+    take: 20,
+    include: {
+      roundResults: {
+        include: {
+          replayFile: {
+            select: {
+              safeDisplayName: true,
+              roundIndex: true,
+              stableFileId: true,
+            },
+          },
+        },
+        orderBy: { replayFile: { roundIndex: "asc" as const } },
+      },
+    },
+  },
   capabilities: { orderBy: { displayName: "asc" as const } },
   canonicalMatch: {
     include: {
@@ -48,6 +65,42 @@ function jsonList(value: string) {
   } catch {
     return [];
   }
+}
+
+function jsonObject(value: string) {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function jsonArray(value: string) {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function jsonWarnings(value: string) {
+  return jsonArray(value).flatMap((item) => {
+    if (typeof item === "string")
+      return [{ code: "PROVIDER_WARNING", message: item }];
+    if (!item || typeof item !== "object") return [];
+    const candidate = item as { code?: unknown; message?: unknown };
+    if (
+      typeof candidate.code !== "string" ||
+      typeof candidate.message !== "string"
+    ) {
+      return [];
+    }
+    return [{ code: candidate.code, message: candidate.message }];
+  });
 }
 
 export function serializeReplayPackage(replay: ReplayWithDetail) {
@@ -89,13 +142,47 @@ export function serializeReplayPackage(replay: ReplayWithDetail) {
       status: run.status,
       progress: run.progress,
       stage: run.stage,
-      warnings: jsonList(run.warningsJson),
+      warnings: jsonWarnings(run.warningsJson),
       errorMessage: run.errorMessage,
+      failureKind: run.failureKind,
+      internalErrorCode: run.internalErrorCode,
+      executableLabel: run.executableLabel,
+      invocation: jsonObject(run.invocationJson),
+      inputFiles: jsonArray(run.inputFilesJson),
+      stdoutPreview: run.stdoutPreview,
+      stderrPreview: run.stderrPreview,
+      exitCode: run.exitCode,
+      terminationSignal: run.terminationSignal,
+      timedOut: run.timedOut,
+      replayReadStarted: run.replayReadStarted,
+      unsupportedVersion: run.unsupportedVersion,
+      successfulRoundCount: run.successfulRoundCount,
+      failedRoundCount: run.failedRoundCount,
       cancelRequestedAt: run.cancelRequestedAt?.toISOString() ?? null,
       startedAt: run.startedAt?.toISOString() ?? null,
       completedAt: run.completedAt?.toISOString() ?? null,
       processingDurationMs: run.processingDurationMs,
       createdAt: run.createdAt.toISOString(),
+      roundResults: run.roundResults.map((result) => ({
+        id: result.id,
+        safeDisplayName: result.replayFile.safeDisplayName,
+        stableFileId: result.replayFile.stableFileId,
+        roundIndex: result.replayFile.roundIndex,
+        providerId: result.providerId,
+        providerVersion: result.providerVersion,
+        status: result.status,
+        failureKind: result.failureKind,
+        internalErrorCode: result.internalErrorCode,
+        safeSummary: result.safeSummary,
+        suggestedAction: result.suggestedAction,
+        stderrPreview: result.stderrPreview,
+        stdoutPreview: result.stdoutPreview,
+        exitCode: result.exitCode,
+        terminationSignal: result.terminationSignal,
+        timedOut: result.timedOut,
+        replayReadStarted: result.replayReadStarted,
+        processingDurationMs: result.processingDurationMs,
+      })),
     })),
     capabilities: replay.capabilities.map((capability) => ({
       key: capability.capabilityKey,

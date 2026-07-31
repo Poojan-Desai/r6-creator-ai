@@ -18,27 +18,32 @@ highlights.” No precision, recall, approval-rate, processing-cost, or accuracy
 claim is supported until Phase 3B has processed a legally usable, manually
 labeled evaluation set.
 
-## Replay-first benchmark boundary — July 30, 2026
+## Replay-first benchmark boundary — verified July 31, 2026
 
 The replay import/provider/canonical-evidence workflow does not create a
-candidate-moment accuracy result. One public MIT Y9S1 parser fixture verified
-integration behavior: the app displayed Chalet/Bomb, 10 privacy-safe players,
-9 match-feedback records, and a 31-row populated/partial/empty/unsupported
-capability report after restart.
+candidate-moment accuracy result. A user-approved nine-round
+`Y11S2_Alpha04` package now verifies real local parsing behavior for that exact
+package and provider version:
 
-That observation is **development fixture evidence**, not:
+- 9 of 9 round files parsed successfully
+- approximately 1.94 seconds of provider processing
+- `LairY10`, `Bomb`, `Ranked`
+- 10 privacy-safe players and 67 canonical events
+- 62 direct kill feedback records, 32 headshot flags, and 4 defuser records
+- a stored populated/partial/empty/unsupported capability report
+- real cancellation and restart cleanup with prior canonical evidence preserved
 
-- a real-user replay result,
-- a current-season compatibility result,
+That observation is **real provider compatibility evidence**, but it is not:
+
+- a promise that every current or future replay version is compatible,
 - a position/timeline reconstruction result,
 - a candidate precision/recall result, or
 - proof that footage-review time is reduced.
 
-No approved real Match Replay was found in app-managed folders. Replay
-capability benchmarking remains pending until the pinned provider runs against
-an explicitly selected real package and important fields are checked against
-available replay playback or other direct evidence. Missing fields stay
-unavailable and do not receive estimated values.
+The upstream provider initially panicked on an unknown current operator. The
+verified compatibility patch corrects that exact roster gap; it does not make
+unsupported movement/POV fields available. Missing fields stay unavailable and
+do not receive estimated values.
 
 ## Score definitions
 

@@ -1,51 +1,108 @@
 # Real Replay Execution Report
 
-## Current gate status
+## Gate status
 
-**Pending: no user-approved real completed Match Replay was present in the
-application-managed data, work, or output folders on July 30, 2026.**
+**Satisfied for one user-approved current replay package on July 31, 2026.**
 
-The application did not search unrelated personal folders. No result in this
-document should be described as real-user proof.
+This is a compatibility result for the exact nine-round package and provider
+version tested. It is not evidence that every current/future replay version is
+supported, and it is not a gameplay-event detection benchmark.
 
-## Integration smoke test performed
+## Initial failure and root cause
 
-One public MIT-licensed upstream Y9S1 parser fixture was imported through the
-actual browser workflow as an individual `.rec` file with alias privacy. The
-pinned locally built provider completed, its JSON passed the reviewed schema,
-and the app displayed:
+Secure import and fingerprinting succeeded, but upstream `r6-dissect` stopped at
+0% with exit code 2. The old adapter had not retained stderr, so the job only
+showed the generic exit code.
 
-- Y9S1 replay version
-- Chalet
-- Bomb
-- one normalized round
-- 10 privacy-safe players with operators
-- 9 match-feedback records
-- separate direct observations and inferences
-- an inspectable 31-row capability matrix, including unsupported fields
+The app-managed replay was copied to a disposable private test directory. The
+same executable, working directory, and one-round input were reproduced without
+touching the imported package. Sanitized stderr showed:
 
-The parsed result and canonical evidence survived a complete application-server
-restart. Browser console inspection showed no errors or warnings. Retained
-provider JSON was checked for raw fixture usernames/profile IDs after privacy
-sanitization.
+```text
+panic: role unknown for operator ID 444310693746
+```
 
-A queued parsing run was cancelled through the production route and reached
-`CANCELLED` while restoring the package to `READY`. A deliberately persisted
-running-job fixture became a readable restart `ERROR`, and its partial output
-directory was removed. A final safe-ZIP import preserved both the original
-archive and extracted replay round; the deletion route then removed the package,
-canonical rows, parser output, and app-managed files. All disposable fixture
-data was removed afterward.
+Inspection of pinned source commit
+`e6c2ca80f7f895e320ca0f8ded0f30136888ffac` established that:
 
-This proves the local build/import/provider/canonical/UI wiring for that fixture.
-It does not prove current replay compatibility, full-match multi-round behavior,
-position reconstruction, or usefulness on the user’s own match.
+- the CLI accepts either one `.rec` or a folder;
+- `--format json` is supported;
+- help intentionally exits 2, but this replay reached parser code;
+- the actual exit 2 was Go's process exit after an unhandled unknown-operator
+  panic; and
+- the known-role switch lacked a current attacker operator present in this
+  replay.
 
-## Required next execution
+Changing argument order, using a folder, and parsing individual files did not
+remove the panic. Permissions, Apple Silicon, build, path spacing, working
+directory, and missing dependencies were not the cause.
 
-The user must select a completed replay through **Match Replays**. The app will
-copy it into managed storage. Then the same pinned provider must be run and the
-following recorded here: replay/game version, round count, runtime, memory,
-populated/empty/unsupported fields, parser warnings/errors, visual checks
-against Siege replay playback where available, cancellation, restart
-persistence, and cleanup. Only then can Phase R1 be called complete.
+## Correction
+
+The local build remains pinned to the reviewed MIT source. Setup now applies a
+small, versioned compatibility patch that identifies operator ID
+`444310693746` as the attacker `SolidSnake`, then records both patch and binary
+hashes in its manifest. The installed provider version is:
+
+`source-e6c2ca80+compat-1-2026-07-31`
+
+The adapter invokes each round independently as:
+
+```text
+<app-owned executable> --format json <app-owned round file>
+```
+
+The process still uses an argument array with `shell:false`. A failure in one
+round is now stored separately; successfully parsed rounds can form an honestly
+marked partial match instead of being discarded.
+
+The audit-only WNC parser also read the unsupported round during investigation,
+but it was not integrated because its repository has no top-level license.
+
+## Exact real execution
+
+The corrected application route parsed all nine round files:
+
+| Measurement              | Verified result                       |
+| ------------------------ | ------------------------------------- |
+| Provider                 | `redraskal.r6-dissect`                |
+| Provider version         | `source-e6c2ca80+compat-1-2026-07-31` |
+| Successful/failed rounds | 9 / 0                                 |
+| Processing duration      | approximately 1.94 seconds            |
+| Replay/game version      | code `9803520` / `Y11S2_Alpha04`      |
+| Map/mode/match type      | `LairY10` / `Bomb` / `Ranked`         |
+| Privacy-safe players     | 10                                    |
+| Canonical events         | 67                                    |
+| Validation               | `VALIDATED`, `HIGH` confidence        |
+| Direct kills/headshots   | 62 / 32                               |
+| Defuser feedback         | 4                                     |
+| Persisted round results  | 9 success records                     |
+
+Retained JSON and API output were checked for private absolute paths and raw
+identity values. Only privacy-safe aliases/hashes are retained in canonical
+records. The application did not modify or delete the imported package or the
+user's original source files.
+
+## Failure handling verified with the same package
+
+- Retry: the failed package was retried through the real application route and
+  completed.
+- Cancellation: a real run reached `CANCELLED`, left no partial round rows or
+  output directory, and preserved the previously valid canonical match.
+- Restart recovery: a real running job was interrupted by a complete server
+  restart. Reconciliation marked it `ERROR`, removed partial results/output,
+  and preserved the prior canonical match.
+- Persistence: a final successful retry cleared the package error and retained
+  all nine rounds and capability records after restart.
+- Diagnostics: provider/version, safe invocation template, safe round
+  fingerprints, exit/signal/timeout/read-start state, per-round status,
+  classified error, suggested action, and sanitized stderr are inspectable.
+
+## Honest limits
+
+The active provider does not expose continuous elapsed match time, positions,
+orientation, health, weapons, ammunition, shots, damage, gadgets, camera
+target, original pixels/audio, or reconstructed POV. Deaths are derived from
+direct kill targets and stay marked unverified. Timer values are event-attached
+round-clock observations, not a continuous timeline. No benchmark yet proves
+candidate-moment accuracy or reduced human review time.

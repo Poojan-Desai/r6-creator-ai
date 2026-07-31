@@ -32,6 +32,9 @@ export function ReplayDetailClient({
   const [error, setError] = useState<string | null>(null);
   const latestRun = replay.providerRuns[0] ?? null;
   const active = latestRun ? activeStatuses.has(latestRun.status) : false;
+  const retryable = latestRun
+    ? ["ERROR", "CANCELLED", "PARTIAL"].includes(latestRun.status)
+    : false;
 
   useEffect(() => {
     if (!active) return;
@@ -117,7 +120,7 @@ export function ReplayDetailClient({
               className="primary-button"
               disabled={Boolean(busyAction)}
               onClick={() =>
-                latestRun && ["ERROR", "CANCELLED"].includes(latestRun.status)
+                retryable && latestRun
                   ? runAction(
                       "retry",
                       `/api/replay-provider-runs/${latestRun.id}/retry`,
@@ -127,13 +130,12 @@ export function ReplayDetailClient({
             >
               {busyAction === "parse" || busyAction === "retry" ? (
                 <LoaderCircle className="animate-spin" size={17} />
-              ) : latestRun &&
-                ["ERROR", "CANCELLED"].includes(latestRun.status) ? (
+              ) : retryable ? (
                 <RefreshCw size={17} />
               ) : (
                 <Play size={17} />
               )}
-              {latestRun && ["ERROR", "CANCELLED"].includes(latestRun.status)
+              {retryable
                 ? "Retry local parse"
                 : replay.canonicalMatch
                   ? "Parse again"
@@ -216,6 +218,138 @@ export function ReplayDetailClient({
               <p className="mt-4 text-sm text-red-200">
                 {latestRun.errorMessage}
               </p>
+            )}
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Fact label="Provider" value={latestRun.providerId} />
+              <Fact
+                label="Rounds recovered"
+                value={`${latestRun.successfulRoundCount}/${replay.roundFileCount}`}
+              />
+              <Fact
+                label="Read replay content"
+                value={latestRun.replayReadStarted ? "Yes" : "No"}
+              />
+              <Fact
+                label="Runtime"
+                value={
+                  latestRun.processingDurationMs === null
+                    ? "Not recorded"
+                    : formatRuntime(latestRun.processingDurationMs)
+                }
+              />
+            </div>
+            {(latestRun.failureKind ||
+              latestRun.internalErrorCode ||
+              latestRun.stderrPreview ||
+              latestRun.roundResults.length > 0) && (
+              <div className="mt-5 space-y-3">
+                {(latestRun.failureKind || latestRun.internalErrorCode) && (
+                  <div className="rounded-xl border border-amber-300/15 bg-amber-300/[0.04] p-4">
+                    <p className="text-sm font-semibold text-amber-100">
+                      {latestRun.failureKind
+                        ? latestRun.failureKind.replaceAll("_", " ")
+                        : "Provider diagnostic"}
+                    </p>
+                    <dl className="mt-3 grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                      <Fact
+                        label="Safe error code"
+                        value={latestRun.internalErrorCode ?? "Not classified"}
+                      />
+                      <Fact
+                        label="Exit"
+                        value={
+                          latestRun.terminationSignal
+                            ? `Signal ${latestRun.terminationSignal}`
+                            : latestRun.exitCode === null
+                              ? "Not recorded"
+                              : `Code ${latestRun.exitCode}`
+                        }
+                      />
+                      <Fact
+                        label="Timed out"
+                        value={latestRun.timedOut ? "Yes" : "No"}
+                      />
+                      <Fact
+                        label="Version unsupported"
+                        value={latestRun.unsupportedVersion ? "Possible" : "No"}
+                      />
+                    </dl>
+                  </div>
+                )}
+
+                {latestRun.roundResults.length > 0 && (
+                  <details className="rounded-xl border border-white/8 bg-black/15 p-4">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-200">
+                      Round-by-round parser results
+                    </summary>
+                    <div className="mt-4 space-y-3">
+                      {latestRun.roundResults.map((result) => (
+                        <div
+                          key={result.id}
+                          className="rounded-xl border border-white/8 p-4 text-xs"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <span className="font-semibold text-slate-200">
+                              {result.safeDisplayName}
+                            </span>
+                            <span className="rounded-full bg-white/5 px-2 py-1 font-bold tracking-wider text-slate-400 uppercase">
+                              {result.status}
+                            </span>
+                          </div>
+                          {result.safeSummary && (
+                            <p className="mt-3 leading-5 text-slate-400">
+                              {result.safeSummary}
+                            </p>
+                          )}
+                          {result.suggestedAction && (
+                            <p className="mt-2 leading-5 text-amber-100/80">
+                              Next action: {result.suggestedAction}
+                            </p>
+                          )}
+                          {result.stderrPreview && (
+                            <details className="mt-3">
+                              <summary className="cursor-pointer text-slate-400">
+                                Sanitized parser stderr
+                              </summary>
+                              <pre className="mt-2 max-h-72 overflow-auto rounded-lg bg-black/30 p-3 leading-5 whitespace-pre-wrap text-slate-500">
+                                {result.stderrPreview}
+                              </pre>
+                            </details>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
+                <details className="rounded-xl border border-white/8 bg-black/15 p-4">
+                  <summary className="cursor-pointer text-sm font-semibold text-slate-200">
+                    Safe invocation details
+                  </summary>
+                  <pre className="mt-3 overflow-x-auto text-xs leading-5 whitespace-pre-wrap text-slate-500">
+                    {JSON.stringify(
+                      {
+                        executable: latestRun.executableLabel,
+                        invocation: latestRun.invocation,
+                        inputFileCount: latestRun.inputFiles.length,
+                      },
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
+
+                {latestRun.stderrPreview && (
+                  <details className="rounded-xl border border-white/8 bg-black/15 p-4">
+                    <summary className="cursor-pointer text-sm font-semibold text-slate-200">
+                      Combined sanitized stderr
+                    </summary>
+                    <pre className="mt-3 max-h-80 overflow-auto text-xs leading-5 whitespace-pre-wrap text-slate-500">
+                      {latestRun.stderrPreview}
+                    </pre>
+                  </details>
+                )}
+              </div>
             )}
           </>
         ) : (
@@ -453,6 +587,11 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dd className="mt-2 truncate text-sm text-slate-200">{value}</dd>
     </div>
   );
+}
+
+function formatRuntime(milliseconds: number) {
+  if (milliseconds < 1_000) return `${milliseconds} ms`;
+  return `${(milliseconds / 1_000).toFixed(2)} s`;
 }
 
 function CapabilityBadge({ state }: { state: string }) {

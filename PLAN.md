@@ -101,9 +101,15 @@ SQLite stores only metadata and file paths. MP4 bytes never go into SQLite.
 4. Run the same providers against a user-approved real replay before claiming
    R1 complete. A public fixture verifies wiring only.
 
-Current result: both candidates built. `r6-dissect` is MIT and integrated. The
-WNC checkout has no license file and remains audit-only. No approved user replay
-was found, so real-replay proof and current-version compatibility remain pending.
+Verified result (July 31, 2026): both candidates built. `r6-dissect` is MIT and
+integrated. The WNC checkout has no top-level license and remains audit-only. A
+user-approved nine-round `Y11S2_Alpha04` replay exposed an upstream unknown
+operator panic. A minimal versioned MIT compatibility patch corrected that
+specific roster gap, after which all nine rounds parsed independently. The
+application now persists safe process/per-round diagnostics, distinguishes
+partial and unsupported results, and preserves prior canonical data across
+cancellation/restart. This satisfies the real execution gate for that exact
+package and provider version; it is not universal current-version support.
 
 ### R2 — secure import and canonical evidence
 
@@ -124,8 +130,9 @@ was found, so real-replay proof and current-version compatibility remain pending
 8. Make Match Replays the primary navigation/home action while preserving all
    existing MP4 workflows.
 
-R2 may be checkpointed after the full validation gate, but R3 cannot begin until
-the real-replay R1 gate is satisfied.
+R2 is checkpointed at `replay-r2-foundation-stable`. The R1 real execution gate
+is satisfied for the exact verified package. Beginning R3 still requires an
+explicit active-phase decision; this correction does not begin another phase.
 
 ## Phase 3 score vocabulary
 

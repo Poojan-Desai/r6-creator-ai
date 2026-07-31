@@ -1,7 +1,10 @@
 export type ReplayProviderCapability =
   | "MATCH_METADATA"
+  | "MAP"
+  | "GAME_MODE"
   | "ROUND_METADATA"
   | "PLAYERS"
+  | "TEAMS"
   | "OPERATORS"
   | "KILLS"
   | "DEATHS"
@@ -16,6 +19,7 @@ export type ReplayProviderCapability =
   | "POSITION_TIMESTAMPS"
   | "VIEW_YAW"
   | "VIEW_PITCH"
+  | "ORIENTATION"
   | "STANCE"
   | "HEALTH"
   | "WEAPONS"
@@ -87,6 +91,15 @@ export type ReplayProviderParseResult = {
   stdoutPreview: string;
   stderrPreview: string;
   processingDurationMs: number;
+  process: {
+    exitCode: number;
+    terminationSignal: null;
+    timedOut: false;
+    replayReadStarted: true;
+    executableLabel: string;
+    sanitizedArguments: string[];
+    sanitizedWorkingDirectory: string;
+  };
 };
 
 export type ReplayParserProvider = {

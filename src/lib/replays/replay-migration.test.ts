@@ -39,9 +39,8 @@ describe("replay-first additive migration", () => {
       .filter((entry) => /^\d+/.test(entry))
       .sort();
     const replayMigration = "20260730213000_replay_first_foundation";
-    for (const migration of migrations.filter(
-      (name) => name !== replayMigration,
-    )) {
+    const replayMigrationIndex = migrations.indexOf(replayMigration);
+    for (const migration of migrations.slice(0, replayMigrationIndex)) {
       applyMigration(databasePath, migration);
     }
     execFileSync("sqlite3", [databasePath], {
@@ -53,6 +52,9 @@ describe("replay-first additive migration", () => {
       `,
     });
     applyMigration(databasePath, replayMigration);
+    for (const migration of migrations.slice(replayMigrationIndex + 1)) {
+      applyMigration(databasePath, migration);
+    }
 
     const client = new PrismaClient({ datasourceUrl: `file:${databasePath}` });
     const replay = await client.replayPackage.create({
@@ -90,6 +92,7 @@ describe("replay-first additive migration", () => {
             status: "COMPLETED",
             progress: 100,
             stage: "Complete",
+            successfulRoundCount: 1,
           },
         },
         canonicalMatch: {
@@ -115,7 +118,22 @@ describe("replay-first additive migration", () => {
           },
         },
       },
-      include: { files: true, providerRuns: true, canonicalMatch: true },
+      include: {
+        files: true,
+        providerRuns: true,
+        canonicalMatch: true,
+      },
+    });
+    await client.replayRoundProviderResult.create({
+      data: {
+        id: "round-provider-result",
+        providerRunId: "provider-run",
+        replayFileId: "replay-file",
+        providerId: "redraskal.r6-dissect",
+        providerVersion: "fixture",
+        status: "SUCCESS",
+        safeSummary: "Round schema validated.",
+      },
     });
     const project = await client.project.findUnique({
       where: { id: "stable-project" },
@@ -130,6 +148,12 @@ describe("replay-first additive migration", () => {
     expect(project?.canonicalMatches).toHaveLength(1);
     expect(replay.files).toHaveLength(1);
     expect(replay.providerRuns[0]?.status).toBe("COMPLETED");
+    expect(replay.providerRuns[0]?.successfulRoundCount).toBe(1);
+    expect(
+      await client.replayRoundProviderResult.count({
+        where: { providerRunId: "provider-run" },
+      }),
+    ).toBe(1);
     await client.$disconnect();
   });
 });

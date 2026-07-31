@@ -430,9 +430,26 @@ enum ReplayRetentionPreference {
 enum ReplayProviderRunStatus {
   QUEUED
   RUNNING
+  PARTIAL
   COMPLETED
   CANCELLED
   ERROR
+}
+
+enum ReplayProviderFailureKind {
+  UNSUPPORTED_REPLAY_VERSION
+  MALFORMED_REPLAY_PACKAGE
+  PARSER_INVOCATION_FAILURE
+  PARSER_DEPENDENCY_FAILURE
+  PROVIDER_OUTPUT_VALIDATION_FAILURE
+  UNKNOWN_PROVIDER_FAILURE
+}
+
+enum ReplayRoundProviderStatus {
+  SUCCESS
+  FAILED
+  UNSUPPORTED
+  CANCELLED
 }
 
 enum ReplayCapabilityState {
@@ -2052,18 +2069,19 @@ model ReplayPackage {
 }
 
 model ReplayFile {
-  id                String        @id
+  id                String                      @id
   replayPackageId   String
-  replayPackage     ReplayPackage @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
+  replayPackage     ReplayPackage               @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
   stableFileId      String
   safeDisplayName   String
-  relativePath      String        @unique
+  relativePath      String                      @unique
   fileSizeBytes     BigInt
   fingerprintSha256 String
   roundIndex        Int?
   detectedVersion   String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  providerResults   ReplayRoundProviderResult[]
 
   @@unique([replayPackageId, stableFileId])
   @@unique([replayPackageId, fingerprintSha256])
@@ -2071,30 +2089,71 @@ model ReplayFile {
 }
 
 model ReplayProviderRun {
-  id                    String                  @id
+  id                    String                      @id
   replayPackageId       String
-  replayPackage         ReplayPackage           @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
+  replayPackage         ReplayPackage               @relation(fields: [replayPackageId], references: [id], onDelete: Cascade)
   providerId            String
   providerVersion       String
   providerCommit        String
-  status                ReplayProviderRunStatus @default(QUEUED)
-  progress              Int                     @default(0)
-  stage                 String                  @default("Waiting to start")
-  rawOutputRelativePath String?                 @unique
+  status                ReplayProviderRunStatus     @default(QUEUED)
+  progress              Int                         @default(0)
+  stage                 String                      @default("Waiting to start")
+  rawOutputRelativePath String?                     @unique
   stdoutPreview         String?
   stderrPreview         String?
-  warningsJson          String                  @default("[]")
+  failureKind           ReplayProviderFailureKind?
+  internalErrorCode     String?
+  executableLabel       String?
+  invocationJson        String                      @default("{}")
+  inputFilesJson        String                      @default("[]")
+  exitCode              Int?
+  terminationSignal     String?
+  timedOut              Boolean                     @default(false)
+  replayReadStarted     Boolean                     @default(false)
+  unsupportedVersion    Boolean                     @default(false)
+  successfulRoundCount  Int                         @default(0)
+  failedRoundCount      Int                         @default(0)
+  warningsJson          String                      @default("[]")
   errorMessage          String?
   cancelRequestedAt     DateTime?
   startedAt             DateTime?
   completedAt           DateTime?
   processingDurationMs  Int?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  roundResults          ReplayRoundProviderResult[]
 
   @@index([replayPackageId, createdAt])
   @@index([status])
   @@index([providerId, providerVersion])
+}
+
+model ReplayRoundProviderResult {
+  id                   String                     @id
+  providerRunId        String
+  providerRun          ReplayProviderRun          @relation(fields: [providerRunId], references: [id], onDelete: Cascade)
+  replayFileId         String
+  replayFile           ReplayFile                 @relation(fields: [replayFileId], references: [id], onDelete: Cascade)
+  providerId           String
+  providerVersion      String
+  status               ReplayRoundProviderStatus
+  failureKind          ReplayProviderFailureKind?
+  internalErrorCode    String?
+  safeSummary          String?
+  suggestedAction      String?
+  stderrPreview        String?
+  stdoutPreview        String?
+  exitCode             Int?
+  terminationSignal    String?
+  timedOut             Boolean                    @default(false)
+  replayReadStarted    Boolean                    @default(false)
+  processingDurationMs Int?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  @@unique([providerRunId, replayFileId])
+  @@index([providerRunId, status])
+  @@index([replayFileId])
 }
 
 model ReplayCapability {

@@ -14,11 +14,22 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
+const projectRoot = process.cwd();
 const provider = {
   id: "redraskal.r6-dissect",
   repository: "https://github.com/redraskal/r6-dissect.git",
   commit: "e6c2ca80f7f895e320ca0f8ded0f30136888ffac",
+  version: "source-e6c2ca80+compat-1-2026-07-31",
   license: "MIT",
+};
+const compatibilityPatch = {
+  id: "r6-dissect-y11s2-solid-snake",
+  path: path.join(
+    projectRoot,
+    "scripts",
+    "replay-parser-patches",
+    "r6-dissect-y11s2-solid-snake.patch",
+  ),
 };
 const fallbackGo = {
   version: "1.26.5",
@@ -26,7 +37,6 @@ const fallbackGo = {
   sha256: "efb87ff28af9a188d0536ef5d42e63dd52ba8263cd7344a993cc48dd11dedb6a",
 };
 
-const projectRoot = process.cwd();
 const dataRoot = path.resolve(
   projectRoot,
   process.env.R6_DATA_DIR?.trim() || "data",
@@ -177,6 +187,18 @@ async function main() {
         "The reviewed source no longer contains its MIT license.",
       );
     }
+    const patchSha256 = await sha256(compatibilityPatch.path);
+    console.log("Applying the reviewed current-replay compatibility patch…");
+    await run(
+      "git",
+      ["apply", "--unidiff-zero", "--check", compatibilityPatch.path],
+      {
+        cwd: sourceDirectory,
+      },
+    );
+    await run("git", ["apply", "--unidiff-zero", compatibilityPatch.path], {
+      cwd: sourceDirectory,
+    });
     console.log("Building the parser inside the project data folder…");
     await mkdir(path.join(workDirectory, "go-cache"), { recursive: true });
     await mkdir(path.join(workDirectory, "go-mod-cache"), { recursive: true });
@@ -202,6 +224,10 @@ async function main() {
         {
           schemaVersion: "r6-creator-replay-parser-manifest/v1",
           provider,
+          compatibilityPatch: {
+            id: compatibilityPatch.id,
+            sha256: patchSha256,
+          },
           binarySha256,
           platform: process.platform,
           architecture: process.arch,

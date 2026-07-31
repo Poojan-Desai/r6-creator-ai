@@ -24,8 +24,11 @@ export const REPLAY_CAPABILITIES: Array<{
   label: string;
 }> = [
   { key: "MATCH_METADATA", label: "Match metadata" },
+  { key: "MAP", label: "Map" },
+  { key: "GAME_MODE", label: "Game mode" },
   { key: "ROUND_METADATA", label: "Round metadata" },
   { key: "PLAYERS", label: "Players" },
+  { key: "TEAMS", label: "Teams" },
   { key: "OPERATORS", label: "Operators" },
   { key: "KILLS", label: "Kills" },
   { key: "DEATHS", label: "Deaths" },
@@ -40,6 +43,7 @@ export const REPLAY_CAPABILITIES: Array<{
   { key: "POSITION_TIMESTAMPS", label: "Position timestamps" },
   { key: "VIEW_YAW", label: "View yaw" },
   { key: "VIEW_PITCH", label: "View pitch" },
+  { key: "ORIENTATION", label: "Orientation" },
   { key: "STANCE", label: "Stance" },
   { key: "HEALTH", label: "Health" },
   { key: "WEAPONS", label: "Weapons" },
@@ -97,8 +101,12 @@ function countFeedback(rounds: ParsedReplayRound[], matcher: RegExp) {
 
 export function evaluateReplayCapabilities(
   rounds: ParsedReplayRound[],
+  options: { expectedRoundCount?: number; failedRoundCount?: number } = {},
 ): Record<ReplayProviderCapability, CapabilityEvaluation> {
   const first = rounds[0];
+  const expectedRoundCount = options.expectedRoundCount ?? rounds.length;
+  const failedRoundCount =
+    options.failedRoundCount ?? Math.max(0, expectedRoundCount - rounds.length);
   const playerCount = Math.max(
     ...rounds.map((round) => round.players.length),
     0,
@@ -110,6 +118,7 @@ export function evaluateReplayCapabilities(
     ),
     0,
   );
+  const teamCount = Math.max(...rounds.map((round) => round.teams.length), 0);
   const kills = countFeedback(rounds, /kill/);
   const headshots = rounds.reduce(
     (count, round) =>
@@ -121,6 +130,14 @@ export function evaluateReplayCapabilities(
   const defuser = countFeedback(rounds, /plant|disable|defuse/);
   const scoreCount =
     first?.teams.filter((team) => team.score !== null).length ?? 0;
+  const timerObservationCount = rounds.reduce(
+    (count, round) =>
+      count +
+      round.feedback.filter(
+        (event) => event.timeInSeconds !== null || Boolean(event.timeLabel),
+      ).length,
+    0,
+  );
   const unsupported = (reason: string): CapabilityEvaluation => ({
     state: "UNSUPPORTED_PROVIDER",
     evidenceSummary: "No field was produced by the reviewed provider.",
@@ -150,11 +167,29 @@ export function evaluateReplayCapabilities(
     ].filter(Boolean).length,
     confidence: 0.95,
   };
+  result.MAP = {
+    state: first?.mapName ? "AVAILABLE_VERIFIED" : "EMPTY_IN_REPLAY",
+    evidenceSummary: first?.mapName
+      ? `The replay header identified map ${first.mapName}.`
+      : "No map value was populated in the parsed replay header.",
+    populatedCount: first?.mapName ? 1 : 0,
+    confidence: first?.mapName ? 0.95 : 0,
+  };
+  result.GAME_MODE = {
+    state: first?.gameMode ? "AVAILABLE_VERIFIED" : "EMPTY_IN_REPLAY",
+    evidenceSummary: first?.gameMode
+      ? `The replay header identified game mode ${first.gameMode}.`
+      : "No game-mode value was populated in the parsed replay header.",
+    populatedCount: first?.gameMode ? 1 : 0,
+    confidence: first?.gameMode ? 0.95 : 0,
+  };
   result.ROUND_METADATA = {
     state: "PARTIALLY_AVAILABLE",
-    evidenceSummary: `${rounds.length} round file${rounds.length === 1 ? "" : "s"} supplied header, team, site, and result fields where populated.`,
+    evidenceSummary: `${rounds.length} of ${expectedRoundCount} round file${expectedRoundCount === 1 ? "" : "s"} supplied header, team, site, and result fields where populated.`,
     missingReason:
-      "Stable elapsed round boundaries and a complete match clock were not produced.",
+      failedRoundCount > 0
+        ? `${failedRoundCount} round file${failedRoundCount === 1 ? "" : "s"} failed provider decoding. Stable elapsed round boundaries and a complete match clock were also not produced.`
+        : "Stable elapsed round boundaries and a complete match clock were not produced.",
     populatedCount: rounds.length,
     confidence: 0.85,
   };
@@ -163,6 +198,12 @@ export function evaluateReplayCapabilities(
     evidenceSummary: `${playerCount} replay player records were schema validated.`,
     populatedCount: playerCount,
     confidence: playerCount > 0 ? 0.95 : 0,
+  };
+  result.TEAMS = {
+    state: teamCount > 0 ? "AVAILABLE_VERIFIED" : "EMPTY_IN_REPLAY",
+    evidenceSummary: `${teamCount} team record${teamCount === 1 ? "" : "s"} were schema validated with roles, scores, and round outcomes where populated.`,
+    populatedCount: teamCount,
+    confidence: teamCount > 0 ? 0.9 : 0,
   };
   result.OPERATORS = {
     state:
@@ -223,6 +264,15 @@ export function evaluateReplayCapabilities(
       "Score semantics across a multi-round package require cross-round validation.",
     populatedCount: scoreCount,
     confidence: scoreCount > 0 ? 0.75 : 0,
+  };
+  result.TIMER = {
+    state:
+      timerObservationCount > 0 ? "PARTIALLY_AVAILABLE" : "EMPTY_IN_REPLAY",
+    evidenceSummary: `${timerObservationCount} event record${timerObservationCount === 1 ? "" : "s"} carried a round-clock observation.`,
+    missingReason:
+      "The provider does not expose a continuous timer stream or elapsed match timestamps.",
+    populatedCount: timerObservationCount,
+    confidence: timerObservationCount > 0 ? 0.75 : 0,
   };
   result.ORIGINAL_VIDEO = {
     state: "EMPTY_IN_REPLAY",
@@ -306,6 +356,8 @@ export async function saveCanonicalReplay(input: {
   rounds: ParsedReplayRound[];
   providerId: string;
   providerVersion: string;
+  expectedRoundCount?: number;
+  failedRoundCount?: number;
 }) {
   const first = input.rounds[0];
   if (!first) throw new Error("Cannot save an empty replay parse.");
@@ -320,6 +372,21 @@ export async function saveCanonicalReplay(input: {
     input.replayPackage.packageFingerprintSha256,
   );
   const recordingPlayer = players.find((player) => player.isRecordingPlayer);
+  const expectedRoundCount = input.expectedRoundCount ?? input.rounds.length;
+  const failedRoundCount =
+    input.failedRoundCount ??
+    Math.max(0, expectedRoundCount - input.rounds.length);
+  const partial = failedRoundCount > 0;
+  const matchMissingEvidence = [
+    "Original gameplay pixels are not contained in .rec files.",
+    "Original game audio is not contained in .rec files.",
+    "Position and orientation were not exposed by this provider.",
+    ...(partial
+      ? [
+          `${failedRoundCount} of ${expectedRoundCount} round files could not be decoded by this provider run.`,
+        ]
+      : []),
+  ];
 
   await db.$transaction(async (transaction) => {
     await transaction.canonicalMatch.deleteMany({
@@ -343,13 +410,9 @@ export async function saveCanonicalReplay(input: {
         recordingPlayerStableId: recordingPlayer?.stableHash ?? null,
         sourceProviderId: input.providerId,
         sourceProviderVersion: input.providerVersion,
-        confidenceStatus: "HIGH",
+        confidenceStatus: partial ? "MODERATE" : "HIGH",
         validationStatus: "VALIDATED",
-        missingEvidenceJson: JSON.stringify([
-          "Original gameplay pixels are not contained in .rec files.",
-          "Original game audio is not contained in .rec files.",
-          "Position and orientation were not exposed by this provider.",
-        ]),
+        missingEvidenceJson: JSON.stringify(matchMissingEvidence),
       },
     });
     const canonicalPlayers = await Promise.all(
@@ -477,7 +540,10 @@ export async function saveCanonicalReplay(input: {
         });
       }
     }
-    const evaluations = evaluateReplayCapabilities(input.rounds);
+    const evaluations = evaluateReplayCapabilities(input.rounds, {
+      expectedRoundCount,
+      failedRoundCount,
+    });
     await transaction.replayCapability.createMany({
       data: REPLAY_CAPABILITIES.map(({ key, label }) => {
         const evaluation = evaluations[key];
@@ -499,14 +565,16 @@ export async function saveCanonicalReplay(input: {
     await transaction.replayPackage.update({
       where: { id: input.replayPackage.id },
       data: {
-        status: "PARSED",
+        status: partial ? "PARTIALLY_PARSED" : "PARSED",
         detectedReplayVersion: first.gameVersion,
         detectedGameVersion: first.codeVersion
           ? String(first.codeVersion)
           : null,
         activeProviderId: input.providerId,
         activeProviderVersion: input.providerVersion,
-        errorMessage: null,
+        errorMessage: partial
+          ? `${input.rounds.length} of ${expectedRoundCount} rounds were recovered. Failed rounds remain available for review and retry.`
+          : null,
       },
     });
   });

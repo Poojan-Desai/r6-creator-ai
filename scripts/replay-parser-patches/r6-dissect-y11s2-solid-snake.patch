@@ -1,0 +1,31 @@
+diff --git a/dissect/header.go b/dissect/header.go
+index 199b9c4..894bf8f 100644
+--- a/dissect/header.go
++++ b/dissect/header.go
+@@ -212 +212,2 @@ const (
+-	Denari      Operator = 374667787937
++	Denari      Operator = 374667787937
++	SolidSnake  Operator = 444310693746
+diff --git a/dissect/operator_roles.go b/dissect/operator_roles.go
+index 2d2f78f..ce9ea22 100644
+--- a/dissect/operator_roles.go
++++ b/dissect/operator_roles.go
+@@ -47 +47,2 @@ var _operatorRoles = map[Operator]TeamRole{
+-	409899350463: Attack,
++	409899350463: Attack,
++	444310693746: Attack,
+diff --git a/dissect/operator_string.go b/dissect/operator_string.go
+index 94a3125..cd4016d 100644
+--- a/dissect/operator_string.go
++++ b/dissect/operator_string.go
+@@ -87 +87,2 @@ func _() {
+-	_ = x[Denari-374667787937]
++	_ = x[Denari-374667787937]
++	_ = x[SolidSnake-444310693746]
+@@ -90 +91 @@ func _() {
+-const _Operator_name = "KapkanFuzeGlazBlackbeardValkyrieEchoHibanaLesionYingMuteSledgeSmokeThatcherBuckFrostBanditBlitzIQJagerAshCastlePulseThermiteDocMontagneRookTwitchElaZofiaCapitaoCaveiraDokkaebiVigilMiraJackalLionFinkaAlibiMaestroClashMaverickWardenNokkAmaruGoyoWamaiKaliIanaOryxMelusiAceAruniKaidNomadGridlockMozzieBravaFenrirThunderbirdOsaTubaraoZeroTachankaFloresRecruitThornDeimosDenariGrimAzamiSensSkoposRauoraSolisRamSentryStriker"
++const _Operator_name = "KapkanFuzeGlazBlackbeardValkyrieEchoHibanaLesionYingMuteSledgeSmokeThatcherBuckFrostBanditBlitzIQJagerAshCastlePulseThermiteDocMontagneRookTwitchElaZofiaCapitaoCaveiraDokkaebiVigilMiraJackalLionFinkaAlibiMaestroClashMaverickWardenNokkAmaruGoyoWamaiKaliIanaOryxMelusiAceAruniKaidNomadGridlockMozzieBravaFenrirThunderbirdOsaTubaraoZeroTachankaFloresRecruitThornDeimosDenariGrimAzamiSensSkoposRauoraSolisRamSentryStrikerSolidSnake"
+@@ -169 +170,2 @@ var _Operator_map = map[Operator]string{
+-	409899350463: _Operator_name[410:417],
++	409899350463: _Operator_name[410:417],
++	444310693746: _Operator_name[417:427],

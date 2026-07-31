@@ -268,7 +268,40 @@ describe("reviewed replay provider normalization", () => {
     });
     expect(capabilities.DEATHS.state).toBe("AVAILABLE_UNVERIFIED");
     expect(capabilities.POSITIONS.state).toBe("UNSUPPORTED_PROVIDER");
+    expect(capabilities.ORIENTATION.state).toBe("UNSUPPORTED_PROVIDER");
     expect(capabilities.ORIGINAL_AUDIO.state).toBe("EMPTY_IN_REPLAY");
     expect(capabilities.MATCH_METADATA.state).toBe("AVAILABLE_VERIFIED");
+    expect(capabilities.MAP).toMatchObject({
+      state: "AVAILABLE_VERIFIED",
+      populatedCount: 1,
+    });
+    expect(capabilities.GAME_MODE).toMatchObject({
+      state: "AVAILABLE_VERIFIED",
+      populatedCount: 1,
+    });
+    expect(capabilities.TEAMS).toMatchObject({
+      state: "AVAILABLE_VERIFIED",
+      populatedCount: 2,
+    });
+    expect(capabilities.TIMER).toMatchObject({
+      state: "PARTIALLY_AVAILABLE",
+      populatedCount: 1,
+    });
+  });
+
+  it("reports incomplete round coverage without overstating a partial parse", () => {
+    const capabilities = evaluateReplayCapabilities([parsedRound()], {
+      expectedRoundCount: 2,
+      failedRoundCount: 1,
+    });
+
+    expect(capabilities.ROUND_METADATA).toMatchObject({
+      state: "PARTIALLY_AVAILABLE",
+      populatedCount: 1,
+    });
+    expect(capabilities.ROUND_METADATA.evidenceSummary).toContain("1 of 2");
+    expect(capabilities.ROUND_METADATA.missingReason).toContain(
+      "1 round file failed",
+    );
   });
 });

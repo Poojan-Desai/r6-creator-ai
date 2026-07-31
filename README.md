@@ -32,8 +32,9 @@ free `whisper.cpp` program and a local model on this Mac.
 - An honest capability matrix separating verified, unverified, partial, empty,
   and unsupported fields
 - Explicit deletion of an app-managed replay package and parsed output
-- Public-fixture browser verification with 10 aliased players and 9 feedback
-  records across restart; real-user replay proof is still required
+- Real nine-round `Y11S2_Alpha04` replay verification with 10 aliased players,
+  67 canonical events, per-round diagnostics, cancellation cleanup, and restart
+  recovery
 
 Existing Phase 1 through Phase 3B.2-O features remain available:
 
@@ -187,11 +188,12 @@ npm run replay:setup
 ```
 
 This checks out one exact MIT-licensed `r6-dissect` source commit, verifies the
-license, builds it inside `./data/tools/replay-parsers`, records the binary
-SHA-256, and removes the temporary source/build cache. On an Apple Silicon Mac,
-the script downloads and verifies a project-local Go toolchain only when a
-compatible `go` command is unavailable. It does not modify your shell profile
-or install a global executable.
+license, applies one checked-in compatibility patch for a verified current
+operator-roster gap, builds it inside `./data/tools/replay-parsers`, records the
+source/patch/binary SHA-256 values, and removes the temporary source/build
+cache. On an Apple Silicon Mac, the script downloads and verifies a
+project-local Go toolchain only when a compatible `go` command is unavailable.
+It does not modify your shell profile or install a global executable.
 
 ### 7. Start R6 Creator AI
 
@@ -224,13 +226,17 @@ Keep the Terminal window open while using the app.
    process and discards partial canonical output.
 8. Inspect the capability matrix, privacy-safe roster, rounds, and direct
    match-feedback evidence.
+9. If a round fails, expand **Round-by-round parser results** to see the safe
+   error type, provider/version, whether replay reading began, exit/signal
+   status, a suggested action, and sanitized technical details.
 
 Import does not parse automatically and nothing is uploaded. The active
-provider is verified only on its upstream Y8S1–Y9S1 fixtures until a real
-current replay is supplied. Match Replay files do not contain original gameplay
-pixels or audio. The provider also does not expose validated positions,
-orientation, health, weapons, shots, gadgets, destruction, or virtual POV; the
-UI shows those fields as unavailable.
+provider parsed one user-approved nine-round `Y11S2_Alpha04` package after a
+reviewed roster compatibility patch. That is evidence for the exact verified
+package/provider version, not a guarantee for every replay. Match Replay files
+do not contain original gameplay pixels or audio. The provider also does not
+expose validated positions, orientation, health, weapons, shots, gadgets,
+destruction, or virtual POV; the UI shows those fields as unavailable.
 
 ### Add an optional gameplay recording
 
@@ -577,8 +583,11 @@ internet connection and retry. Normal replay parsing is offline after setup.
 Rainbow Six replay formats change. “Empty” means the provider understands a
 field but this replay did not populate it. “Unsupported” means the active
 provider does not expose it. “Partial” or “unverified” means evidence exists but
-the app will not present a stronger conclusion. Keep the original replay and
-retry after a compatible provider update; missing movement is never invented.
+the app will not present a stronger conclusion. One failed round no longer
+discards other successful rounds. Expand the parser diagnostics for the safe
+failure code, suggested next action, and sanitized stderr. Keep the original
+replay and retry after a compatible provider update; missing movement is never
+invented.
 
 ### Replay parsing stops after the app restarts
 
@@ -693,8 +702,8 @@ The detailed implementation and verification record is in
   room name
 - No operator, weapon, ability, icon, or gadget recognition and no automatic
   tactical outcome claim from a documented operator fact
-- No claim that the parser supports the current Siege replay version until a
-  real current replay is executed
+- No claim that one successful current replay guarantees support for every
+  current or future Siege replay
 - No position/orientation, ten-player movement timeline, reconstructed player
   POV, replay-only tactical video, or replay-derived playable MP4 yet
 - No original pixels or audio inside `.rec` Match Replay files

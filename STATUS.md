@@ -1,62 +1,65 @@
 # R6 Creator AI — Current Status
 
 - **Current branch:** `codex/phase-3`
-- **Latest verified commit:** `eb9b11f` — secure Match Replay evidence
-  foundation
-- **Latest stable tag:** `replay-r2-foundation-stable` at `0730820`
-- **Current phase:** Replay-first Phase R1/R2 checkpoint
+- **Preserved replay checkpoint:** `replay-r2-foundation-stable` at `0730820`
+- **Correction baseline:** `faafab6`
+- **Current phase:** Replay-first Phase R1/R2 validation and parser correction
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
-  Phase 3B.2-M, Phase 3B.2-O, replay Phase 0
-- **Current active task:** Obtain a user-approved real Match Replay through the
-  application to finish R1 validation
-- **Remaining tasks:** Real-user replay execution before R3; all later phases
-  remain pending
-- **Known failures:** No application failure is currently known. Two upstream
-  `r6-dissect` tests that contact Ubisoft’s operator-roster endpoint failed
-  offline; focused replay parsing tests passed. The WNC parser has no tests and
-  no repository license file.
-- **Unsupported replay versions:** Current Ubisoft replay versions are untested.
-  Only upstream fixtures from Y8S1 through Y9S1 have been executed with the
-  integrated provider. Replays outside an actually verified version must be
-  treated as unknown/partial until parsed.
+  Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
+  gate
+- **Current active task:** Finish and commit the independently verified current
+  replay-parser correction; do not begin another product phase
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
-  reviewed source
-- **Pinned parser commits:**
-  - `redraskal/r6-dissect`:
-    `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
-  - `wnc-replay/replay-tool` audit-only:
-    `dd535f6499069c8268841fda76c68a04b19ba104`
-- **Current capability matrix:** Stable metadata/players/operators and direct
-  match feedback are integrated. Scores/round metadata are partial. Deaths are
-  inferred from kill targets. Positions, view, health, weapons, shots, gadgets,
-  destruction, original video, original audio, and virtual POV are unavailable.
-- **Test count:** 153 tests across 31 files
-- **Tests last run:** Complete suite passed on July 30, 2026
-- **Build status:** Production build passed on July 30, 2026; production-browser
-  replay detail verification also passed without warnings or errors
-- **Migration version:** `20260730213000_replay_first_foundation`, applied
-  successfully with all prior row counts preserved and a clean foreign-key
-  check
-- **Manual verification required:** A real, user-approved completed Match Replay
-  package; fixture verification cannot satisfy this requirement
-- **Exact next action:** Import a real replay through **Match Replays**, run the
-  pinned provider, compare actual populated fields, verify browser persistence,
-  and update the real-replay report before starting R3.
+  reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
+  plus the reviewed `compat-1` operator-roster patch
+- **Provider version:** `source-e6c2ca80+compat-1-2026-07-31`
+- **Audit-only provider:** `wnc-replay/replay-tool` commit
+  `dd535f6499069c8268841fda76c68a04b19ba104`; it remains unintegrated because
+  the repository has no top-level license
+- **Migration version:**
+  `20260731010500_real_replay_provider_diagnostics`, applied additively after a
+  private local database backup with a clean foreign-key check
+- **Current real-replay compatibility:** One user-approved nine-round
+  `Y11S2_Alpha04` package parsed successfully. This is evidence for that exact
+  package and provider version, not a promise that every current or future
+  replay will parse.
+- **Known correction:** Upstream `r6-dissect` panicked with exit code 2 on
+  operator ID `444310693746`. Source inspection proved the exit was a Go panic,
+  not a CLI-use error. The local setup now applies a minimal versioned MIT
+  compatibility patch before building.
+- **Current capability result:** Map, game mode, players, teams, operators,
+  direct kill feedback, headshot flags, and defuser feedback populated. Deaths
+  remain an unverified inference from direct kill targets. Round metadata,
+  scores, and timer observations remain partial. DBNO/objective-event fields
+  were supported but empty. Positions, orientation, health, weapons, shots,
+  damage, gadgets, camera target, original pixels/audio, and virtual POV remain
+  unavailable.
+- **Parser diagnostics:** Provider/version, safe invocation template, input
+  fingerprints, per-round results, exit/signal/timeout/read-start state,
+  classified failure, safe error code, and sanitized stderr are persisted and
+  inspectable.
+- **Cancellation/restart:** Real cancellation removed partial rows/output and
+  preserved the prior valid canonical match. A deliberately interrupted real
+  run became a recoverable error after restart, leaked no temporary output, and
+  also preserved the prior match.
+- **Automated validation:** Formatting, ESLint, strict TypeScript, 161 tests
+  across 31 files, and the warning-free production build passed on July 31, 2026.
 
-## Latest local verification
+## Latest real replay verification
 
-The public MIT Y9S1 integration fixture was streamed through the browser,
-parsed, schema validated, privacy aliased, and displayed as Chalet/Bomb with 10
-players and 9 match-feedback records. Unsupported fields were visible. The
-result survived a complete development-server restart, and the browser console
-contained no warnings or errors. This is integration evidence only—not a
-real-user replay result and not a current-version compatibility claim.
+The exact imported nine-round package completed through the application
+background-job route on July 31, 2026:
 
-Queued-job cancellation reached `CANCELLED` and restored the package to `READY`.
-A deliberately persisted running job became `ERROR` after a production-server
-restart, its partial output directory was deleted, and the verification-only
-database rows were then removed. The package returned to its valid `PARSED`
-state. A safe ZIP import then preserved its source archive and extracted round,
-and explicit deletion removed the verification package, canonical data, parser
-output, and app-managed files. The real library is clean and ready for the
-user’s replay.
+- 9 successful rounds, 0 failed rounds
+- approximately 1.94 seconds of provider processing
+- game version `Y11S2_Alpha04`, code version `9803520`
+- map `LairY10`, mode `Bomb`, match type `Ranked`
+- 10 privacy-safe players and 67 canonical events
+- 62 direct kill records, 32 direct headshot flags, and 4 defuser feedback
+  records
+- canonical validation `VALIDATED` with `HIGH` confidence
+- 9 persisted per-round success records and a privacy-sanitized retained result
+
+The imported replay and its original source files were not modified or deleted.
+The report deliberately makes no movement, room-location, POV-reconstruction,
+highlight-accuracy, review-time, view, or virality claim.
