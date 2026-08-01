@@ -21,6 +21,7 @@ export const dataPaths = {
   replayImportTemp: path.join(appConfig.dataRoot, "replay-import-temp"),
   replayParserOutputs: path.join(appConfig.dataRoot, "replay-parser-outputs"),
   studioMedia: path.join(appConfig.dataRoot, "studio-media"),
+  voiceoverTemp: path.join(appConfig.dataRoot, "voiceover-temp"),
   shortFormProxies: path.join(appConfig.dataRoot, "short-form-proxies"),
   shortFormProxyTemp: path.join(appConfig.dataRoot, "short-form-proxy-temp"),
   shortFormExports: path.join(appConfig.dataRoot, "short-form-exports"),
@@ -48,6 +49,7 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.replayImportTemp, { recursive: true }),
     mkdir(dataPaths.replayParserOutputs, { recursive: true }),
     mkdir(dataPaths.studioMedia, { recursive: true }),
+    mkdir(dataPaths.voiceoverTemp, { recursive: true }),
     mkdir(dataPaths.shortFormProxies, { recursive: true }),
     mkdir(dataPaths.shortFormProxyTemp, { recursive: true }),
     mkdir(dataPaths.shortFormExports, { recursive: true }),
@@ -131,6 +133,10 @@ export function replayProviderOutputDirectory(providerRunId: string) {
 
 export function studioMediaDirectory(studioProjectId: string) {
   return path.join(dataPaths.studioMedia, studioProjectId);
+}
+
+export function voiceoverTemporaryDirectory(jobId: string) {
+  return path.join(dataPaths.voiceoverTemp, jobId);
 }
 
 export function shortFormProxyDirectory(timelineId: string) {

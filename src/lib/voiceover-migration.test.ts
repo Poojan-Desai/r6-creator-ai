@@ -41,6 +41,7 @@ describe("U5 Voiceover Studio additive migration", () => {
       .filter((entry) => /^\d+/.test(entry))
       .sort();
     const voiceoverMigration = "20260801173100_voiceover_studio_foundation";
+    const processingMigration = "20260801180500_voiceover_processing_outputs";
     const migrationIndex = migrations.indexOf(voiceoverMigration);
     expect(migrationIndex).toBeGreaterThan(0);
     for (const migration of migrations.slice(0, migrationIndex)) {
@@ -60,6 +61,7 @@ describe("U5 Voiceover Studio additive migration", () => {
       `,
     });
     applyMigration(databasePath, voiceoverMigration);
+    applyMigration(databasePath, processingMigration);
 
     const client = new PrismaClient({ datasourceUrl: `file:${databasePath}` });
     const production = await client.voiceoverProduction.create({
@@ -112,6 +114,49 @@ describe("U5 Voiceover Studio additive migration", () => {
         isActive: true,
       },
     });
+    await client.studioMediaAsset.create({
+      data: {
+        id: "voiceover-processed",
+        studioProjectId: "studio",
+        kind: "VOICEOVER",
+        name: "Opening take (processed)",
+        originalFilename: "opening-processed.m4a",
+        mimeType: "audio/mp4",
+        relativePath: "studio-media/studio/opening-processed.m4a",
+        fileSizeBytes: 900,
+        durationSeconds: 11,
+        permissionConfirmed: true,
+      },
+    });
+    await client.voiceoverJob.create({
+      data: {
+        id: "voiceover-job",
+        takeId: "take-one",
+        kind: "PROCESS",
+        status: "COMPLETED",
+        progress: 100,
+        stage: "Processed narration ready",
+        processorVersion: "u5-local-audio-v1",
+        settingsJson: '{"normalize":true}',
+        completedAt: new Date(),
+      },
+    });
+    await client.voiceoverProcessedAsset.create({
+      data: {
+        id: "processed-output",
+        takeId: "take-one",
+        jobId: "voiceover-job",
+        assetId: "voiceover-processed",
+        settingsJson: '{"normalize":true}',
+      },
+    });
+    await client.voiceoverTake.update({
+      where: { id: "take-one" },
+      data: {
+        processedAssetId: "voiceover-processed",
+        normalize: true,
+      },
+    });
     const preserved = await client.longFormProduction.findUnique({
       where: { id: "long-production" },
       include: { revisions: true },
@@ -123,7 +168,11 @@ describe("U5 Voiceover Studio additive migration", () => {
     });
     const persistedTake = await reopened.voiceoverTake.findUnique({
       where: { id: "take-one" },
-      include: { sourceAsset: true },
+      include: {
+        sourceAsset: true,
+        processedAsset: true,
+        processedOutputs: { include: { job: true } },
+      },
     });
     await reopened.$disconnect();
 
@@ -138,6 +187,14 @@ describe("U5 Voiceover Studio additive migration", () => {
         mimeType: "audio/webm",
         permissionConfirmed: true,
       },
+      processedAsset: {
+        id: "voiceover-processed",
+        mimeType: "audio/mp4",
+      },
+    });
+    expect(persistedTake?.processedOutputs[0]?.job).toMatchObject({
+      processorVersion: "u5-local-audio-v1",
+      status: "COMPLETED",
     });
     expect(preserved?.revisions[0]?.plannerVersion).toBe(
       "u4-long-form-planner-v1",

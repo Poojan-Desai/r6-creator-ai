@@ -23,8 +23,8 @@ import {
 } from "@/lib/timeline-document";
 import { probeVideo } from "@/lib/video";
 
-export const SHORT_FORM_PROXY_PIPELINE_VERSION = "u3-proxy-ffmpeg-v1";
-export const SHORT_FORM_EXPORT_PIPELINE_VERSION = "u3-export-ffmpeg-v1";
+export const SHORT_FORM_PROXY_PIPELINE_VERSION = "u5-proxy-ffmpeg-v4";
+export const SHORT_FORM_EXPORT_PIPELINE_VERSION = "u5-export-ffmpeg-v4";
 
 export type ShortFormRenderSource = {
   id: string;
@@ -121,6 +121,42 @@ function escapeDrawText(value: string) {
     .replace(/\r?\n/g, "\\n");
 }
 
+export function wrapCaptionForRender(
+  value: string,
+  width: number,
+  fontSize: number,
+) {
+  const maxCharacters = Math.max(
+    18,
+    Math.floor((width * 0.86) / Math.max(1, fontSize * 0.58)),
+  );
+  const lines: string[] = [];
+  for (const paragraph of value.trim().split(/\r?\n/)) {
+    let current = "";
+    for (const word of paragraph.trim().split(/\s+/).filter(Boolean)) {
+      if (word.length > maxCharacters) {
+        if (current) {
+          lines.push(current);
+          current = "";
+        }
+        for (let offset = 0; offset < word.length; offset += maxCharacters) {
+          lines.push(word.slice(offset, offset + maxCharacters));
+        }
+        continue;
+      }
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > maxCharacters && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+    if (current) lines.push(current);
+  }
+  return lines.join("\n");
+}
+
 function atempoFilters(speed: number) {
   const filters: number[] = [];
   let remaining = speed;
@@ -202,16 +238,30 @@ function drawTextFilter(
 ) {
   if (!item.text) return null;
   const fontSize = Math.max(14, Math.round(height * 0.055 * item.fontScale));
+  const lines =
+    item.kind === "CAPTION"
+      ? wrapCaptionForRender(item.text, width, fontSize).split("\n")
+      : [item.text];
   const enable = includeEnable
     ? `:enable='between(t,${ffmpegNumber(item.timelineStartSeconds)},${ffmpegNumber(item.timelineStartSeconds + item.durationSeconds)})'`
     : "";
-  return (
-    `drawtext=fontfile=/System/Library/Fonts/SFNS.ttf:` +
-    `text='${escapeDrawText(item.text)}':fontcolor=white:` +
-    `fontsize=${fontSize}:borderw=${Math.max(1, Math.round(fontSize / 14))}:` +
-    `bordercolor=black@0.85:x='(w-text_w)*${ffmpegNumber(item.positionX)}':` +
-    `y='(h-text_h)*${ffmpegNumber(item.positionY)}'${enable}`
-  );
+  const lineHeight = Math.round(fontSize * 1.25);
+  const totalHeight = lineHeight * lines.length;
+  return lines
+    .map((line, index) => {
+      const y =
+        lines.length === 1
+          ? `(h-text_h)*${ffmpegNumber(item.positionY)}`
+          : `(h-${totalHeight})*${ffmpegNumber(item.positionY)}+${index * lineHeight}`;
+      return (
+        `drawtext=fontfile=/System/Library/Fonts/SFNS.ttf:` +
+        `text='${escapeDrawText(line)}':fontcolor=white:` +
+        `fontsize=${fontSize}:borderw=${Math.max(1, Math.round(fontSize / 14))}:` +
+        `bordercolor=black@0.85:x='(w-text_w)*${ffmpegNumber(item.positionX)}':` +
+        `y='${y}'${enable}`
+      );
+    })
+    .join(",");
 }
 
 function buildShortFormRenderPlan(
@@ -429,13 +479,21 @@ function buildShortFormRenderPlan(
   if (mediaLabels.length === 0) {
     filters.push("[basea]anull[aout]");
   } else {
-    const ducking = mediaLabels.find(
-      ({ sidechainLabel }) => sidechainLabel !== null,
+    const duckingLabels = mediaLabels.flatMap(({ sidechainLabel }) =>
+      sidechainLabel ? [sidechainLabel] : [],
     );
     let baseAudioLabel = "basea";
-    if (ducking?.sidechainLabel) {
+    if (duckingLabels.length > 0) {
+      const sidechainLabel =
+        duckingLabels.length === 1 ? duckingLabels[0]! : "combinedsidechain";
+      if (duckingLabels.length > 1) {
+        filters.push(
+          `${duckingLabels.map((label) => `[${label}]`).join("")}` +
+            `amix=inputs=${duckingLabels.length}:duration=longest:normalize=0[${sidechainLabel}]`,
+        );
+      }
       filters.push(
-        `[basea][${ducking.sidechainLabel}]sidechaincompress=` +
+        `[basea][${sidechainLabel}]sidechaincompress=` +
           "threshold=0.02:ratio=6:attack=20:release=300[duckedbase]",
       );
       baseAudioLabel = "duckedbase";

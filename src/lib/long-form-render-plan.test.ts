@@ -209,4 +209,51 @@ describe("long-form segmented render planning", () => {
     expect(args.join(" ")).toContain("sidechaincompress");
     expect(args.join(" ")).toContain("adelay=3000");
   });
+
+  it("uses every ducking narration track as combined sidechain evidence", () => {
+    const input = document(305);
+    input.items.push(
+      createLongFormTimelineItem({
+        id: "voice-one",
+        kind: "VOICEOVER",
+        track: "VOICEOVER",
+        mediaAssetId: "voice-one",
+        timelineStartSeconds: 3,
+        durationSeconds: 10,
+        duckOtherAudio: true,
+      }),
+      createLongFormTimelineItem({
+        id: "voice-two",
+        kind: "VOICEOVER",
+        track: "VOICEOVER",
+        mediaAssetId: "voice-two",
+        timelineStartSeconds: 20,
+        durationSeconds: 8,
+        duckOtherAudio: true,
+      }),
+    );
+    const args = buildLongFormFinalizeArguments({
+      document: input,
+      media: [
+        {
+          id: "voice-one",
+          absolutePath: "/tmp/voice-one.m4a",
+          durationSeconds: 12,
+        },
+        {
+          id: "voice-two",
+          absolutePath: "/tmp/voice-two.m4a",
+          durationSeconds: 10,
+        },
+      ],
+      concatPath: "/tmp/concat.mp4",
+      outputPath: "/tmp/output.mp4",
+      kind: "EXPORT",
+    });
+    const filter = args[args.indexOf("-filter_complex") + 1];
+    expect(filter).toContain(
+      "[media0sidechain][media1sidechain]amix=inputs=2:duration=longest:normalize=0[combinedsidechain]",
+    );
+    expect(filter).toContain("[baseaudio][combinedsidechain]sidechaincompress");
+  });
 });

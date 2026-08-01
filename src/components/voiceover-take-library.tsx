@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Captions,
   CheckCircle2,
   FileAudio,
   LoaderCircle,
   Mic2,
+  Scissors,
   Square,
   Trash2,
   UploadCloud,
+  Volume2,
+  XCircle,
 } from "lucide-react";
 
 import { formatBytes } from "@/lib/format";
@@ -45,6 +49,29 @@ export function VoiceoverTakeLibrary({
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hasActiveJob = state.takes.some((take) =>
+    take.jobs.some(
+      (job) => job.status === "QUEUED" || job.status === "RUNNING",
+    ),
+  );
+
+  const refreshState = useCallback(async () => {
+    const response = await fetch(
+      `/api/studio-projects/${studioProjectId}/voiceover`,
+      { cache: "no-store" },
+    );
+    const body = (await response.json()) as {
+      voiceover?: VoiceoverState;
+      error?: { message?: string };
+    };
+    if (!response.ok || !body.voiceover) {
+      throw new Error(
+        body.error?.message || "The narration status could not be refreshed.",
+      );
+    }
+    onState(body.voiceover);
+    return body.voiceover;
+  }, [onState, studioProjectId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -56,6 +83,20 @@ export function VoiceoverTakeLibrary({
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
+
+  useEffect(() => {
+    if (!hasActiveJob) return;
+    let stopped = false;
+    const interval = window.setInterval(() => {
+      void refreshState().catch((reason) => {
+        if (!stopped) setError(errorMessage(reason));
+      });
+    }, 1_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(interval);
+    };
+  }, [hasActiveJob, refreshState]);
 
   function chooseFile(next: File | undefined) {
     setError(null);
@@ -335,6 +376,8 @@ export function VoiceoverTakeLibrary({
                 onState={onState}
                 onError={setError}
                 onMessage={setMessage}
+                onRefresh={refreshState}
+                targetAvailability={state.targetAvailability}
               />
             ))}
           </div>
@@ -361,6 +404,8 @@ function TakeCard({
   onState,
   onError,
   onMessage,
+  onRefresh,
+  targetAvailability,
 }: {
   studioProjectId: string;
   take: VoiceoverState["takes"][number];
@@ -368,6 +413,8 @@ function TakeCard({
   onState: (state: VoiceoverState) => void;
   onError: (value: string | null) => void;
   onMessage: (value: string | null) => void;
+  onRefresh: () => Promise<VoiceoverState>;
+  targetAvailability: VoiceoverState["targetAvailability"];
 }) {
   const [name, setName] = useState(take.name);
   const [scriptSectionKey, setScriptSectionKey] = useState(
@@ -376,12 +423,25 @@ function TakeCard({
   const [alignmentStartSeconds, setAlignmentStartSeconds] = useState(
     take.alignmentStartSeconds,
   );
+  const [trimStartSeconds, setTrimStartSeconds] = useState(
+    take.trimStartSeconds,
+  );
+  const [trimEndSeconds, setTrimEndSeconds] = useState(
+    take.trimEndSeconds ?? take.sourceAsset.durationSeconds,
+  );
+  const [normalize, setNormalize] = useState(take.normalize);
+  const [noiseReduction, setNoiseReduction] = useState(take.noiseReduction);
+  const [gainDb, setGainDb] = useState(take.gainDb);
   const [busy, setBusy] = useState(false);
   const asset = take.processedAsset ?? take.sourceAsset;
   const sectionTitle =
     sections.find((section) => section.key === take.scriptSectionKey)?.title ??
     take.scriptSectionKey ??
     "whole script";
+  const activeJob = take.jobs.find(
+    (job) => job.status === "QUEUED" || job.status === "RUNNING",
+  );
+  const latestJob = take.jobs[0];
 
   async function update(extra: Record<string, unknown> = {}) {
     setBusy(true);
@@ -455,6 +515,124 @@ function TakeCard({
     }
   }
 
+  async function startJob(kind: "process" | "captions") {
+    setBusy(true);
+    onError(null);
+    onMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/voiceover/takes/${take.id}/${kind}`,
+        {
+          method: "POST",
+          headers:
+            kind === "process"
+              ? { "Content-Type": "application/json" }
+              : undefined,
+          body:
+            kind === "process"
+              ? JSON.stringify({
+                  trimStartSeconds,
+                  trimEndSeconds,
+                  normalize,
+                  noiseReduction,
+                  gainDb,
+                })
+              : undefined,
+        },
+      );
+      const body = (await response.json()) as {
+        job?: { id: string };
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.job) {
+        throw new Error(
+          body.error?.message ||
+            `The local ${kind === "process" ? "audio processing" : "caption"} job could not start.`,
+        );
+      }
+      await onRefresh();
+      onMessage(
+        kind === "process"
+          ? "Local narration processing started."
+          : "Local caption generation started.",
+      );
+    } catch (reason) {
+      onError(errorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelJob() {
+    if (!activeJob) return;
+    setBusy(true);
+    onError(null);
+    onMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/voiceover/jobs/${activeJob.id}/cancel`,
+        { method: "POST" },
+      );
+      const body = (await response.json()) as {
+        job?: { id: string };
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.job) {
+        throw new Error(
+          body.error?.message || "The narration job could not be cancelled.",
+        );
+      }
+      await onRefresh();
+      onMessage("Narration job cancellation requested.");
+    } catch (reason) {
+      onError(errorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateTimeline(
+    target: "SHORT_FORM" | "LONG_FORM",
+    action: "ADD_OR_REPLACE" | "REMOVE",
+  ) {
+    setBusy(true);
+    onError(null);
+    onMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/voiceover/takes/${take.id}/timeline`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target,
+            action,
+            includeCaptions: true,
+          }),
+        },
+      );
+      const body = (await response.json()) as {
+        voiceover?: VoiceoverState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.voiceover) {
+        throw new Error(
+          body.error?.message || "The timeline could not be updated.",
+        );
+      }
+      onState(body.voiceover);
+      onMessage(
+        action === "REMOVE"
+          ? `Narration removed from the ${target === "LONG_FORM" ? "long-form" : "short-form"} timeline.`
+          : `Narration, captions, alignment, and gameplay-audio ducking saved to the ${target === "LONG_FORM" ? "long-form" : "short-form"} timeline.`,
+      );
+    } catch (reason) {
+      onError(errorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <article className="rounded-xl border border-white/8 bg-black/15 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -464,6 +642,11 @@ function TakeCard({
             {asset.durationSeconds.toFixed(1)}s ·{" "}
             {formatBytes(asset.fileSizeBytes)} · {sectionTitle}
           </p>
+          {take.processedAsset && (
+            <p className="mt-1 text-[10px] font-bold text-[#b8ff2c] uppercase">
+              Processed copy active · original preserved
+            </p>
+          )}
         </div>
         {take.isActive && (
           <span className="rounded-full border border-[#b8ff2c]/20 bg-[#b8ff2c]/6 px-2 py-1 text-[10px] font-bold text-[#d8ff8a] uppercase">
@@ -518,6 +701,71 @@ function TakeCard({
             }
           />
         </label>
+        <label>
+          <span className="form-label">Trim start (seconds)</span>
+          <input
+            className="field mt-2"
+            type="number"
+            min={0}
+            max={take.sourceAsset.durationSeconds}
+            step="0.05"
+            value={trimStartSeconds}
+            disabled={busy || Boolean(activeJob)}
+            onChange={(event) =>
+              setTrimStartSeconds(Number(event.target.value))
+            }
+          />
+        </label>
+        <label>
+          <span className="form-label">Trim end (seconds)</span>
+          <input
+            className="field mt-2"
+            type="number"
+            min={0.05}
+            max={take.sourceAsset.durationSeconds}
+            step="0.05"
+            value={trimEndSeconds}
+            disabled={busy || Boolean(activeJob)}
+            onChange={(event) => setTrimEndSeconds(Number(event.target.value))}
+          />
+        </label>
+        <label>
+          <span className="form-label">Gain (dB)</span>
+          <input
+            className="field mt-2"
+            type="number"
+            min={-12}
+            max={12}
+            step="0.5"
+            value={gainDb}
+            disabled={busy || Boolean(activeJob)}
+            onChange={(event) => setGainDb(Number(event.target.value))}
+          />
+        </label>
+      </div>
+      <p className="mt-3 text-[11px] leading-5 text-slate-600">
+        Use trim start/end to remove leading or trailing silence. Processing
+        always starts from the untouched original take.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-400">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={normalize}
+            disabled={busy || Boolean(activeJob)}
+            onChange={(event) => setNormalize(event.target.checked)}
+          />
+          Normalize narration loudness
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={noiseReduction}
+            disabled={busy || Boolean(activeJob)}
+            onChange={(event) => setNoiseReduction(event.target.checked)}
+          />
+          Conservative local noise reduction
+        </label>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -545,6 +793,217 @@ function TakeCard({
           <Trash2 size={13} /> Delete take
         </button>
       </div>
+      <div className="mt-4 border-t border-white/8 pt-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={busy || Boolean(activeJob)}
+            onClick={() => void startJob("process")}
+          >
+            <Scissors size={13} /> Process take
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={busy || Boolean(activeJob)}
+            onClick={() => void startJob("captions")}
+          >
+            <Captions size={13} /> Generate captions
+          </button>
+          {activeJob && (
+            <button
+              type="button"
+              className="secondary-button text-red-200"
+              disabled={busy}
+              onClick={() => void cancelJob()}
+            >
+              <XCircle size={13} /> Cancel job
+            </button>
+          )}
+        </div>
+        {activeJob && (
+          <div className="mt-3">
+            <div className="mb-1 flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+              <span>{activeJob.stage}</span>
+              <span>{activeJob.progress}%</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
+              <div
+                className="h-full bg-[#b8ff2c]"
+                style={{ width: `${activeJob.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+        {!activeJob && latestJob && (
+          <p
+            className={`mt-3 text-xs ${
+              latestJob.status === "ERROR"
+                ? "text-red-200"
+                : latestJob.status === "CANCELLED"
+                  ? "text-amber-200"
+                  : "text-slate-500"
+            }`}
+          >
+            {latestJob.stage}
+            {latestJob.errorMessage ? ` — ${latestJob.errorMessage}` : ""}
+          </p>
+        )}
+      </div>
+      {take.captions.length > 0 && (
+        <div className="mt-4 border-t border-white/8 pt-4">
+          <p className="form-label">
+            Editable narration captions · {take.captions.length}
+          </p>
+          <div className="mt-3 space-y-2">
+            {take.captions.map((caption) => (
+              <CaptionEditor
+                key={caption.id}
+                studioProjectId={studioProjectId}
+                caption={caption}
+                onState={onState}
+                onError={onError}
+                onMessage={onMessage}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="mt-4 border-t border-white/8 pt-4">
+        <p className="form-label">Timeline delivery</p>
+        <p className="mt-2 text-[11px] leading-5 text-slate-600">
+          The active take is aligned non-destructively. Gameplay audio ducks
+          only while narration is present; original recordings remain unchanged.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {targetAvailability.shortFormTimeline && (
+            <>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy || Boolean(activeJob) || !take.isActive}
+                onClick={() =>
+                  void updateTimeline("SHORT_FORM", "ADD_OR_REPLACE")
+                }
+              >
+                <Volume2 size={13} /> Add/replace in Short
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy || Boolean(activeJob)}
+                onClick={() => void updateTimeline("SHORT_FORM", "REMOVE")}
+              >
+                Remove from Short
+              </button>
+            </>
+          )}
+          {targetAvailability.longFormTimeline && (
+            <>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy || Boolean(activeJob) || !take.isActive}
+                onClick={() =>
+                  void updateTimeline("LONG_FORM", "ADD_OR_REPLACE")
+                }
+              >
+                <Volume2 size={13} /> Add/replace in long form
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy || Boolean(activeJob)}
+                onClick={() => void updateTimeline("LONG_FORM", "REMOVE")}
+              >
+                Remove from long form
+              </button>
+            </>
+          )}
+          {!targetAvailability.shortFormTimeline &&
+            !targetAvailability.longFormTimeline && (
+              <p className="text-xs text-slate-600">
+                Create a short- or long-form editor timeline before delivering
+                narration.
+              </p>
+            )}
+        </div>
+      </div>
     </article>
+  );
+}
+
+function CaptionEditor({
+  studioProjectId,
+  caption,
+  onState,
+  onError,
+  onMessage,
+}: {
+  studioProjectId: string;
+  caption: VoiceoverState["takes"][number]["captions"][number];
+  onState: (state: VoiceoverState) => void;
+  onError: (value: string | null) => void;
+  onMessage: (value: string | null) => void;
+}) {
+  const [text, setText] = useState(caption.text);
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    onError(null);
+    onMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/voiceover/captions/${caption.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        },
+      );
+      const body = (await response.json()) as {
+        voiceover?: VoiceoverState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.voiceover) {
+        throw new Error(
+          body.error?.message || "The caption edit could not be saved.",
+        );
+      }
+      onState(body.voiceover);
+      onMessage("Narration caption edit saved.");
+    } catch (reason) {
+      onError(errorMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-white/8 bg-black/20 p-3">
+      <p className="text-[10px] font-bold text-slate-600 uppercase">
+        {caption.startSeconds.toFixed(2)}s–{caption.endSeconds.toFixed(2)}s
+      </p>
+      <div className="mt-2 flex gap-2">
+        <input
+          className="field"
+          value={text}
+          maxLength={2_000}
+          disabled={busy}
+          aria-label={`Caption ${caption.segmentOrder + 1}`}
+          onChange={(event) => setText(event.target.value)}
+        />
+        <button
+          type="button"
+          className="secondary-button shrink-0"
+          disabled={busy || !text.trim()}
+          onClick={() => void save()}
+        >
+          Save
+        </button>
+      </div>
+    </div>
   );
 }

@@ -542,6 +542,8 @@ was not required.
 
 #### U5.3 — Processing, captions, and timeline integration
 
+Status: **implemented and verified on August 1, 2026**.
+
 - Run trimming, EBU-style loudness normalization, conservative local FFmpeg
   noise reduction, and narration transcription outside the request path with
   persisted progress, cancellation, restart reconciliation, and temporary
@@ -554,6 +556,33 @@ was not required.
 - Generate editable timestamped captions from the final selected narration and
   add them to the chosen timeline. Use gameplay-audio ducking only while
   narration is active.
+
+The retained owned microphone take was trimmed from 0.2 to 10.5 seconds,
+normalized, conservatively denoised, and raised by 1 dB through a persisted
+background job. The 10.3-second AAC result was saved as a separate
+permission-confirmed asset while the untouched 97,851-byte original retained
+SHA-256
+`bad3d63c2aac34fbfd699c2b442d754900748edc60e5a38980be74c75bfbc610`.
+Local Whisper generated one timestamped segment from the final audio; its edit
+survived restart and preserved the original recognized text separately.
+
+The active section take and editable caption were added to long-form timeline
+section `section-1` at 1.5 seconds. Reprocessing created a second immutable
+processed-output record, and re-integration replaced only that section's
+deterministic voiceover/caption items with the newest asset. Gameplay-audio
+ducking remained explicit on the narration item. A cancelled job became
+`CANCELLED` and removed its temporary directory; a deliberately interrupted
+job became an honest `ERROR` after restart, retained the completed narration
+and captions, and removed its partial directory.
+
+The final browser render used versioned pipeline
+`u5-segmented-ffmpeg-v5`. It produced a playable 1,200.022-second 640×360
+H.264/AAC preview with 15 bounded segments, one narration item, gameplay
+ducking, and centered multi-line captions. The file is 67,707,935 bytes,
+browser media reached ready state 4, the first 15 seconds had a distinct
+decoded-audio SHA-256 from the pre-voiceover preview, and visual inspection
+confirmed the long caption stayed within the frame. Browser console warning and
+error counts were both zero.
 
 #### U5.4 — Real verification and checkpoint
 

@@ -1,3 +1,5 @@
+import { unlink } from "node:fs/promises";
+
 import type {
   StudioMediaAsset,
   VoiceoverFact,
@@ -13,7 +15,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { resolveDataPath } from "@/lib/data-paths";
 import { AppError } from "@/lib/errors";
+import { longFormTimelineDocumentSchema } from "@/lib/long-form-timeline-document";
 import { type CandidateEvidenceItem } from "@/lib/short-form-candidates";
+import { timelineDocumentSchema } from "@/lib/timeline-document";
+import { reconcileVoiceoverJobs } from "@/lib/voiceover-jobs";
 import { getVoiceoverScriptProvider } from "@/lib/voiceover/index";
 import {
   type VoiceoverFactInput,
@@ -24,9 +29,6 @@ import {
   voiceoverPackageSchema,
   voiceoverRevisionSchema,
 } from "@/lib/voiceover/types";
-import { longFormTimelineDocumentSchema } from "@/lib/long-form-timeline-document";
-import { timelineDocumentSchema } from "@/lib/timeline-document";
-import { unlink } from "node:fs/promises";
 
 const factUpdateSchema = z
   .object({
@@ -104,6 +106,9 @@ type VoiceoverJobDto = {
   progress: number;
   stage: string;
   errorMessage: string | null;
+  cancelRequestedAt: string | null;
+  completedAt: string | null;
+  processorVersion: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -130,6 +135,10 @@ export type VoiceoverState = {
   currentRevision: VoiceoverScriptRevisionDto | null;
   revisions: VoiceoverScriptRevisionDto[];
   takes: VoiceoverTakeDto[];
+  targetAvailability: {
+    shortFormTimeline: boolean;
+    longFormTimeline: boolean;
+  };
 };
 
 const takeUpdateSchema = z
@@ -138,6 +147,12 @@ const takeUpdateSchema = z
     scriptSectionKey: z.string().trim().max(120).nullable().optional(),
     isActive: z.boolean().optional(),
     alignmentStartSeconds: z.number().finite().min(0).max(14_400).optional(),
+  })
+  .strict();
+
+const captionUpdateSchema = z
+  .object({
+    text: z.string().trim().min(1).max(2_000),
   })
   .strict();
 
@@ -231,6 +246,9 @@ function serializeJob(job: VoiceoverJob): VoiceoverJobDto {
     progress: job.progress,
     stage: job.stage,
     errorMessage: job.errorMessage,
+    cancelRequestedAt: job.cancelRequestedAt?.toISOString() ?? null,
+    completedAt: job.completedAt?.toISOString() ?? null,
+    processorVersion: job.processorVersion,
     createdAt: job.createdAt.toISOString(),
     updatedAt: job.updatedAt.toISOString(),
   };
@@ -299,11 +317,13 @@ async function findStudioContext(studioProjectId: string) {
         include: {
           selectedCandidate: true,
           revisions: { orderBy: { version: "desc" }, take: 1 },
+          timeline: { select: { id: true } },
         },
       },
       longFormProduction: {
         include: {
           revisions: { orderBy: { version: "desc" }, take: 1 },
+          timeline: { select: { id: true } },
         },
       },
     },
@@ -568,6 +588,7 @@ async function structureForTarget(
 export async function getVoiceoverState(
   studioProjectId: string,
 ): Promise<VoiceoverState> {
+  await reconcileVoiceoverJobs();
   const project = await findStudioContext(studioProjectId);
   const initialProduction = await ensureProduction(studioProjectId);
   const factCount = await db.voiceoverFact.count({
@@ -614,6 +635,10 @@ export async function getVoiceoverState(
     currentRevision: revisions[0] ?? null,
     revisions,
     takes: production.takes.map(serializeTake),
+    targetAvailability: {
+      shortFormTimeline: Boolean(project.shortFormProduction?.timeline),
+      longFormTimeline: Boolean(project.longFormProduction?.timeline),
+    },
   };
 }
 
@@ -850,6 +875,7 @@ export async function deleteVoiceoverTake(
     include: {
       sourceAsset: true,
       processedAsset: true,
+      processedOutputs: { include: { asset: true } },
       production: {
         include: {
           studioProject: {
@@ -886,9 +912,11 @@ export async function deleteVoiceoverTake(
     );
   }
   const assetIds = new Set(
-    [take.sourceAssetId, take.processedAssetId].filter(
-      (value): value is string => Boolean(value),
-    ),
+    [
+      take.sourceAssetId,
+      take.processedAssetId,
+      ...take.processedOutputs.map((output) => output.assetId),
+    ].filter((value): value is string => Boolean(value)),
   );
   const studio = take.production.studioProject;
   if (
@@ -909,20 +937,51 @@ export async function deleteVoiceoverTake(
       "VOICEOVER_TAKE_IN_USE",
     );
   }
-  const assets = [take.sourceAsset, take.processedAsset].filter(
-    (asset): asset is StudioMediaAsset => Boolean(asset),
-  );
+  const assets = [
+    take.sourceAsset,
+    take.processedAsset,
+    ...take.processedOutputs.map((output) => output.asset),
+  ].filter((asset): asset is StudioMediaAsset => Boolean(asset));
+  const uniqueAssets = [
+    ...new Map(assets.map((asset) => [asset.id, asset])).values(),
+  ];
   await db.$transaction(async (transaction) => {
     await transaction.voiceoverTake.delete({ where: { id: take.id } });
     await transaction.studioMediaAsset.deleteMany({
-      where: { id: { in: assets.map((asset) => asset.id) } },
+      where: { id: { in: uniqueAssets.map((asset) => asset.id) } },
     });
   });
   await Promise.all(
-    assets.map((asset) =>
+    uniqueAssets.map((asset) =>
       unlink(resolveDataPath(asset.relativePath)).catch(() => undefined),
     ),
   );
+  return getVoiceoverState(studioProjectId);
+}
+
+export async function updateVoiceoverCaption(
+  studioProjectId: string,
+  captionId: string,
+  input: unknown,
+) {
+  const parsed = captionUpdateSchema.parse(input);
+  const caption = await db.voiceoverCaptionSegment.findFirst({
+    where: {
+      id: captionId,
+      take: { production: { studioProjectId } },
+    },
+  });
+  if (!caption) {
+    throw new AppError(
+      "That narration caption does not exist.",
+      404,
+      "VOICEOVER_CAPTION_NOT_FOUND",
+    );
+  }
+  await db.voiceoverCaptionSegment.update({
+    where: { id: caption.id },
+    data: { text: parsed.text },
+  });
   return getVoiceoverState(studioProjectId);
 }
 

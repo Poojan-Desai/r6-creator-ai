@@ -21,7 +21,7 @@ import {
   type TimelineItem,
 } from "@/lib/timeline-document";
 
-export const LONG_FORM_RENDER_PIPELINE_VERSION = "u4-segmented-ffmpeg-v2";
+export const LONG_FORM_RENDER_PIPELINE_VERSION = "u5-segmented-ffmpeg-v5";
 export const LONG_FORM_SEGMENT_MAX_SECONDS = 120;
 
 export type LongFormRenderSegment = {
@@ -499,11 +499,21 @@ export function buildLongFormFinalizeArguments(input: {
       sidechain: item.duckOtherAudio ? `${label}sidechain` : null,
     });
   }
-  const ducking = labels.find((label) => label.sidechain);
+  const duckingLabels = labels.flatMap(({ sidechain }) =>
+    sidechain ? [sidechain] : [],
+  );
   let baseLabel = "baseaudio";
-  if (ducking?.sidechain) {
+  if (duckingLabels.length > 0) {
+    const sidechainLabel =
+      duckingLabels.length === 1 ? duckingLabels[0]! : "combinedsidechain";
+    if (duckingLabels.length > 1) {
+      filters.push(
+        `${duckingLabels.map((label) => `[${label}]`).join("")}` +
+          `amix=inputs=${duckingLabels.length}:duration=longest:normalize=0[${sidechainLabel}]`,
+      );
+    }
     filters.push(
-      `[baseaudio][${ducking.sidechain}]sidechaincompress=` +
+      `[baseaudio][${sidechainLabel}]sidechaincompress=` +
         "threshold=0.02:ratio=6:attack=20:release=300[duckedbase]",
     );
     baseLabel = "duckedbase";

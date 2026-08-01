@@ -2438,21 +2438,22 @@ model ShortFormTimelineRevision {
 }
 
 model StudioMediaAsset {
-  id                     String          @id @default(cuid())
-  studioProjectId        String
-  studioProject          StudioProject   @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
-  kind                   StudioMediaKind
-  name                   String
-  originalFilename       String
-  mimeType               String
-  relativePath           String
-  fileSizeBytes          BigInt
-  durationSeconds        Float
-  permissionConfirmed    Boolean
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-  sourceVoiceoverTake    VoiceoverTake?  @relation("VoiceoverTakeSource")
-  processedVoiceoverTake VoiceoverTake?  @relation("VoiceoverTakeProcessed")
+  id                       String                   @id @default(cuid())
+  studioProjectId          String
+  studioProject            StudioProject            @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  kind                     StudioMediaKind
+  name                     String
+  originalFilename         String
+  mimeType                 String
+  relativePath             String
+  fileSizeBytes            BigInt
+  durationSeconds          Float
+  permissionConfirmed      Boolean
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  sourceVoiceoverTake      VoiceoverTake?           @relation("VoiceoverTakeSource")
+  processedVoiceoverTake   VoiceoverTake?           @relation("VoiceoverTakeProcessed")
+  voiceoverProcessedOutput VoiceoverProcessedAsset?
 
   @@index([studioProjectId, kind, createdAt])
 }
@@ -2530,27 +2531,43 @@ model VoiceoverTake {
   updatedAt             DateTime                  @updatedAt
   jobs                  VoiceoverJob[]
   captions              VoiceoverCaptionSegment[]
+  processedOutputs      VoiceoverProcessedAsset[]
 
   @@index([productionId, isActive, createdAt])
   @@index([productionId, scriptSectionKey])
 }
 
+model VoiceoverProcessedAsset {
+  id           String           @id @default(cuid())
+  takeId       String
+  take         VoiceoverTake    @relation(fields: [takeId], references: [id], onDelete: Cascade)
+  jobId        String           @unique
+  job          VoiceoverJob     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  assetId      String           @unique
+  asset        StudioMediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  settingsJson String
+  createdAt    DateTime         @default(now())
+
+  @@index([takeId, createdAt])
+}
+
 model VoiceoverJob {
-  id                String             @id @default(cuid())
+  id                String                   @id @default(cuid())
   takeId            String
-  take              VoiceoverTake      @relation(fields: [takeId], references: [id], onDelete: Cascade)
+  take              VoiceoverTake            @relation(fields: [takeId], references: [id], onDelete: Cascade)
   kind              VoiceoverJobKind
-  status            VoiceoverJobStatus @default(QUEUED)
-  progress          Int                @default(0)
-  stage             String             @default("Waiting to start")
+  status            VoiceoverJobStatus       @default(QUEUED)
+  progress          Int                      @default(0)
+  stage             String                   @default("Waiting to start")
   processorVersion  String
-  settingsJson      String             @default("{}")
+  settingsJson      String                   @default("{}")
   errorMessage      String?
   cancelRequestedAt DateTime?
   startedAt         DateTime?
   completedAt       DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  processedOutput   VoiceoverProcessedAsset?
 
   @@index([takeId, createdAt])
   @@index([status, updatedAt])

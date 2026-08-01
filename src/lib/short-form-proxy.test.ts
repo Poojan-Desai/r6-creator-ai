@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildShortFormExportPlan,
   buildShortFormProxyPlan,
+  wrapCaptionForRender,
 } from "@/lib/short-form-proxy";
 import {
   addTimelineItem,
@@ -12,6 +13,19 @@ import {
 } from "@/lib/timeline-document";
 
 describe("U3 low-resolution proxy render plan", () => {
+  it("wraps long captions to the current render width", () => {
+    const wrapped = wrapCaptionForRender(
+      "And so, my fellow Americans, ask not what your country can do for you; ask what you can do for your country.",
+      640,
+      18,
+    );
+    const lines = wrapped.split("\n");
+    expect(lines.length).toBeGreaterThan(1);
+    expect(Math.max(...lines.map((line) => line.length))).toBeLessThanOrEqual(
+      52,
+    );
+  });
+
   it("builds deterministic vertical FFmpeg arguments for split-speed edits", () => {
     const original = createDefaultTimelineDocument({
       sourceProjectId: "video",
@@ -116,6 +130,69 @@ describe("U3 low-resolution proxy render plan", () => {
       plan.arguments[plan.arguments.indexOf("-filter_complex") + 1];
     expect(filter).toContain("sidechaincompress");
     expect(filter).toContain("amix=inputs=2");
+  });
+
+  it("combines every ducking narration track before compressing gameplay", () => {
+    const original = createDefaultTimelineDocument({
+      sourceProjectId: "video",
+      sourceStartSeconds: 0,
+      sourceEndSeconds: 10,
+      aspectRatio: "HORIZONTAL_16_9",
+      targetDurationSeconds: 15,
+    });
+    const first = addTimelineItem(
+      original,
+      createTimelineItem({
+        id: "voice-one",
+        kind: "VOICEOVER",
+        track: "VOICEOVER",
+        mediaAssetId: "voice-one",
+        durationSeconds: 3,
+        timelineStartSeconds: 1,
+        duckOtherAudio: true,
+      }),
+    );
+    const timeline = addTimelineItem(
+      first,
+      createTimelineItem({
+        id: "voice-two",
+        kind: "VOICEOVER",
+        track: "VOICEOVER",
+        mediaAssetId: "voice-two",
+        durationSeconds: 3,
+        timelineStartSeconds: 5,
+        duckOtherAudio: true,
+      }),
+    );
+    const plan = buildShortFormProxyPlan({
+      document: timeline,
+      sources: [
+        {
+          id: "video",
+          absolutePath: "/safe/source.mp4",
+          audioStreamIndex: null,
+        },
+      ],
+      media: [
+        {
+          id: "voice-one",
+          absolutePath: "/safe/voice-one.wav",
+          durationSeconds: 3,
+        },
+        {
+          id: "voice-two",
+          absolutePath: "/safe/voice-two.wav",
+          durationSeconds: 3,
+        },
+      ],
+      outputPath: "/safe/preview.mp4",
+    });
+    const filter =
+      plan.arguments[plan.arguments.indexOf("-filter_complex") + 1];
+    expect(filter).toContain(
+      "[media0sidechain][media1sidechain]amix=inputs=2:duration=longest:normalize=0[combinedsidechain]",
+    );
+    expect(filter).toContain("[basea][combinedsidechain]sidechaincompress");
   });
 
   it("refuses to render a timeline with no visual items", () => {
