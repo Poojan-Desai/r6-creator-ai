@@ -136,8 +136,9 @@ export default async function HomePage() {
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
               Connect recordings, optional replay evidence, references, and
-              style preferences. U1 now saves one shared brief; editing and
-              export arrive in their verified stages.
+              style preferences. U1 saves one shared brief and U2 aligns
+              combined recording/replay timelines without changing either
+              source.
             </p>
           </Link>
           <Link

@@ -126,8 +126,9 @@ views, or virality claim follows from replay parsing.
 
 ## Exact next action
 
-Finish the U2 release gate: run the complete automated suite and production
-build, verify SQLite integrity and migration preservation, restart the server,
-confirm the saved versions persist with a clean browser console, remove only
-the temporary unified verification wrapper, and commit the verified U2 release.
-Then begin U3 short-form work from that clean checkpoint.
+Begin U3 short-form Creator Studio from the verified U2 checkpoint. Reuse the
+existing local detector evidence, transcript, manual labels, Creator Style
+Profile, template writing provider, manual clipping service, and verified
+synchronization mapping where applicable. Keep Event Confidence, Content
+Potential Score, and Style Similarity separate; do not claim prediction of
+views, and do not invent replay or visual facts.

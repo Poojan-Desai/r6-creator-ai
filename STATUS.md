@@ -3,13 +3,13 @@
 - **Current branch:** `codex/phase-3`
 - **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
   and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
-- **Current phase:** U2 — replay/video synchronization
+- **Current phase:** U3 — short-form Creator Studio
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
   gate
-- **Current active task:** Preserve the verified U1 checkpoint, inspect replay
-  and video time evidence, then design and implement versioned manual
-  synchronization before adding automatic anchor candidates
+- **Current active task:** Begin U3 from the verified U2 checkpoint with
+  evidence-backed short-form candidate review and original local writing;
+  preserve the existing manual clipping and template-provider fallback
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
   reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
   plus the reviewed `compat-1` operator-roster patch
@@ -17,9 +17,9 @@
 - **Audit-only provider:** `wnc-replay/replay-tool` commit
   `dd535f6499069c8268841fda76c68a04b19ba104`; it remains unintegrated because
   the repository has no top-level license
-- **Migration version:** `20260731075246_unified_project_foundation`, applied
-  additively after a private local database backup with matching legacy row
-  counts and a clean foreign-key check
+- **Migration version:** `20260731083310_replay_video_synchronization`, applied
+  additively after private pre-U1 and pre-U2 SQLite backups with matching legacy
+  row counts, integrity `ok`, and clean foreign keys
 - **Current real-replay compatibility:** One user-approved nine-round
   `Y11S2_Alpha04` package parsed successfully. This is evidence for that exact
   package and provider version, not a promise that every current or future
@@ -43,8 +43,8 @@
   preserved the prior valid canonical match. A deliberately interrupted real
   run became a recoverable error after restart, leaked no temporary output, and
   also preserved the prior match.
-- **Automated validation:** Formatting, ESLint, strict TypeScript, 169 tests
-  across 33 files, and the warning-free production build passed on July 31, 2026.
+- **Automated validation:** Formatting, ESLint, strict TypeScript, 175 tests
+  across 35 files, and the warning-free production build passed on July 31, 2026.
 - **Pre-U1 safety:** The Git tree was clean before work. A consistent private
   SQLite backup was created at
   `data/backups/r6-creator.pre-unified-u1-20260731.db`; integrity was `ok` and
@@ -72,6 +72,23 @@
   browser checks after the production build. SQLite integrity was `ok`, foreign
   keys were clean, invalid combined input returned a readable 400 error, and
   the development server is running at `http://localhost:3000`.
+- **U2 implementation:** Combined projects now have a local synchronization
+  workspace with explicit manual anchors, round/event selection, a visible
+  linear offset/drift formula, per-round adjustments, conservative automatic
+  candidate offsets, separate observation/fact/inference records, confidence,
+  notes, and immutable verified versions.
+- **U2 honesty boundary:** The current imported replays contain 160 canonical
+  events across 21 rounds but zero replay-relative event or round timestamps.
+  Automatic offset discovery therefore reports unavailable. User-entered
+  replay times remain labeled user-entered and visible as missing parser
+  evidence.
+- **U2 browser proof:** A real combined project used the existing 20-minute
+  MP4 and nine-round replay. One-anchor verification returned a readable 409.
+  Two confirmed anchors fitted offset and drift; a saved correction, round
+  adjustment, notes, verified version, and editable correction version all
+  survived a full restart. The source route returned HTTP 206, the UI rendered
+  no error overlay, and five video projects, three replay packages, and four
+  references remained after deleting only the temporary wrapper.
 
 ## Latest real replay verification
 

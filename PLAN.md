@@ -81,7 +81,7 @@ SQLite integrity, foreign keys, and Phase 1–replay regressions passed.
 
 ### U2 — Replay/video synchronization
 
-Status: **active; begins from the verified `ed467aa` U1 checkpoint**.
+Status: **verified on July 31, 2026; U3 is now active**.
 
 Add versioned, non-destructive synchronization with manual anchors, multiple
 automatic candidate offsets, per-round adjustments, drift correction, visual
@@ -148,9 +148,22 @@ event timing or claim that automatic alignment is available for those packages.
   across an application restart, and browser-console inspection before marking
   U2 verified.
 
+Verified result: the additive migration preserved all five source-video
+projects, three replay packages, four references, and every Phase 1–U1 row.
+Browser verification used the existing 20-minute recording and parsed
+nine-round replay. The app rejected one-anchor verification, saved two
+user-confirmed anchors, measured a 91.025-second offset and -9 seconds/hour
+drift after a correction, preserved missing parser timing as explicit evidence,
+saved a per-round adjustment and notes, froze version 1, copied it into editable
+version 2, and reopened both versions after a complete server restart. The real
+MP4 endpoint returned HTTP 206. The temporary unified-project wrapper was then
+deleted while all source records remained. Formatting, ESLint, strict
+TypeScript, 175 tests across 35 files, the production build, SQLite integrity,
+foreign keys, and browser regressions passed.
+
 ### U3 — Short-form Creator Studio
 
-Status: not started.
+Status: **active from the verified U2 checkpoint**.
 
 Build evidence-backed candidates, human review, an editable story plan,
 original scripts, voiceover integration, proxy previews, deterministic FFmpeg
