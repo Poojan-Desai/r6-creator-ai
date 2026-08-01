@@ -373,6 +373,14 @@ function coachingProjectInclude() {
     coachingCalibrations: {
       orderBy: { version: "desc" as const },
     },
+    coachingMeasurements: {
+      orderBy: { createdAt: "desc" as const },
+      include: {
+        calibration: {
+          select: { version: true, name: true },
+        },
+      },
+    },
     coachingAnalyses: {
       orderBy: { createdAt: "desc" as const },
       include: { _count: { select: { findings: true } } },
@@ -573,6 +581,23 @@ function serializeCoachingProject(project: CoachingProject) {
       userConfirmed: calibration.userConfirmed,
       calibrationVersion: calibration.calibrationVersion,
       createdAt: calibration.createdAt.toISOString(),
+    })),
+    measurements: project.coachingMeasurements.map((measurement) => ({
+      id: measurement.id,
+      findingId: measurement.findingId,
+      kind: measurement.kind,
+      startSeconds: measurement.startSeconds,
+      peakSeconds: measurement.peakSeconds,
+      endSeconds: measurement.endSeconds,
+      confidence: measurement.confidence,
+      methodVersion: measurement.methodVersion,
+      inputs: parseJson(measurement.inputsJson),
+      measurements: parseJson(measurement.measurementsJson),
+      thresholds: parseJson(measurement.thresholdsJson),
+      userConfirmed: measurement.userConfirmed,
+      warnings: parseStringArray(measurement.warningMessagesJson),
+      calibration: measurement.calibration,
+      createdAt: measurement.createdAt.toISOString(),
     })),
     analyses: project.coachingAnalyses.map((analysis) => ({
       id: analysis.id,

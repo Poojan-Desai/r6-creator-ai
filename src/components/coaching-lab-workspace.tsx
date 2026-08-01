@@ -5,6 +5,7 @@ import {
   BookOpenCheck,
   CheckCircle2,
   CircleHelp,
+  Crosshair,
   Eye,
   FileQuestion,
   History,
@@ -86,6 +87,35 @@ export function CoachingLabWorkspace({
     alternativeExplanation: "",
     coachNote: "",
   });
+  const [calibrationForm, setCalibrationForm] = useState({
+    name: "Centered crosshair",
+    crosshairNormalizedX: "0.5",
+    crosshairNormalizedY: "0.5",
+    hudScalePercent: "100",
+    sensitivityAssumptions: "",
+    aspectRatio: state.project.recording
+      ? `${state.project.recording.width}:${state.project.recording.height}`
+      : "",
+    fovDegrees: "",
+    colorSettings: "",
+    safeAreaNotes: "",
+    overlayNotes: "",
+    userConfirmed: false,
+  });
+  const [measurementForm, setMeasurementForm] = useState({
+    kind: "CROSSHAIR_OFFSET",
+    calibrationId: state.calibrations.find((item) => item.isActive)?.id ?? "",
+    timestampSeconds: "",
+    alignedTimestampSeconds: "",
+    startSeconds: "",
+    endSeconds: "",
+    firstTimestampSeconds: "",
+    secondTimestampSeconds: "",
+    targetNormalizedX: "0.5",
+    targetNormalizedY: "0.5",
+    sameViewConfirmed: false,
+    userConfirmed: false,
+  });
   const selectedCategory = categories.find(
     (category) => category.value === form.category,
   );
@@ -138,6 +168,166 @@ export function CoachingLabWorkspace({
       }));
       setMessage(
         "Saved the finding with observations, replay facts, inferences, and unknowns kept separate.",
+      );
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveCalibration() {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/calibrations`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: calibrationForm.name,
+            crosshairNormalizedX: Number(calibrationForm.crosshairNormalizedX),
+            crosshairNormalizedY: Number(calibrationForm.crosshairNormalizedY),
+            hudScalePercent: calibrationForm.hudScalePercent
+              ? Number(calibrationForm.hudScalePercent)
+              : null,
+            sensitivityAssumptions:
+              calibrationForm.sensitivityAssumptions || null,
+            aspectRatio: calibrationForm.aspectRatio || null,
+            fovDegrees: calibrationForm.fovDegrees
+              ? Number(calibrationForm.fovDegrees)
+              : null,
+            colorSettings: calibrationForm.colorSettings || null,
+            safeAreaNotes: calibrationForm.safeAreaNotes || null,
+            overlayNotes: calibrationForm.overlayNotes || null,
+            userConfirmed: calibrationForm.userConfirmed,
+          }),
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      const active = body.coaching.calibrations.find((item) => item.isActive);
+      if (active) {
+        setMeasurementForm((current) => ({
+          ...current,
+          calibrationId: active.id,
+        }));
+      }
+      setMessage(
+        `Saved calibration version ${active?.version ?? body.coaching.calibrations.length}.`,
+      );
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteCalibration(calibrationId: string) {
+    if (
+      !window.confirm(
+        "Delete this calibration version? Existing measurements keep their stored numeric inputs.",
+      )
+    )
+      return;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/calibrations/${calibrationId}`,
+        { method: "DELETE" },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMeasurementForm((current) => ({
+        ...current,
+        calibrationId:
+          body.coaching?.calibrations.find((item) => item.isActive)?.id ?? "",
+      }));
+      setMessage("Deleted the selected calibration version.");
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createMeasurement() {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const common = {
+        kind: measurementForm.kind,
+        calibrationId: measurementForm.calibrationId || null,
+        userConfirmed: measurementForm.userConfirmed,
+      };
+      const payload =
+        measurementForm.kind === "CROSSHAIR_OFFSET"
+          ? {
+              ...common,
+              timestampSeconds: Number(measurementForm.timestampSeconds),
+              targetNormalizedX: Number(measurementForm.targetNormalizedX),
+              targetNormalizedY: Number(measurementForm.targetNormalizedY),
+            }
+          : measurementForm.kind === "CROSSHAIR_CORRECTION"
+            ? {
+                ...common,
+                timestampSeconds: Number(measurementForm.timestampSeconds),
+                alignedTimestampSeconds: Number(
+                  measurementForm.alignedTimestampSeconds,
+                ),
+                targetNormalizedX: Number(measurementForm.targetNormalizedX),
+                targetNormalizedY: Number(measurementForm.targetNormalizedY),
+              }
+            : measurementForm.kind === "EXPOSURE_DURATION"
+              ? {
+                  ...common,
+                  startSeconds: Number(measurementForm.startSeconds),
+                  endSeconds: Number(measurementForm.endSeconds),
+                }
+              : {
+                  ...common,
+                  firstTimestampSeconds: Number(
+                    measurementForm.firstTimestampSeconds,
+                  ),
+                  secondTimestampSeconds: Number(
+                    measurementForm.secondTimestampSeconds,
+                  ),
+                  sameViewConfirmed: measurementForm.sameViewConfirmed,
+                };
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/measurements`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMeasurementForm((current) => ({
+        ...current,
+        userConfirmed: false,
+        sameViewConfirmed: false,
+      }));
+      setMessage(
+        "Saved the local measurement and created an uncertainty-aware review finding.",
       );
     } catch (reason) {
       setError(failureMessage(reason));
@@ -301,6 +491,582 @@ export function CoachingLabWorkspace({
               <Eye size={15} /> Use current video time
             </button>
           </div>
+        </section>
+      )}
+
+      {state.project.recording && (
+        <section className="panel overflow-hidden">
+          <div className="border-b border-white/8 p-5 sm:p-6">
+            <p className="section-kicker">U6.2 · User-confirmed calibration</p>
+            <h2 className="font-display mt-1 text-3xl font-bold text-white uppercase">
+              Calibrate before measuring
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500">
+              These values are assumptions you confirm for this recording. They
+              do not detect sensitivity, FOV, HUD scale, or overlays
+              automatically. Saving creates a new version and preserves earlier
+              versions.
+            </p>
+          </div>
+          <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-2">
+            <label>
+              <span className="form-label">Calibration name</span>
+              <input
+                className="field mt-2"
+                value={calibrationForm.name}
+                disabled={busy}
+                onChange={(event) =>
+                  setCalibrationForm((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label>
+                <span className="form-label">Crosshair X (0–1)</span>
+                <input
+                  className="field mt-2"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.001"
+                  value={calibrationForm.crosshairNormalizedX}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setCalibrationForm((current) => ({
+                      ...current,
+                      crosshairNormalizedX: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span className="form-label">Crosshair Y (0–1)</span>
+                <input
+                  className="field mt-2"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.001"
+                  value={calibrationForm.crosshairNormalizedY}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setCalibrationForm((current) => ({
+                      ...current,
+                      crosshairNormalizedY: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <label>
+                <span className="form-label">HUD scale %</span>
+                <input
+                  className="field mt-2"
+                  type="number"
+                  min="25"
+                  max="200"
+                  value={calibrationForm.hudScalePercent}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setCalibrationForm((current) => ({
+                      ...current,
+                      hudScalePercent: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span className="form-label">Aspect ratio</span>
+                <input
+                  className="field mt-2"
+                  value={calibrationForm.aspectRatio}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setCalibrationForm((current) => ({
+                      ...current,
+                      aspectRatio: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span className="form-label">FOV degrees</span>
+                <input
+                  className="field mt-2"
+                  type="number"
+                  min="1"
+                  max="180"
+                  value={calibrationForm.fovDegrees}
+                  placeholder="Unknown"
+                  disabled={busy}
+                  onChange={(event) =>
+                    setCalibrationForm((current) => ({
+                      ...current,
+                      fovDegrees: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <label>
+              <span className="form-label">Sensitivity assumptions</span>
+              <textarea
+                className="field mt-2 min-h-20"
+                value={calibrationForm.sensitivityAssumptions}
+                disabled={busy}
+                placeholder="Optional user-supplied sensitivity notes."
+                onChange={(event) =>
+                  setCalibrationForm((current) => ({
+                    ...current,
+                    sensitivityAssumptions: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label>
+              <span className="form-label">Color settings</span>
+              <textarea
+                className="field mt-2 min-h-20"
+                value={calibrationForm.colorSettings}
+                disabled={busy}
+                placeholder="Optional colorblind, reticle, or brightness notes."
+                onChange={(event) =>
+                  setCalibrationForm((current) => ({
+                    ...current,
+                    colorSettings: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label>
+              <span className="form-label">Safe area notes</span>
+              <textarea
+                className="field mt-2 min-h-20"
+                value={calibrationForm.safeAreaNotes}
+                disabled={busy}
+                placeholder="Optional HUD safe-area notes."
+                onChange={(event) =>
+                  setCalibrationForm((current) => ({
+                    ...current,
+                    safeAreaNotes: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label>
+              <span className="form-label">Overlay notes</span>
+              <textarea
+                className="field mt-2 min-h-20"
+                value={calibrationForm.overlayNotes}
+                disabled={busy}
+                placeholder="Optional streamer overlay or cropped-area notes."
+                onChange={(event) =>
+                  setCalibrationForm((current) => ({
+                    ...current,
+                    overlayNotes: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <label className="flex items-start gap-3 rounded-xl border border-white/8 bg-black/15 p-4 lg:col-span-2">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={calibrationForm.userConfirmed}
+                disabled={busy}
+                onChange={(event) =>
+                  setCalibrationForm((current) => ({
+                    ...current,
+                    userConfirmed: event.target.checked,
+                  }))
+                }
+              />
+              <span className="text-sm leading-6 text-slate-300">
+                I confirm these are user-supplied assumptions for this exact
+                recording, not values automatically detected by the app.
+              </span>
+            </label>
+            <div className="lg:col-span-2">
+              <button
+                type="button"
+                className="primary-button"
+                disabled={busy}
+                onClick={() => void saveCalibration()}
+              >
+                {busy ? (
+                  <LoaderCircle className="animate-spin" size={16} />
+                ) : (
+                  <Crosshair size={16} />
+                )}
+                Save new calibration version
+              </button>
+            </div>
+          </div>
+          {state.calibrations.length > 0 && (
+            <div className="border-t border-white/8 p-5 sm:p-6">
+              <h3 className="text-sm font-semibold text-white">
+                Saved calibration versions
+              </h3>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {state.calibrations.map((calibration) => (
+                  <article
+                    key={calibration.id}
+                    className="rounded-xl border border-white/8 bg-black/15 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          Version {calibration.version} · {calibration.name}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          Crosshair{" "}
+                          {calibration.crosshairNormalizedX.toFixed(3)},{" "}
+                          {calibration.crosshairNormalizedY.toFixed(3)} ·{" "}
+                          {calibration.sourceWidth}×{calibration.sourceHeight} ·{" "}
+                          {calibration.calibrationVersion}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-bold tracking-[0.08em] text-[#d8ff8a] uppercase">
+                        {calibration.isActive ? "Active" : "Historical"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary-button mt-3 text-red-200"
+                      disabled={busy}
+                      onClick={() => void deleteCalibration(calibration.id)}
+                    >
+                      <Trash2 size={14} /> Delete version
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {state.project.recording && (
+        <section className="panel overflow-hidden">
+          <div className="border-b border-white/8 p-5 sm:p-6">
+            <p className="section-kicker">U6.2 · Bounded local measurement</p>
+            <h2 className="font-display mt-1 text-3xl font-bold text-white uppercase">
+              Measure without diagnosing
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500">
+              Crosshair points and exposure boundaries are user marked.
+              Repeated-view comparison samples two 96×54 grayscale frames
+              locally and stores no frame image. These measurements can suggest
+              review; they cannot prove intention, room, threat state, or
+              tactical cause.
+            </p>
+          </div>
+          <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-2">
+            <label>
+              <span className="form-label">Measurement</span>
+              <select
+                className="field mt-2"
+                value={measurementForm.kind}
+                disabled={busy}
+                onChange={(event) =>
+                  setMeasurementForm((current) => ({
+                    ...current,
+                    kind: event.target.value,
+                  }))
+                }
+              >
+                <option value="CROSSHAIR_OFFSET">
+                  Crosshair to marked target
+                </option>
+                <option value="CROSSHAIR_CORRECTION">
+                  Crosshair correction time
+                </option>
+                <option value="EXPOSURE_DURATION">
+                  Visible exposure duration
+                </option>
+                <option value="REPEATED_VIEW_SIMILARITY">
+                  Repeated-view similarity
+                </option>
+              </select>
+            </label>
+            <label>
+              <span className="form-label">Calibration version</span>
+              <select
+                className="field mt-2"
+                value={measurementForm.calibrationId}
+                disabled={busy || state.calibrations.length === 0}
+                onChange={(event) =>
+                  setMeasurementForm((current) => ({
+                    ...current,
+                    calibrationId: event.target.value,
+                  }))
+                }
+              >
+                <option value="">No calibration selected</option>
+                {state.calibrations.map((calibration) => (
+                  <option key={calibration.id} value={calibration.id}>
+                    Version {calibration.version} · {calibration.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {(measurementForm.kind === "CROSSHAIR_OFFSET" ||
+              measurementForm.kind === "CROSSHAIR_CORRECTION") && (
+              <>
+                <label>
+                  <span className="form-label">
+                    First visible threat time (seconds)
+                  </span>
+                  <input
+                    className="field mt-2"
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={measurementForm.timestampSeconds}
+                    disabled={busy}
+                    onChange={(event) =>
+                      setMeasurementForm((current) => ({
+                        ...current,
+                        timestampSeconds: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                {measurementForm.kind === "CROSSHAIR_CORRECTION" && (
+                  <label>
+                    <span className="form-label">
+                      Crosshair aligned time (seconds)
+                    </span>
+                    <input
+                      className="field mt-2"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={measurementForm.alignedTimestampSeconds}
+                      disabled={busy}
+                      onChange={(event) =>
+                        setMeasurementForm((current) => ({
+                          ...current,
+                          alignedTimestampSeconds: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <label>
+                    <span className="form-label">Marked target X (0–1)</span>
+                    <input
+                      className="field mt-2"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.001"
+                      value={measurementForm.targetNormalizedX}
+                      disabled={busy}
+                      onChange={(event) =>
+                        setMeasurementForm((current) => ({
+                          ...current,
+                          targetNormalizedX: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span className="form-label">Marked target Y (0–1)</span>
+                    <input
+                      className="field mt-2"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.001"
+                      value={measurementForm.targetNormalizedY}
+                      disabled={busy}
+                      onChange={(event) =>
+                        setMeasurementForm((current) => ({
+                          ...current,
+                          targetNormalizedY: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              </>
+            )}
+
+            {measurementForm.kind === "EXPOSURE_DURATION" && (
+              <>
+                <label>
+                  <span className="form-label">Exposure start (seconds)</span>
+                  <input
+                    className="field mt-2"
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={measurementForm.startSeconds}
+                    disabled={busy}
+                    onChange={(event) =>
+                      setMeasurementForm((current) => ({
+                        ...current,
+                        startSeconds: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  <span className="form-label">Exposure end (seconds)</span>
+                  <input
+                    className="field mt-2"
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={measurementForm.endSeconds}
+                    disabled={busy}
+                    onChange={(event) =>
+                      setMeasurementForm((current) => ({
+                        ...current,
+                        endSeconds: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </>
+            )}
+
+            {measurementForm.kind === "REPEATED_VIEW_SIMILARITY" && (
+              <>
+                <label>
+                  <span className="form-label">First view time (seconds)</span>
+                  <input
+                    className="field mt-2"
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={measurementForm.firstTimestampSeconds}
+                    disabled={busy}
+                    onChange={(event) =>
+                      setMeasurementForm((current) => ({
+                        ...current,
+                        firstTimestampSeconds: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  <span className="form-label">Second view time (seconds)</span>
+                  <input
+                    className="field mt-2"
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={measurementForm.secondTimestampSeconds}
+                    disabled={busy}
+                    onChange={(event) =>
+                      setMeasurementForm((current) => ({
+                        ...current,
+                        secondTimestampSeconds: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="flex items-start gap-3 rounded-xl border border-white/8 bg-black/15 p-4 lg:col-span-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={measurementForm.sameViewConfirmed}
+                    disabled={busy}
+                    onChange={(event) =>
+                      setMeasurementForm((current) => ({
+                        ...current,
+                        sameViewConfirmed: event.target.checked,
+                      }))
+                    }
+                  />
+                  <span className="text-sm leading-6 text-slate-300">
+                    I reviewed both timestamps and confirm they show the same
+                    visible view. This does not confirm the same tactical angle
+                    or an unnecessary re-peek.
+                  </span>
+                </label>
+              </>
+            )}
+
+            <label className="flex items-start gap-3 rounded-xl border border-amber-300/15 bg-amber-300/5 p-4 lg:col-span-2">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={measurementForm.userConfirmed}
+                disabled={busy}
+                onChange={(event) =>
+                  setMeasurementForm((current) => ({
+                    ...current,
+                    userConfirmed: event.target.checked,
+                  }))
+                }
+              />
+              <span className="text-sm leading-6 text-amber-100/80">
+                I reviewed the selected timestamps and marked points. I
+                understand this creates an uncertainty-aware review candidate,
+                not a confirmed tactical diagnosis.
+              </span>
+            </label>
+            <div className="lg:col-span-2">
+              <button
+                type="button"
+                className="primary-button"
+                disabled={busy}
+                onClick={() => void createMeasurement()}
+              >
+                {busy ? (
+                  <LoaderCircle className="animate-spin" size={16} />
+                ) : (
+                  <ScanSearch size={16} />
+                )}
+                Run local measurement
+              </button>
+            </div>
+          </div>
+          {state.measurements.length > 0 && (
+            <div className="border-t border-white/8 p-5 sm:p-6">
+              <h3 className="text-sm font-semibold text-white">
+                Recent measurements
+              </h3>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {state.measurements.slice(0, 8).map((measurement) => (
+                  <article
+                    key={measurement.id}
+                    className="rounded-xl border border-white/8 bg-black/15 p-4"
+                  >
+                    <p className="text-sm font-semibold text-white">
+                      {measurement.kind.replaceAll("_", " ")}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatDuration(measurement.startSeconds)}–{" "}
+                      {formatDuration(measurement.endSeconds)} · confidence{" "}
+                      {Math.round(measurement.confidence * 100)}% ·{" "}
+                      {measurement.methodVersion}
+                    </p>
+                    <pre className="mt-3 overflow-x-auto text-[11px] leading-5 whitespace-pre-wrap text-slate-400">
+                      {JSON.stringify(measurement.measurements, null, 2)}
+                    </pre>
+                    {measurement.warnings.map((warning) => (
+                      <p
+                        key={warning}
+                        className="mt-2 text-xs leading-5 text-amber-100/70"
+                      >
+                        {warning}
+                      </p>
+                    ))}
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
 

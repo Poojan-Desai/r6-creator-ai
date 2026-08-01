@@ -245,6 +245,13 @@ enum CoachingReportFormat {
   PDF
 }
 
+enum CoachingMeasurementKind {
+  CROSSHAIR_OFFSET
+  CROSSHAIR_CORRECTION
+  EXPOSURE_DURATION
+  REPEATED_VIEW_SIMILARITY
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -821,6 +828,7 @@ model Project {
   canonicalMatches       CanonicalMatch[]
   studioInputs           StudioProjectInput[]
   coachingCalibrations   CoachingCalibration[]
+  coachingMeasurements   CoachingMeasurement[]
 
   @@index([createdAt])
 }
@@ -2407,6 +2415,7 @@ model StudioProject {
   coachingFindings       CoachingFinding[]
   coachingDrills         CoachingPracticeDrill[]
   coachingReports        CoachingReport[]
+  coachingMeasurements   CoachingMeasurement[]
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2660,16 +2669,16 @@ model VoiceoverCaptionSegment {
 }
 
 model CoachingCalibration {
-  id                     String             @id @default(cuid())
+  id                     String                @id @default(cuid())
   studioProjectId        String
-  studioProject          StudioProject      @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  studioProject          StudioProject         @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
   videoProjectId         String?
-  videoProject           Project?           @relation(fields: [videoProjectId], references: [id], onDelete: SetNull)
+  videoProject           Project?              @relation(fields: [videoProjectId], references: [id], onDelete: SetNull)
   version                Int
   name                   String
-  isActive               Boolean            @default(true)
-  crosshairNormalizedX   Float              @default(0.5)
-  crosshairNormalizedY   Float              @default(0.5)
+  isActive               Boolean               @default(true)
+  crosshairNormalizedX   Float                 @default(0.5)
+  crosshairNormalizedY   Float                 @default(0.5)
   hudScalePercent        Float?
   sensitivityAssumptions String?
   aspectRatio            String?
@@ -2679,11 +2688,12 @@ model CoachingCalibration {
   colorSettings          String?
   safeAreaNotes          String?
   overlayNotes           String?
-  userConfirmed          Boolean            @default(false)
-  calibrationVersion     String             @default("u6-coaching-calibration-v1")
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
+  userConfirmed          Boolean               @default(false)
+  calibrationVersion     String                @default("u6-coaching-calibration-v1")
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
   analyses               CoachingAnalysis[]
+  measurements           CoachingMeasurement[]
 
   @@unique([studioProjectId, version])
   @@index([studioProjectId, isActive, version])
@@ -2762,6 +2772,7 @@ model CoachingFinding {
   evidence                      CoachingFindingEvidence[]
   feedbackHistory               CoachingFindingFeedback[]
   practiceDrills                CoachingPracticeDrill[]
+  measurements                  CoachingMeasurement[]
 
   @@index([studioProjectId, createdAt])
   @@index([analysisId, category])
@@ -2788,6 +2799,36 @@ model CoachingFindingEvidence {
 
   @@index([findingId, evidenceClass])
   @@index([sourceType, sourceId])
+}
+
+model CoachingMeasurement {
+  id                  String                  @id @default(cuid())
+  studioProjectId     String
+  studioProject       StudioProject           @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  videoProjectId      String
+  videoProject        Project                 @relation(fields: [videoProjectId], references: [id], onDelete: Cascade)
+  calibrationId       String?
+  calibration         CoachingCalibration?    @relation(fields: [calibrationId], references: [id], onDelete: SetNull)
+  findingId           String?
+  finding             CoachingFinding?        @relation(fields: [findingId], references: [id], onDelete: SetNull)
+  kind                CoachingMeasurementKind
+  startSeconds        Float
+  peakSeconds         Float
+  endSeconds          Float
+  confidence          Float
+  methodVersion       String
+  inputsJson          String
+  measurementsJson    String
+  thresholdsJson      String
+  userConfirmed       Boolean                 @default(false)
+  warningMessagesJson String                  @default("[]")
+  createdAt           DateTime                @default(now())
+
+  @@index([studioProjectId, createdAt])
+  @@index([videoProjectId, startSeconds])
+  @@index([calibrationId])
+  @@index([findingId])
+  @@index([kind, createdAt])
 }
 
 model CoachingFindingFeedback {

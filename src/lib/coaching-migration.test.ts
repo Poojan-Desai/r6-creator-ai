@@ -42,6 +42,7 @@ describe("U6 Coaching Lab additive migration", () => {
       .sort();
     const coachingMigration = "20260801184010_coaching_lab_foundation";
     const correctionMigration = "20260801184058_coaching_finding_corrections";
+    const measurementMigration = "20260801185541_coaching_measurements";
     const migrationIndex = migrations.indexOf(coachingMigration);
     expect(migrationIndex).toBeGreaterThan(0);
     for (const migration of migrations.slice(0, migrationIndex)) {
@@ -77,6 +78,7 @@ describe("U6 Coaching Lab additive migration", () => {
     });
     applyMigration(databasePath, coachingMigration);
     applyMigration(databasePath, correctionMigration);
+    applyMigration(databasePath, measurementMigration);
 
     const client = new PrismaClient({ datasourceUrl: `file:${databasePath}` });
     const calibration = await client.coachingCalibration.create({
@@ -160,6 +162,25 @@ describe("U6 Coaching Lab additive migration", () => {
         },
       },
     });
+    await client.coachingMeasurement.create({
+      data: {
+        id: "measurement",
+        studioProjectId: "studio",
+        videoProjectId: "video",
+        calibrationId: calibration.id,
+        findingId: finding.id,
+        kind: "CROSSHAIR_OFFSET",
+        startSeconds: 12.5,
+        peakSeconds: 12.5,
+        endSeconds: 12.5,
+        confidence: 0.7,
+        methodVersion: "u6-local-measurements-v1",
+        inputsJson: '{"crosshairNormalizedX":0.5}',
+        measurementsJson: '{"pixelDistance":48}',
+        thresholdsJson: '{"issueThreshold":0.075}',
+        userConfirmed: true,
+      },
+    });
     await client.$disconnect();
 
     const reopened = new PrismaClient({
@@ -174,6 +195,7 @@ describe("U6 Coaching Lab additive migration", () => {
         coachingFindings: {
           include: { evidence: true, feedbackHistory: true },
         },
+        coachingMeasurements: true,
       },
     });
     await reopened.$disconnect();
@@ -193,6 +215,11 @@ describe("U6 Coaching Lab additive migration", () => {
     expect(persisted?.coachingFindings[0]?.feedbackHistory[0]).toMatchObject({
       previousDecision: "PENDING",
       correctedVideoTimestamp: 12.75,
+    });
+    expect(persisted?.coachingMeasurements[0]).toMatchObject({
+      kind: "CROSSHAIR_OFFSET",
+      methodVersion: "u6-local-measurements-v1",
+      userConfirmed: true,
     });
     expect(
       execFileSync("sqlite3", [databasePath, "PRAGMA integrity_check;"], {
