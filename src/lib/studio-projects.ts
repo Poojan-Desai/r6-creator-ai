@@ -390,6 +390,20 @@ const studioProjectInclude = Prisma.validator<Prisma.StudioProjectInclude>()({
   bombSite: true,
   operator: true,
   operatorVersion: true,
+  synchronizations: {
+    orderBy: { version: "desc" as const },
+    take: 10,
+    select: {
+      id: true,
+      version: true,
+      status: true,
+      confidence: true,
+      confidenceLabel: true,
+      userVerifiedAt: true,
+      createdAt: true,
+      _count: { select: { anchors: true } },
+    },
+  },
 });
 
 type StudioProjectWithDetail = Prisma.StudioProjectGetPayload<{
@@ -459,6 +473,16 @@ export function serializeStudioProject(project: StudioProjectWithDetail) {
     contextUserConfirmed: project.contextUserConfirmed,
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
+    synchronizations: project.synchronizations.map((synchronization) => ({
+      id: synchronization.id,
+      version: synchronization.version,
+      status: synchronization.status,
+      confidence: synchronization.confidence,
+      confidenceLabel: synchronization.confidenceLabel,
+      anchorCount: synchronization._count.anchors,
+      userVerifiedAt: synchronization.userVerifiedAt?.toISOString() ?? null,
+      createdAt: synchronization.createdAt.toISOString(),
+    })),
     inputs: project.inputs.map((input) => ({
       id: input.id,
       kind: input.kind,

@@ -179,10 +179,6 @@ const synchronizationProjectInclude =
     },
   });
 
-type SynchronizationProject = Prisma.StudioProjectGetPayload<{
-  include: typeof synchronizationProjectInclude;
-}>;
-
 async function findSynchronizationProject(
   client: typeof db | TransactionClient,
   studioProjectId: string,
@@ -359,6 +355,24 @@ async function refreshMapping(
         replayRoundIndex: anchor.replayRoundIndex,
       })),
   );
+  const preservedDiscoveryMissing = parseJsonArray(
+    synchronization.missingEvidenceJson,
+  ).filter(
+    (item): item is string =>
+      typeof item === "string" &&
+      item.startsWith("Automatic offset discovery:"),
+  );
+  const anchorConflicts = synchronization.anchors.flatMap((anchor, index) =>
+    parseJsonArray(anchor.conflictingEvidenceJson).flatMap((item) =>
+      typeof item === "string" ? [`Anchor ${index + 1}: ${item}`] : [],
+    ),
+  );
+  const anchorMissing = synchronization.anchors.flatMap((anchor, index) =>
+    parseJsonArray(anchor.missingEvidenceJson).flatMap((item) =>
+      typeof item === "string" ? [`Anchor ${index + 1}: ${item}`] : [],
+    ),
+  );
+  const uniqueStrings = (values: string[]) => Array.from(new Set(values));
 
   for (const anchor of synchronization.anchors) {
     const residual = mapping.residuals.find(
@@ -380,8 +394,16 @@ async function refreshMapping(
       confidence: mapping.confidence,
       confidenceLabel: mapping.confidenceLabel,
       supportingEvidenceJson: JSON.stringify(mapping.supportingEvidence),
-      conflictingEvidenceJson: JSON.stringify(mapping.conflictingEvidence),
-      missingEvidenceJson: JSON.stringify(mapping.missingEvidence),
+      conflictingEvidenceJson: JSON.stringify(
+        uniqueStrings([...mapping.conflictingEvidence, ...anchorConflicts]),
+      ),
+      missingEvidenceJson: JSON.stringify(
+        uniqueStrings([
+          ...mapping.missingEvidence,
+          ...anchorMissing,
+          ...preservedDiscoveryMissing,
+        ]),
+      ),
     },
   });
 }
@@ -870,7 +892,7 @@ export async function verifySynchronization(
 ) {
   const sources = await findSynchronizationProject(db, studioProjectId);
   await db.$transaction(async (transaction) => {
-    const synchronization = await findMutableSynchronization(
+    await findMutableSynchronization(
       transaction,
       studioProjectId,
       synchronizationId,

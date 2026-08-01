@@ -13,6 +13,13 @@ this repository.
   reference library, high-level style profiles, evidence-backed local candidate
   detection, explicit local feedback learning, and a later optional budgeted
   OpenAI provider in their documented sequence.
+- Preserve the verified U1 unified-project workflow. Combined projects may use
+  the U2 replay/video synchronization workspace, but synchronization must keep
+  video observations, replay facts, and alignment inferences separate.
+- A U2 mapping requires at least two user-confirmed anchors at different replay
+  times before verification. Verified versions are immutable; corrections
+  create a new version. Missing parser timestamps must remain visibly missing,
+  and a user-entered replay time must never be relabeled as parser evidence.
 - Phase 3B.1 is a verified labeling and detector-job foundation. It deliberately
   produces no automatic candidates. Implement general local signals only in
   Phase 3B.2, then calibrated R6 screen-state evidence in Phase 3B.3, fusion in

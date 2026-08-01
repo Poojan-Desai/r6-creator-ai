@@ -69,6 +69,7 @@ export default async function StudioProjectPage({ params }: Props) {
   const replay = replayInput?.replayPackage;
   const hasRecording = Boolean(primaryRecording);
   const hasReplay = Boolean(replay);
+  const latestSynchronization = project.synchronizations[0];
 
   return (
     <main className="min-h-screen">
@@ -313,14 +314,24 @@ export default async function StudioProjectPage({ params }: Props) {
               title="Synchronization"
               status={
                 hasRecording && hasReplay
-                  ? "U2 · Not configured"
+                  ? latestSynchronization
+                    ? `U2 · Version ${latestSynchronization.version} · ${latestSynchronization.status.toLowerCase()}`
+                    : "U2 · Ready to configure"
                   : "Not applicable yet"
               }
               description={
                 hasRecording && hasReplay
-                  ? "Video and replay have not been aligned. No replay timestamps are being applied to footage."
+                  ? latestSynchronization
+                    ? `${latestSynchronization.anchorCount} matched anchor${latestSynchronization.anchorCount === 1 ? "" : "s"} · ${latestSynchronization.confidenceLabel.toLowerCase()} confidence. Open the workspace to inspect every point and mapping assumption.`
+                    : "Create explicit matched points before applying replay-relative facts to footage."
                   : "Synchronization requires both a recording and a Match Replay."
               }
+              href={
+                hasRecording && hasReplay
+                  ? `/studio/${project.id}/sync`
+                  : undefined
+              }
+              ready={latestSynchronization?.status === "VERIFIED"}
             />
             <WorkflowCard
               icon={Headphones}

@@ -69,6 +69,14 @@ export function SourcePlayer({
       src={`/api/media/projects/${projectId}/source`}
       onError={() => setFailed(true)}
       onTimeUpdate={(event) => {
+        window.dispatchEvent(
+          new CustomEvent("r6-source-time", {
+            detail: {
+              projectId,
+              time: event.currentTarget.currentTime,
+            },
+          }),
+        );
         if (
           replayEndRef.current !== null &&
           event.currentTarget.currentTime >= replayEndRef.current

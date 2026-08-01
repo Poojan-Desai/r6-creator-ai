@@ -35,9 +35,21 @@ free `whisper.cpp` program and a local model on this Mac.
 - A shared project dashboard with Inputs, Synchronization, Transcript,
   Candidate moments, Story plan and script, Editor, Voiceover, Coaching, and
   Exports sections
-- Honest stage boundaries: only project setup and input linking are complete in
-  U1; later sections say planned, not configured, not connected, or unavailable
-  instead of displaying fake results
+- A local replay/video synchronization workspace for combined projects with
+  manual matched points, a visible mapping formula, drift measurement,
+  per-round correction, replay event selection, visual source-video preview,
+  confidence, and saved versions
+- Separate direct video observations, replay facts, alignment inferences,
+  supporting evidence, conflicting evidence, and missing evidence
+- Immutable verified synchronization versions plus editable correction
+  versions; verification requires at least two user-confirmed points at
+  different replay times
+- Conservative automatic offset suggestions only when both the recording and
+  replay contain genuine compatible timestamps; suggestions are never accepted
+  automatically
+- Honest stage boundaries: U1 project setup and U2 synchronization are
+  available; later sections say planned, not configured, not connected, or
+  unavailable instead of displaying fake results
 - Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection
 - Replay magic-byte, duplicate, archive-traversal, symbolic-link, entry-count,
@@ -257,10 +269,48 @@ Keep the Terminal window open while using the app.
     and links back to the existing video, replay, and reference workspaces.
 
 Creating the project does not start analysis, send data to a service, or alter
-the source files. In combined mode, the dashboard says
-**U2 · Not configured** until video/replay synchronization is actually built
-and saved. Replay-only projects have no gameplay preview, audio, transcript, or
-playable clip source because `.rec` files do not contain them.
+the source files. In combined mode, open the **Synchronization** card to align
+the two timelines. Replay-only projects have no gameplay preview, audio,
+transcript, or playable clip source because `.rec` files do not contain them.
+
+### Synchronize a recording with its Match Replay
+
+1. Create or open a unified project that uses **Both — recommended**.
+2. Click the **Synchronization** card.
+3. Play or seek the primary recording to a directly observable point such as a
+   clear round transition or kill-feed change.
+4. Click **Use current time**, choose the matching replay round and event, and
+   enter the replay-relative time. If the parser shows **time unavailable**,
+   enter a replay time only when you can verify it yourself.
+5. Describe only what is directly visible or audible in **Direct video
+   observation**. Explain why the two points may correspond in **Alignment
+   inference**.
+6. Check the confirmation only after you visually reviewed the point, then
+   click **Save anchor**.
+7. Add a second confirmed point at a different replay time. The app then
+   calculates offset, drift, and anchor error using the displayed formula.
+8. Use **Preview mapped point** on each anchor. Correct any wrong time before
+   continuing.
+9. Add a per-round adjustment only when one round visibly needs a small
+   correction that the global mapping cannot explain.
+10. Click **Discover offsets** for conservative local suggestions. The current
+    verified replay parser results contain event categories and round order but
+    no replay-relative timestamps, so the app correctly reports automatic
+    discovery unavailable for those packages.
+11. Save verification notes and click **Verify mapping**. A verified version is
+    read-only. Use **Create correction version** for later changes; the old
+    version remains reproducible.
+
+The explicit formula is:
+
+```text
+video seconds = offset seconds + replay seconds × slope + round adjustment
+```
+
+The app never modifies either source. A high mapping confidence means the
+entered anchors fit one timeline mathematically; it does not prove that a
+user-entered replay time or event identity is correct. Review the saved missing
+evidence before using replay facts in later writing or coaching.
 
 ### Import and inspect a Match Replay
 

@@ -9,9 +9,12 @@ authoritative active sequence is now U1–U8 for one unified Creator Studio and
 Coaching Lab. U1 is verified. U2 replay/video synchronization is the active
 stage.
 
-A consistent pre-migration backup exists at
+A consistent pre-U1 migration backup exists at
 `data/backups/r6-creator.pre-unified-u1-20260731.db`. It passed SQLite integrity
 and foreign-key checks. It is private runtime data and must not be committed.
+The private pre-U2 backup is
+`data/backups/r6-creator.pre-u2-20260731.db`; it also passed integrity and
+foreign-key checks.
 
 ## Completed in this correction
 
@@ -65,6 +68,34 @@ and foreign-key checks. It is private runtime data and must not be committed.
   production build, and final browser regressions with no console warnings or
   errors.
 
+## Implemented in U2
+
+- Added checked-in additive migration
+  `20260731083310_replay_video_synchronization`.
+- Added versioned synchronization records, matched anchors, per-round
+  adjustments, conservative automatic offset candidates, confidence,
+  residuals, and separate observation/replay-fact/inference evidence.
+- Added the explicit linear mapping
+  `video = offset + replay × slope + round adjustment`.
+- One anchor produces only a low-confidence offset. Verification requires at
+  least two user-confirmed anchors at distinct replay times and rejects
+  excessive drift, large residual error, or out-of-recording mappings.
+- Verified versions are read-only. A correction copies the evidence into a new
+  editable version without changing either source or the earlier version.
+- Automatic discovery uses only compatible completed local detector events and
+  genuine replay-relative event/round timestamps. The current real packages
+  contain no replay-relative timestamps, so the UI reports discovery
+  unavailable rather than manufacturing candidates.
+- Added a real recording/replay workspace with source-video seeking, current
+  time capture, replay round/event selection, two timelines, manual correction,
+  per-round adjustment, evidence inspection, verification notes, and saved
+  versions.
+- Browser verification created a combined project using the existing
+  20-minute recording and nine-round replay, rejected verification with one
+  anchor, saved and corrected two anchors, measured drift, saved a round
+  adjustment and notes, verified/froze version 1, and created editable
+  correction version 2.
+
 ## Verified real result
 
 - Provider version `source-e6c2ca80+compat-1-2026-07-31`
@@ -95,9 +126,8 @@ views, or virality claim follows from replay parsing.
 
 ## Exact next action
 
-Begin U2 with the additive synchronization data model and manual alignment
-workflow. Preserve recording observations, replay facts, alignment inferences,
-confidence, multiple anchors, drift, per-round adjustments, and immutable
-versions separately. Do not treat a single uncertain anchor as confirmed
-synchronization and do not alter either source. Keep the development server
-running except for the brief controlled pause required by a production build.
+Finish the U2 release gate: run the complete automated suite and production
+build, verify SQLite integrity and migration preservation, restart the server,
+confirm the saved versions persist with a clean browser console, remove only
+the temporary unified verification wrapper, and commit the verified U2 release.
+Then begin U3 short-form work from that clean checkpoint.
