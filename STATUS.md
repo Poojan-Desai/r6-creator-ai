@@ -3,13 +3,14 @@
 - **Current branch:** `codex/phase-3`
 - **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
   and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
-- **Current phase:** U5 verified; U6 Coaching Lab is next
+- **Current phase:** U5 verified; U6 Coaching Lab is active
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
   gate, U1 unified projects, U2 synchronization, U3 short-form Creator Studio,
   U4 long-form Creator Studio, and U5 Voiceover Studio
-- **Current active task:** Preserve the verified U5 checkpoint and prepare the
-  evidence-backed U6 Coaching Lab plan
+- **Current active task:** Implement U6.1 inspectable coaching evidence,
+  findings, feedback, and report foundations without overstating unsupported
+  replay or video capabilities
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
   reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
   plus the reviewed `compat-1` operator-roster patch

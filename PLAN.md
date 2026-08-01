@@ -616,13 +616,111 @@ and the U4 1080p export remain preserved.
 
 ### U6 — Coaching Lab
 
-Status: not started.
+Status: **active on August 1, 2026**.
 
 Produce evidence-backed reviews using visible recording observations and
-supported replay facts. Separate observed facts, replay facts, inferences,
-conflicts, and unknowns. Never claim exact room/position, intent, line of sight,
-player count, or mechanical cause when the available evidence cannot establish
-it. Reports remain inspectable and local.
+supported replay facts. Separate direct observations, replay-confirmed facts,
+transcript evidence, user-confirmed map context, inferences, conflicts, and
+unknowns in storage, APIs, UI, and exports. Never claim exact room/position,
+intent, line of sight, player count, or mechanical cause when the available
+evidence cannot establish it. Reports remain inspectable and local.
+
+The current replay provider has verified match/round order, map, teams, players,
+operators, kills, headshot flags, and some defuser feedback. It does not expose
+validated position, orientation, stance, health, weapon, ammunition, shot,
+damage, gadget, destruction, or camera-target streams. Replay-only coaching can
+therefore discuss supported outcomes and timing only where the replay includes a
+timestamp. It cannot reconstruct the selected player's point of view or prove a
+crosshair, positioning, angle, rotation, flank, trade opportunity, or re-peek.
+
+#### U6.1 — Inspectable coaching foundation
+
+- Add additive, versioned tables for coaching calibration, analyses, findings,
+  typed evidence, feedback, practice drills, and immutable report revisions.
+- Support `SCREEN_RECORDING_ONLY`, `MATCH_REPLAY_ONLY`, and
+  `SCREEN_RECORDING_AND_REPLAY` without making a recording or replay appear to
+  supply evidence it does not contain.
+- Give every finding a category, severity, confidence, optional round/video/
+  replay timestamp, direct observations, replay facts, transcript evidence,
+  map evidence, inferences, conflicts, missing context, alternatives, detector
+  versions, analysis version, user decision, and coach note.
+- Add a dedicated Coaching Lab workspace with source-capability disclosure,
+  evidence cards, original-source links, feedback controls, and no empty
+  success claims.
+- Permit deliberate human-reviewed findings so an actual visible observation
+  can be recorded without pretending it came from an unavailable detector.
+- Test the evidence boundary, validation, project ownership, immutable history,
+  additive migration from U5, and all legacy regressions.
+
+#### U6.2 — Conservative recording measurements and calibration
+
+- Add versioned calibration for the selected recording: crosshair center, HUD
+  scale, aspect ratio, FOV/sensitivity assumptions, resolution, safe area,
+  color settings, and overlay notes. These are user-confirmed assumptions, not
+  automatic facts.
+- Implement bounded local measurements for crosshair-to-user-marked-target
+  distance, correction distance, time visibly exposed, and repeated-view
+  similarity. Store the numeric measurement and inputs that produced it.
+- Create only `Possible unnecessary re-peek`, `Crosshair-placement issue`, or
+  `Review recommended` findings from these measurements when thresholds and
+  temporal consistency are satisfied. Keep threat identity, intention, room,
+  angle quality, and cause explicitly unknown.
+- Reuse completed local video/audio/transcript detector events as direct
+  signal measurements. Transcript statements support a review but never prove
+  a gameplay event or emotional diagnosis.
+
+#### U6.3 — Replay facts and combined evidence
+
+- Generate conservative replay-only findings for supported outcomes such as an
+  early-round death, opening event, objective involvement, headshot, strong
+  outcome, or review recommendation. Describe a death as an inferred target of
+  direct kill feedback when that is the provider's actual evidence boundary.
+- Calculate a possible trade window only when teammate/opponent relationships,
+  event order, and usable replay timestamps establish that a nearby sequence
+  occurred. Otherwise show `Possible missed trade` as unsupported or missing
+  timing/position evidence.
+- In combined mode, apply only a verified synchronization version. Keep the
+  source video observation, replay fact, alignment inference, residual error,
+  and synchronization confidence separately visible.
+- Isolate each coaching rule. One failed rule becomes a stored warning and
+  cannot discard findings from other rules.
+- Run coaching analysis outside the start request with persisted progress,
+  cancellation, retry, restart reconciliation, and temporary-artifact cleanup.
+
+#### U6.4 — Feedback, drills, and local reports
+
+- Add accept, reject, not-enough-context, wrong-category, good-observation, and
+  bad-explanation decisions plus editable timestamp/severity, coach notes,
+  future-practice flags, and review-clip links.
+- Save drills with a bounded observation, repeatable exercise, measurable goal,
+  and optional next-five-matches target. Do not claim a drill will fix an
+  unproven cause.
+- Generate a versioned match report covering supported match/round/side/opening
+  facts, kills/deaths/objective involvement, strengths, priorities, crosshair,
+  re-peek, position, trade, timing, operator, review clips, drills, and goals.
+  Unsupported sections must say why evidence is missing.
+- Export the same immutable report as browser HTML/print view, PDF, versioned
+  JSON, and Markdown. Exports must not contain private absolute paths.
+- Use the exact product boundary: “AI-assisted replay and POV review.” It does
+  not replace a professional coach.
+
+#### U6.5 — Real verification and checkpoint
+
+- With legally usable local inputs, verify one direct visible observation, one
+  replay-confirmed fact, one uncertainty-aware inference, one accepted and one
+  rejected finding, an edited timestamp, a saved drill, and all report formats.
+- Verify recording-only, replay-only, and combined capability states; playable
+  source/review-clip links; cancellation; isolated rule failure; restart
+  recovery; persistence; and empty temporary storage.
+- Run formatting, ESLint, strict TypeScript, all tests, production build,
+  migration from U5, SQLite integrity/foreign keys, browser-console inspection,
+  documentation, focused commits, and a stable U6 tag.
+
+U6 is complete only when the real browser creates and reopens inspectable
+findings whose evidence classes remain separate, the report exports reproduce
+those bounded claims, all three input modes behave honestly, and every required
+verification gate passes. A database schema, generic advice page, or
+unsupported tactical label is not completion.
 
 ### U7 — Evidence fusion and progress tracking
 
