@@ -252,6 +252,18 @@ enum CoachingMeasurementKind {
   REPEATED_VIEW_SIMILARITY
 }
 
+enum ProgressMetricAvailability {
+  AVAILABLE
+  INSUFFICIENT_SAMPLE
+  UNAVAILABLE
+}
+
+enum PlayerPracticeGoalStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -2416,6 +2428,8 @@ model StudioProject {
   coachingDrills         CoachingPracticeDrill[]
   coachingReports        CoachingReport[]
   coachingMeasurements   CoachingMeasurement[]
+  progressSnapshotLinks  ProgressSnapshotProject[]
+  playerProgressNotes    PlayerProgressNote[]
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2865,9 +2879,119 @@ model CoachingPracticeDrill {
   completed         Boolean          @default(false)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+  progressGoals     PlayerPracticeGoal[]
 
   @@index([studioProjectId, createdAt])
   @@index([findingId])
+}
+
+model PlayerProfile {
+  id                      String               @id @default(cuid())
+  name                    String
+  preferredAlias          String?
+  selectedPlayerStableIds String               @default("[]")
+  notes                   String?
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  snapshots               PlayerProgressSnapshot[]
+  progressNotes           PlayerProgressNote[]
+  practiceGoals           PlayerPracticeGoal[]
+
+  @@index([updatedAt])
+}
+
+model PlayerProgressSnapshot {
+  id                  String                    @id @default(cuid())
+  playerProfileId     String
+  playerProfile       PlayerProfile             @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  version             Int
+  reason              String
+  metricVersion       String
+  filterJson          String                    @default("{}")
+  evidenceSummaryJson String                    @default("{}")
+  createdAt           DateTime                  @default(now())
+  projectLinks        ProgressSnapshotProject[]
+  metrics             PlayerProgressMetric[]
+  notes               PlayerProgressNote[]
+  practiceGoals       PlayerPracticeGoal[]
+
+  @@unique([playerProfileId, version])
+  @@index([playerProfileId, createdAt])
+}
+
+model ProgressSnapshotProject {
+  snapshotId             String
+  snapshot               PlayerProgressSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  studioProjectId        String
+  studioProject          StudioProject           @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  sortOrder              Int                     @default(0)
+  selectedPlayerStableId String?
+  selectedPlayerAlias    String?
+  sourceSummaryJson      String                  @default("{}")
+  createdAt              DateTime                @default(now())
+
+  @@id([snapshotId, studioProjectId])
+  @@index([studioProjectId, createdAt])
+}
+
+model PlayerProgressMetric {
+  id                 String                     @id @default(cuid())
+  snapshotId         String
+  snapshot           PlayerProgressSnapshot     @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  key                String
+  label              String
+  metricGroup        String
+  value              Float?
+  unit               String
+  sampleSize         Int                        @default(0)
+  availability       ProgressMetricAvailability @default(UNAVAILABLE)
+  confidence         Float?
+  explanation        String
+  evidenceClass      String
+  sourceVersionsJson String                     @default("[]")
+  sourceEvidenceJson String                     @default("[]")
+  createdAt          DateTime                   @default(now())
+
+  @@unique([snapshotId, key])
+  @@index([key, createdAt])
+  @@index([availability, createdAt])
+}
+
+model PlayerProgressNote {
+  id              String                  @id @default(cuid())
+  playerProfileId String
+  playerProfile   PlayerProfile           @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  snapshotId      String?
+  snapshot        PlayerProgressSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  studioProjectId String?
+  studioProject   StudioProject?          @relation(fields: [studioProjectId], references: [id], onDelete: SetNull)
+  text            String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([playerProfileId, createdAt])
+  @@index([snapshotId])
+  @@index([studioProjectId])
+}
+
+model PlayerPracticeGoal {
+  id              String                   @id @default(cuid())
+  playerProfileId String
+  playerProfile   PlayerProfile            @relation(fields: [playerProfileId], references: [id], onDelete: Cascade)
+  snapshotId      String?
+  snapshot        PlayerProgressSnapshot?  @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  sourceDrillId   String?
+  sourceDrill     CoachingPracticeDrill?    @relation(fields: [sourceDrillId], references: [id], onDelete: SetNull)
+  name            String
+  measurableGoal  String
+  status          PlayerPracticeGoalStatus @default(ACTIVE)
+  completedAt     DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([playerProfileId, status, createdAt])
+  @@index([snapshotId])
+  @@index([sourceDrillId])
 }
 
 model CoachingReport {

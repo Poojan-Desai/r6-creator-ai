@@ -9,6 +9,7 @@ import {
   Crosshair,
   ScrollText,
   SlidersHorizontal,
+  TrendingUp,
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
@@ -31,6 +32,7 @@ export function AppHeader() {
           <NavItem href="/references" icon={BookOpen} label="References" />
           <NavItem href="/maps" icon={Map} label="Map knowledge" />
           <NavItem href="/operators" icon={Crosshair} label="Operators" />
+          <NavItem href="/progress" icon={TrendingUp} label="Progress" />
           <NavItem href="/benchmarks" icon={BarChart3} label="Benchmarks" />
           <NavItem
             href="/transcript-rules"
