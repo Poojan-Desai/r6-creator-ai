@@ -10,6 +10,7 @@ import {
   FileText,
   Film,
   Headphones,
+  ListTree,
   MessageSquareText,
   Mic2,
   Pencil,
@@ -399,6 +400,14 @@ export default async function StudioProjectPage({ params }: Props) {
               status="U6.1 · Inspectable review ready"
               description="Record human-reviewed visible observations, attach supported replay facts, keep inferences and missing context separate, and preserve every correction."
               href={`/studio/${project.id}/coaching`}
+              ready
+            />
+            <WorkflowCard
+              icon={ListTree}
+              title="Evidence Inspector"
+              status="U7.1 · Shared contract ready"
+              description="Inspect creator and coaching statements using one evidence vocabulary with provenance, confidence, corrections, conflicts, and unknowns."
+              href={`/studio/${project.id}/evidence`}
               ready
             />
             <WorkflowCard

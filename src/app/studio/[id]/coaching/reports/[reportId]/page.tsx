@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, ListTree, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -86,6 +86,12 @@ export default async function CoachingReportPage({ params }: Props) {
             className="secondary-button no-underline"
           >
             <ArrowLeft size={15} /> Back to Coaching Lab
+          </Link>
+          <Link
+            href={`/studio/${id}/evidence`}
+            className="secondary-button no-underline"
+          >
+            <ListTree size={15} /> Evidence Inspector
           </Link>
           <PrintReportButton />
           {report.exports.map((item) => (

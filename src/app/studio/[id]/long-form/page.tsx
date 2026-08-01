@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpenCheck, Film } from "lucide-react";
+import { ArrowLeft, BookOpenCheck, Film, ListTree } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -35,12 +35,20 @@ export default async function LongFormStudioPage({ params }: Props) {
     <main className="min-h-screen">
       <AppHeader />
       <div className="mx-auto max-w-7xl px-5 py-9 sm:px-7 lg:px-10 lg:py-12">
-        <Link
-          href={`/studio/${project.id}`}
-          className="secondary-button no-underline"
-        >
-          <ArrowLeft size={16} /> Back to project
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/studio/${project.id}`}
+            className="secondary-button no-underline"
+          >
+            <ArrowLeft size={16} /> Back to project
+          </Link>
+          <Link
+            href={`/studio/${project.id}/evidence`}
+            className="secondary-button no-underline"
+          >
+            <ListTree size={16} /> Evidence Inspector
+          </Link>
+        </div>
         <header className="mt-8 border-b border-white/8 pb-8">
           <div className="eyebrow">
             <BookOpenCheck size={15} /> U4 · Long-Form Creator Studio

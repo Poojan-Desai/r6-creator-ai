@@ -1,4 +1,4 @@
-import { ArrowLeft, Clapperboard, Film } from "lucide-react";
+import { ArrowLeft, Clapperboard, Film, ListTree } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -54,14 +54,22 @@ export default async function ShortFormStudioPage({ params }: Props) {
               preserve why each moment was selected before writing or editing.
             </p>
           </div>
-          {recording && (
+          <div className="flex flex-wrap gap-2">
             <Link
-              href={`/projects/${recording.id}#analysis-foundation`}
+              href={`/studio/${project.id}/evidence`}
               className="secondary-button shrink-0 no-underline"
             >
-              <Film size={16} /> Open signal analysis
+              <ListTree size={16} /> Evidence Inspector
             </Link>
-          )}
+            {recording && (
+              <Link
+                href={`/projects/${recording.id}#analysis-foundation`}
+                className="secondary-button shrink-0 no-underline"
+              >
+                <Film size={16} /> Open signal analysis
+              </Link>
+            )}
+          </div>
         </div>
 
         {!recording ? (
