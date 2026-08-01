@@ -396,8 +396,10 @@ export default async function StudioProjectPage({ params }: Props) {
             <WorkflowCard
               icon={ScanSearch}
               title="Coaching"
-              status="U6 · Planned"
-              description="No coaching finding has been generated. Visible observations and replay facts must remain separate."
+              status="U6.1 · Inspectable review ready"
+              description="Record human-reviewed visible observations, attach supported replay facts, keep inferences and missing context separate, and preserve every correction."
+              href={`/studio/${project.id}/coaching`}
+              ready
             />
             <WorkflowCard
               icon={BookOpen}

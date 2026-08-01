@@ -182,6 +182,69 @@ enum VoiceoverJobStatus {
   ERROR
 }
 
+enum CoachingAnalysisStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
+enum CoachingFindingCategory {
+  POSSIBLE_UNNECESSARY_REPEEK
+  CROSSHAIR_PLACEMENT_ISSUE
+  POSSIBLE_BAD_POSITIONING
+  ROTATION_ISSUE
+  POSSIBLE_MISSED_TRADE
+  POSSIBLE_FLANK_EXPOSURE
+  LINE_OF_SIGHT_ISSUE
+  POSSIBLE_WRONG_ANGLE
+  POOR_TIMING
+  EARLY_ROUND_DEATH
+  UTILITY_TIMING
+  OBJECTIVE_INVOLVEMENT
+  STRONG_DECISION
+  STRONG_PATIENCE
+  GOOD_TRADE
+  GOOD_POSITIONING
+  GOOD_CROSSHAIR_DISCIPLINE
+  REVIEW_RECOMMENDED
+}
+
+enum CoachingFindingSeverity {
+  INFORMATIONAL
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CoachingEvidenceClass {
+  DIRECT_VIDEO_OBSERVATION
+  REPLAY_CONFIRMED_FACT
+  TRANSCRIPT_EVIDENCE
+  USER_CONFIRMED_MAP_CONTEXT
+  USER_CONFIRMED_CONTEXT
+  INFERENCE
+  CONFLICTING_EVIDENCE
+  MISSING_CONTEXT
+}
+
+enum CoachingFindingDecision {
+  PENDING
+  ACCEPTED
+  REJECTED
+  NOT_ENOUGH_CONTEXT
+  WRONG_CATEGORY
+  GOOD_OBSERVATION
+  BAD_EXPLANATION
+}
+
+enum CoachingReportFormat {
+  JSON
+  MARKDOWN
+  PDF
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -757,6 +820,7 @@ model Project {
   replayPackages         ReplayPackage[]
   canonicalMatches       CanonicalMatch[]
   studioInputs           StudioProjectInput[]
+  coachingCalibrations   CoachingCalibration[]
 
   @@index([createdAt])
 }
@@ -826,19 +890,20 @@ model TranscriptSegment {
 }
 
 model Clip {
-  id              String     @id @default(cuid())
-  projectId       String
-  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name            String
-  status          ClipStatus @default(PROCESSING)
-  startSeconds    Float
-  endSeconds      Float
-  durationSeconds Float
-  relativePath    String?    @unique
-  fileSizeBytes   BigInt?
-  errorMessage    String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id               String            @id @default(cuid())
+  projectId        String
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name             String
+  status           ClipStatus        @default(PROCESSING)
+  startSeconds     Float
+  endSeconds       Float
+  durationSeconds  Float
+  relativePath     String?           @unique
+  fileSizeBytes    BigInt?
+  errorMessage     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  coachingFindings CoachingFinding[]
 
   @@index([projectId, createdAt])
 }
@@ -2337,6 +2402,11 @@ model StudioProject {
   longFormProduction     LongFormProduction?
   mediaAssets            StudioMediaAsset[]
   voiceoverProduction    VoiceoverProduction?
+  coachingCalibrations   CoachingCalibration[]
+  coachingAnalyses       CoachingAnalysis[]
+  coachingFindings       CoachingFinding[]
+  coachingDrills         CoachingPracticeDrill[]
+  coachingReports        CoachingReport[]
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2587,6 +2657,206 @@ model VoiceoverCaptionSegment {
 
   @@unique([takeId, segmentOrder])
   @@index([takeId, startSeconds])
+}
+
+model CoachingCalibration {
+  id                     String             @id @default(cuid())
+  studioProjectId        String
+  studioProject          StudioProject      @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  videoProjectId         String?
+  videoProject           Project?           @relation(fields: [videoProjectId], references: [id], onDelete: SetNull)
+  version                Int
+  name                   String
+  isActive               Boolean            @default(true)
+  crosshairNormalizedX   Float              @default(0.5)
+  crosshairNormalizedY   Float              @default(0.5)
+  hudScalePercent        Float?
+  sensitivityAssumptions String?
+  aspectRatio            String?
+  fovDegrees             Float?
+  sourceWidth            Int?
+  sourceHeight           Int?
+  colorSettings          String?
+  safeAreaNotes          String?
+  overlayNotes           String?
+  userConfirmed          Boolean            @default(false)
+  calibrationVersion     String             @default("u6-coaching-calibration-v1")
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  analyses               CoachingAnalysis[]
+
+  @@unique([studioProjectId, version])
+  @@index([studioProjectId, isActive, version])
+  @@index([videoProjectId])
+}
+
+model CoachingAnalysis {
+  id                   String                 @id @default(cuid())
+  studioProjectId      String
+  studioProject        StudioProject          @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  calibrationId        String?
+  calibration          CoachingCalibration?   @relation(fields: [calibrationId], references: [id], onDelete: SetNull)
+  synchronizationId    String?
+  inputMode            StudioInputMode
+  status               CoachingAnalysisStatus @default(QUEUED)
+  progress             Int                    @default(0)
+  stage                String                 @default("Waiting to start")
+  analysisVersion      String
+  ruleSetVersion       String
+  sourceSnapshotJson   String                 @default("{}")
+  detectorVersionsJson String                 @default("{}")
+  currentRuleId        String?
+  completedRuleCount   Int                    @default(0)
+  failedRuleCount      Int                    @default(0)
+  warningsJson         String                 @default("[]")
+  errorMessage         String?
+  cancelRequestedAt    DateTime?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  findings             CoachingFinding[]
+
+  @@index([studioProjectId, createdAt])
+  @@index([status, updatedAt])
+  @@index([calibrationId])
+}
+
+model CoachingFinding {
+  id                            String                    @id @default(cuid())
+  studioProjectId               String
+  studioProject                 StudioProject             @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  analysisId                    String
+  analysis                      CoachingAnalysis          @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  canonicalRoundId              String?
+  canonicalRound                CanonicalRound?           @relation(fields: [canonicalRoundId], references: [id], onDelete: SetNull)
+  canonicalEventId              String?
+  canonicalEvent                CanonicalEvent?           @relation(fields: [canonicalEventId], references: [id], onDelete: SetNull)
+  reviewClipId                  String?
+  reviewClip                    Clip?                     @relation(fields: [reviewClipId], references: [id], onDelete: SetNull)
+  originalCategory              CoachingFindingCategory
+  category                      CoachingFindingCategory
+  originalSeverity              CoachingFindingSeverity
+  severity                      CoachingFindingSeverity
+  confidence                    Float
+  roundIndex                    Int?
+  originalVideoTimestampSeconds Float?
+  videoTimestampSeconds         Float?
+  replayTimestampSeconds        Float?
+  directObservationsJson        String                    @default("[]")
+  replayFactsJson               String                    @default("[]")
+  transcriptEvidenceJson        String                    @default("[]")
+  mapEvidenceJson               String                    @default("[]")
+  supportingFramesJson          String                    @default("[]")
+  conflictingEvidenceJson       String                    @default("[]")
+  missingContextJson            String                    @default("[]")
+  explanation                   String
+  alternativeExplanationsJson   String                    @default("[]")
+  detectorVersionsJson          String                    @default("{}")
+  analysisVersion               String
+  decision                      CoachingFindingDecision   @default(PENDING)
+  coachNote                     String?
+  futurePractice                Boolean                   @default(false)
+  createdAt                     DateTime                  @default(now())
+  updatedAt                     DateTime                  @updatedAt
+  evidence                      CoachingFindingEvidence[]
+  feedbackHistory               CoachingFindingFeedback[]
+  practiceDrills                CoachingPracticeDrill[]
+
+  @@index([studioProjectId, createdAt])
+  @@index([analysisId, category])
+  @@index([canonicalRoundId])
+  @@index([canonicalEventId])
+  @@index([reviewClipId])
+  @@index([decision, updatedAt])
+}
+
+model CoachingFindingEvidence {
+  id                     String                @id @default(cuid())
+  findingId              String
+  finding                CoachingFinding       @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  evidenceClass          CoachingEvidenceClass
+  summary                String
+  sourceType             String
+  sourceId               String?
+  videoTimestampSeconds  Float?
+  replayTimestampSeconds Float?
+  confidence             Float?
+  observationJson        String                @default("{}")
+  inferenceJson          String                @default("{}")
+  createdAt              DateTime              @default(now())
+
+  @@index([findingId, evidenceClass])
+  @@index([sourceType, sourceId])
+}
+
+model CoachingFindingFeedback {
+  id                      String                   @id @default(cuid())
+  findingId               String
+  finding                 CoachingFinding          @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  decision                CoachingFindingDecision
+  previousDecision        CoachingFindingDecision?
+  correctedVideoTimestamp Float?
+  previousVideoTimestamp  Float?
+  correctedSeverity       CoachingFindingSeverity?
+  previousSeverity        CoachingFindingSeverity?
+  correctedCategory       CoachingFindingCategory?
+  previousCategory        CoachingFindingCategory?
+  note                    String?
+  futurePractice          Boolean?
+  createdAt               DateTime                 @default(now())
+
+  @@index([findingId, createdAt])
+  @@index([decision, createdAt])
+}
+
+model CoachingPracticeDrill {
+  id                String           @id @default(cuid())
+  studioProjectId   String
+  studioProject     StudioProject    @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  findingId         String?
+  finding           CoachingFinding? @relation(fields: [findingId], references: [id], onDelete: SetNull)
+  name              String
+  observation       String
+  instructions      String
+  measurableGoal    String
+  nextFiveMatchGoal String?
+  completed         Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([studioProjectId, createdAt])
+  @@index([findingId])
+}
+
+model CoachingReport {
+  id                  String                 @id @default(cuid())
+  studioProjectId     String
+  studioProject       StudioProject          @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  version             Int
+  reason              String
+  reportVersion       String
+  reportJson          String
+  findingSnapshotJson String
+  sourceSnapshotJson  String
+  createdAt           DateTime               @default(now())
+  exports             CoachingReportExport[]
+
+  @@unique([studioProjectId, version])
+  @@index([studioProjectId, createdAt])
+}
+
+model CoachingReportExport {
+  id             String               @id @default(cuid())
+  reportId       String
+  report         CoachingReport       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  format         CoachingReportFormat
+  relativePath   String
+  fileSizeBytes  BigInt
+  checksumSha256 String
+  createdAt      DateTime             @default(now())
+
+  @@index([reportId, format, createdAt])
 }
 
 model ShortFormProxyJob {
@@ -3024,6 +3294,7 @@ model CanonicalRound {
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   events                  CanonicalEvent[]
+  coachingFindings        CoachingFinding[]
 
   @@unique([matchId, roundIndex])
   @@index([matchId, startSeconds])
@@ -3081,6 +3352,7 @@ model CanonicalEvent {
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   evidence                CanonicalEvidence[]
+  coachingFindings        CoachingFinding[]
 
   @@index([matchId, timestampSeconds])
   @@index([roundId, timestampSeconds])
