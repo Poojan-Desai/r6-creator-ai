@@ -271,6 +271,8 @@ This is a low-resolution editing proxy, not the full-resolution U3.4 export.
 
 #### U3.4 — Deterministic export jobs
 
+Status: **verified from U3.3 commit `945061b`**.
+
 - Render 9:16, 16:9, 1:1, and 4:5 MP4s with FFmpeg from the saved timeline.
   Manual crop/reframe settings remain editable; any automatic reframe is an
   explicit suggested starting point, not an uninspectable tracking claim.
@@ -283,6 +285,36 @@ This is a low-resolution editing proxy, not the full-resolution U3.4 export.
   with byte-range support.
 - Prevent output beyond source duration, missing source references, empty
   timelines, unsafe media paths, and unconfirmed music uploads.
+- Add a safe additive `ShortFormExportJob` migration tied to the immutable
+  timeline revision. Keep full-resolution outputs, temporary work, and proxy
+  files in separate app-owned directories.
+- Reuse the tested timeline-to-FFmpeg graph while selecting explicit
+  full-resolution dimensions, export-quality H.264/AAC settings, and a
+  deterministic pipeline version. Keep proxy and final-export terminology
+  separate in code, storage, UI, and documentation.
+- Add a beginner-facing export panel with saved-revision status, progress,
+  cancellation, restart messages, playable byte-range preview, download, render
+  details, history, and explicit deletion.
+- Verify a real vertical export plus deterministic generated-media coverage for
+  all aspect ratios. Probe duration, dimensions, codecs, and byte-range
+  responses instead of trusting only process exit status.
+
+Verified result: a browser-requested export rendered a real 12.7-second segment
+from the existing 20-minute Siege recording at 1080×1920. FFprobe confirmed an
+H.264 video stream, AAC audio stream, exact 12.667-second duration, and expected
+dimensions; the saved file was 4,510,228 bytes. The preview reached browser
+ready-state 4 without a media error, the media route returned HTTP 206, and the
+download response used the safe saved filename. A deliberately slowed second
+revision was cancelled during FFmpeg processing, persisted as cancelled, saved
+no output path, leaked no process, and left an empty temporary root. A
+controlled interrupted export became a readable restart error, removed its
+partial file, and preserved the completed/cancelled history. The recovered test
+record was deleted through the browser UI. Generated-media tests cover
+1920×1080 real output and deterministic dimension/settings plans for 9:16,
+16:9, 1:1, and 4:5. Formatting, ESLint, strict TypeScript, 207 tests across 45
+files, the production build, all 20 migrations, SQLite integrity, foreign keys,
+and browser-console inspection passed. These tests prove deterministic local
+rendering for the exercised edits; they do not predict content performance.
 
 #### U3.5 — Verification and release
 

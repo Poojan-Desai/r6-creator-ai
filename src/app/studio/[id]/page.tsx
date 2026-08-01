@@ -377,14 +377,26 @@ export default async function StudioProjectPage({ params }: Props) {
             <WorkflowCard
               icon={Clapperboard}
               title="Editor"
-              status="U3/U4 · Planned"
-              description="No automatic edit or preview proxy exists for this unified project yet."
+              status={hasRecording ? "U3.3 · Ready" : "Recording required"}
+              description={
+                hasRecording
+                  ? "Build an immutable timeline, add cards and overlays, edit framing and audio, then render a local preview proxy."
+                  : "A real screen recording is required for timeline editing."
+              }
+              href={hasRecording ? `/studio/${project.id}/shorts` : undefined}
             />
             <WorkflowCard
               icon={Mic2}
               title="Voiceover"
-              status="U5 · Planned"
-              description="No voiceover take has been recorded or placed in a unified timeline."
+              status={
+                hasRecording ? "U3.3 · Import ready" : "Recording required"
+              }
+              description={
+                hasRecording
+                  ? "Import a voiceover you recorded or may use, then place it on the saved short-form timeline."
+                  : "Voiceover placement requires a playable screen-recording timeline."
+              }
+              href={hasRecording ? `/studio/${project.id}/shorts` : undefined}
             />
             <WorkflowCard
               icon={ScanSearch}
@@ -395,8 +407,15 @@ export default async function StudioProjectPage({ params }: Props) {
             <WorkflowCard
               icon={Film}
               title="Exports"
-              status="No unified export"
-              description="Existing manual clips remain available in video workspaces. Unified short, long-form, and report exports are later stages."
+              status={
+                hasRecording ? "U3.4 · Short MP4 ready" : "Recording required"
+              }
+              description={
+                hasRecording
+                  ? "Render, preview, download, inspect, and delete a full-resolution short-form MP4 from an immutable saved edit."
+                  : "Replay-only projects have structured evidence but no gameplay pixels to export."
+              }
+              href={hasRecording ? `/studio/${project.id}/shorts` : undefined}
             />
           </div>
         </section>

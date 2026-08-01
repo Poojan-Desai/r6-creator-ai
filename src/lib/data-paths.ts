@@ -23,6 +23,8 @@ export const dataPaths = {
   studioMedia: path.join(appConfig.dataRoot, "studio-media"),
   shortFormProxies: path.join(appConfig.dataRoot, "short-form-proxies"),
   shortFormProxyTemp: path.join(appConfig.dataRoot, "short-form-proxy-temp"),
+  shortFormExports: path.join(appConfig.dataRoot, "short-form-exports"),
+  shortFormExportTemp: path.join(appConfig.dataRoot, "short-form-export-temp"),
   replayTools: path.join(appConfig.dataRoot, "tools", "replay-parsers"),
   models: path.join(appConfig.dataRoot, "models"),
   transcriptionTemp: path.join(appConfig.dataRoot, "transcription-temp"),
@@ -45,6 +47,8 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.studioMedia, { recursive: true }),
     mkdir(dataPaths.shortFormProxies, { recursive: true }),
     mkdir(dataPaths.shortFormProxyTemp, { recursive: true }),
+    mkdir(dataPaths.shortFormExports, { recursive: true }),
+    mkdir(dataPaths.shortFormExportTemp, { recursive: true }),
     mkdir(dataPaths.replayTools, { recursive: true }),
     mkdir(dataPaths.models, { recursive: true }),
     mkdir(dataPaths.transcriptionTemp, { recursive: true }),
@@ -129,4 +133,12 @@ export function shortFormProxyDirectory(timelineId: string) {
 
 export function shortFormProxyTemporaryDirectory(jobId: string) {
   return path.join(dataPaths.shortFormProxyTemp, jobId);
+}
+
+export function shortFormExportDirectory(timelineId: string) {
+  return path.join(dataPaths.shortFormExports, timelineId);
+}
+
+export function shortFormExportTemporaryDirectory(jobId: string) {
+  return path.join(dataPaths.shortFormExportTemp, jobId);
 }

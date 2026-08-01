@@ -6,7 +6,10 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { appConfig } from "@/lib/config";
-import { buildShortFormProxyPlan } from "@/lib/short-form-proxy";
+import {
+  buildShortFormExportPlan,
+  buildShortFormProxyPlan,
+} from "@/lib/short-form-proxy";
 import {
   addTimelineItem,
   createDefaultTimelineDocument,
@@ -20,6 +23,7 @@ const directory = mkdtempSync(path.join(tmpdir(), "r6-proxy-media-"));
 const sourcePath = path.join(directory, "source.mp4");
 const voicePath = path.join(directory, "voice.wav");
 const outputPath = path.join(directory, "preview.mp4");
+const fullOutputPath = path.join(directory, "full-export.mp4");
 
 describe.skipIf(!appConfig.ffmpegPath)("U3 proxy real-media render", () => {
   beforeAll(() => {
@@ -174,5 +178,37 @@ describe.skipIf(!appConfig.ffmpegPath)("U3 proxy real-media render", () => {
     expect(metadata.height).toBe(640);
     expect(metadata.durationSeconds).toBeGreaterThanOrEqual(6.5);
     expect(metadata.durationSeconds).toBeLessThanOrEqual(6.8);
+  }, 30_000);
+
+  it("renders and probes a full-resolution horizontal H.264 and AAC MP4", async () => {
+    const document = createDefaultTimelineDocument({
+      sourceProjectId: "video",
+      sourceStartSeconds: 0.5,
+      sourceEndSeconds: 1.5,
+      aspectRatio: "HORIZONTAL_16_9",
+      targetDurationSeconds: 15,
+    });
+    const plan = buildShortFormExportPlan({
+      document,
+      sources: [
+        {
+          id: "video",
+          absolutePath: sourcePath,
+          audioStreamIndex: 1,
+        },
+      ],
+      media: [],
+      outputPath: fullOutputPath,
+    });
+    execFileSync(appConfig.ffmpegPath!, plan.arguments, {
+      timeout: 30_000,
+    });
+    expect(statSync(fullOutputPath).size).toBeGreaterThan(20_000);
+    const metadata = await probeVideo(fullOutputPath);
+    expect(metadata.width).toBe(1920);
+    expect(metadata.height).toBe(1080);
+    expect(metadata.durationSeconds).toBeGreaterThanOrEqual(0.9);
+    expect(metadata.durationSeconds).toBeLessThanOrEqual(1.1);
+    expect(metadata.audioTracks).toHaveLength(1);
   }, 30_000);
 });

@@ -98,6 +98,14 @@ enum ShortFormProxyStatus {
   ERROR
 }
 
+enum ShortFormExportStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -2330,6 +2338,7 @@ model ShortFormTimeline {
   updatedAt      DateTime                    @updatedAt
   revisions      ShortFormTimelineRevision[]
   proxyJobs      ShortFormProxyJob[]
+  exportJobs     ShortFormExportJob[]
 
   @@index([status, updatedAt])
 }
@@ -2344,6 +2353,7 @@ model ShortFormTimelineRevision {
   renderSpecJson String              @default("{}")
   createdAt      DateTime            @default(now())
   proxyJobs      ShortFormProxyJob[]
+  exportJobs     ShortFormExportJob[]
 
   @@unique([timelineId, version])
   @@index([timelineId, createdAt])
@@ -2383,6 +2393,37 @@ model ShortFormProxyJob {
   width              Int?
   height             Int?
   durationSeconds    Float?
+  errorMessage       String?
+  cancelRequestedAt  DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  @@index([timelineId, createdAt])
+  @@index([status, updatedAt])
+  @@index([timelineRevisionId])
+}
+
+model ShortFormExportJob {
+  id                 String                    @id @default(cuid())
+  timelineId         String
+  timeline           ShortFormTimeline         @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  timelineRevisionId String
+  timelineRevision   ShortFormTimelineRevision @relation(fields: [timelineRevisionId], references: [id], onDelete: Cascade)
+  status             ShortFormExportStatus     @default(QUEUED)
+  progress           Int                       @default(0)
+  stage              String                    @default("Waiting to export")
+  pipelineVersion    String
+  renderSpecJson     String                    @default("{}")
+  outputFilename     String
+  relativePath       String?
+  fileSizeBytes      BigInt?
+  width              Int?
+  height             Int?
+  durationSeconds    Float?
+  videoCodec         String?
+  audioCodec         String?
   errorMessage       String?
   cancelRequestedAt  DateTime?
   startedAt          DateTime?

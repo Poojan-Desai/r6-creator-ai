@@ -24,25 +24,35 @@ import {
 import { probeVideo } from "@/lib/video";
 
 export const SHORT_FORM_PROXY_PIPELINE_VERSION = "u3-proxy-ffmpeg-v1";
+export const SHORT_FORM_EXPORT_PIPELINE_VERSION = "u3-export-ffmpeg-v1";
 
-type ProxySource = {
+export type ShortFormRenderSource = {
   id: string;
   absolutePath: string;
   audioStreamIndex: number | null;
 };
 
-type ProxyMedia = {
+export type ShortFormRenderMedia = {
   id: string;
   absolutePath: string;
   durationSeconds: number;
 };
 
-export type ProxyRenderPlan = {
+export type ShortFormRenderPlan = {
   arguments: string[];
   width: number;
   height: number;
   durationSeconds: number;
   specification: Record<string, unknown>;
+};
+
+type ShortFormRenderMode = "PROXY" | "EXPORT";
+
+type ShortFormRenderInput = {
+  document: TimelineDocument;
+  sources: ShortFormRenderSource[];
+  media: ShortFormRenderMedia[];
+  outputPath: string;
 };
 
 type ActiveProxyController = {
@@ -70,8 +80,11 @@ function safeProxyDiagnostic(error: unknown) {
     .slice(0, 4_000);
 }
 
-function dimensions(aspectRatio: ShortFormAspectRatio) {
-  const values: Record<
+function dimensions(
+  aspectRatio: ShortFormAspectRatio,
+  renderMode: ShortFormRenderMode,
+) {
+  const proxyValues: Record<
     ShortFormAspectRatio,
     { width: number; height: number }
   > = {
@@ -80,7 +93,16 @@ function dimensions(aspectRatio: ShortFormAspectRatio) {
     SQUARE_1_1: { width: 480, height: 480 },
     PORTRAIT_4_5: { width: 384, height: 480 },
   };
-  return values[aspectRatio];
+  const exportValues: Record<
+    ShortFormAspectRatio,
+    { width: number; height: number }
+  > = {
+    VERTICAL_9_16: { width: 1080, height: 1920 },
+    HORIZONTAL_16_9: { width: 1920, height: 1080 },
+    SQUARE_1_1: { width: 1080, height: 1080 },
+    PORTRAIT_4_5: { width: 1080, height: 1350 },
+  };
+  return (renderMode === "EXPORT" ? exportValues : proxyValues)[aspectRatio];
 }
 
 function ffmpegNumber(value: number) {
@@ -192,12 +214,9 @@ function drawTextFilter(
   );
 }
 
-export function buildShortFormProxyPlan(input: {
-  document: TimelineDocument;
-  sources: ProxySource[];
-  media: ProxyMedia[];
-  outputPath: string;
-}): ProxyRenderPlan {
+function buildShortFormRenderPlan(
+  input: ShortFormRenderInput & { renderMode: ShortFormRenderMode },
+): ShortFormRenderPlan {
   const document = timelineDocumentSchema.parse(input.document);
   const videoItems = document.items
     .filter(
@@ -208,12 +227,12 @@ export function buildShortFormProxyPlan(input: {
     .sort((left, right) => left.order - right.order);
   if (videoItems.length === 0) {
     throw new AppError(
-      "Add at least one source-video or card item before rendering a preview.",
+      "Add at least one source-video or card item before rendering.",
       400,
       "EMPTY_TIMELINE",
     );
   }
-  const { width, height } = dimensions(document.aspectRatio);
+  const { width, height } = dimensions(document.aspectRatio, input.renderMode);
   const sources = new Map(input.sources.map((source) => [source.id, source]));
   const media = new Map(input.media.map((asset) => [asset.id, asset]));
   const args = ["-hide_banner", "-loglevel", "error"];
@@ -439,13 +458,13 @@ export function buildShortFormProxyPlan(input: {
     "-c:v",
     "libx264",
     "-preset",
-    "veryfast",
+    input.renderMode === "EXPORT" ? "medium" : "veryfast",
     "-crf",
-    "28",
+    input.renderMode === "EXPORT" ? "20" : "28",
     "-c:a",
     "aac",
     "-b:a",
-    "128k",
+    input.renderMode === "EXPORT" ? "192k" : "128k",
     "-movflags",
     "+faststart",
     "-progress",
@@ -460,7 +479,11 @@ export function buildShortFormProxyPlan(input: {
     height,
     durationSeconds: document.currentDurationSeconds,
     specification: {
-      pipelineVersion: SHORT_FORM_PROXY_PIPELINE_VERSION,
+      pipelineVersion:
+        input.renderMode === "EXPORT"
+          ? SHORT_FORM_EXPORT_PIPELINE_VERSION
+          : SHORT_FORM_PROXY_PIPELINE_VERSION,
+      renderMode: input.renderMode,
       timelineVersion: document.version,
       aspectRatio: document.aspectRatio,
       width,
@@ -469,9 +492,29 @@ export function buildShortFormProxyPlan(input: {
       videoItemCount: videoItems.length,
       overlayCount: overlays.length,
       mediaItemCount: mediaItems.length,
-      note: "Low-resolution user-requested preview. Final export uses a separate job.",
+      videoCodec: "h264",
+      audioCodec: "aac",
+      videoPreset: input.renderMode === "EXPORT" ? "medium" : "veryfast",
+      videoCrf: input.renderMode === "EXPORT" ? 20 : 28,
+      audioBitrate: input.renderMode === "EXPORT" ? "192k" : "128k",
+      note:
+        input.renderMode === "EXPORT"
+          ? "Full-resolution user-requested deterministic MP4 export."
+          : "Low-resolution user-requested preview. Final export uses a separate job.",
     },
   };
+}
+
+export function buildShortFormProxyPlan(
+  input: ShortFormRenderInput,
+): ShortFormRenderPlan {
+  return buildShortFormRenderPlan({ ...input, renderMode: "PROXY" });
+}
+
+export function buildShortFormExportPlan(
+  input: ShortFormRenderInput,
+): ShortFormRenderPlan {
+  return buildShortFormRenderPlan({ ...input, renderMode: "EXPORT" });
 }
 
 async function cleanupTemporaryDirectory(jobId: string) {
@@ -626,7 +669,10 @@ export async function runShortFormProxyJob(jobId: string) {
     await ensureDataDirectories();
     await mkdir(temporaryDirectory, { recursive: true });
     const context = await loadProxyContext(jobId, temporaryPath);
-    if (!context) return;
+    if (!context) {
+      if (controller.cancelRequested) throw new ProxyCancelledError();
+      return;
+    }
     finalPath = path.join(
       shortFormProxyDirectory(context.job.timelineId),
       `${jobId}.mp4`,
@@ -771,6 +817,10 @@ export async function startShortFormProxyJob(studioProjectId: string) {
             where: { status: { in: ["QUEUED", "RUNNING"] } },
             take: 1,
           },
+          exportJobs: {
+            where: { status: { in: ["QUEUED", "RUNNING"] } },
+            take: 1,
+          },
         },
       },
     },
@@ -784,11 +834,11 @@ export async function startShortFormProxyJob(studioProjectId: string) {
       "TIMELINE_REQUIRED",
     );
   }
-  if (timeline.proxyJobs.length > 0) {
+  if (timeline.proxyJobs.length > 0 || timeline.exportJobs.length > 0) {
     throw new AppError(
-      "A preview is already rendering for this timeline.",
+      "Wait for the active preview or export to finish, or cancel it first.",
       409,
-      "PROXY_ALREADY_RUNNING",
+      "RENDER_ALREADY_RUNNING",
     );
   }
   await cleanupOldProxyJobs(timeline.id);

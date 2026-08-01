@@ -55,9 +55,12 @@ free `whisper.cpp` program and a local model on this Mac.
   storage and byte-range playback
 - Explicit low-resolution FFmpeg proxy rendering with progress, cancellation,
   restart recovery, cleanup, caching per saved revision, and playable MP4 output
-- Honest stage boundaries: U1 through U3.3 are available; final full-resolution
-  short export and later studios remain clearly unavailable until their
-  verified stages instead of displaying fake results
+- Explicit full-resolution H.264/AAC short export at 1080×1920, 1920×1080,
+  1080×1080, or 1080×1350 with progress, cancellation, restart recovery,
+  byte-range playback, safe download names, history, and deletion
+- Honest stage boundaries: U1 through U3.4 are available; long-form, expanded
+  voiceover, coaching, and later shared workflows remain clearly unavailable
+  until their verified stages instead of displaying fake results
 - Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection
 - Replay magic-byte, duplicate, archive-traversal, symbolic-link, entry-count,
@@ -369,11 +372,18 @@ stakes.
    **Cancel preview**. A cancelled or interrupted render keeps no partial MP4.
 7. Play the finished proxy directly on the page. Reopening the same saved
    revision reuses its proxy instead of rendering again.
+8. When the edit is final, click **Export saved revision** under
+   **Full-resolution MP4 export**. Keep using the page while progress updates,
+   or click **Cancel export** to stop safely.
+9. Play the completed full-resolution file, then click **Download MP4** to save
+   a copy wherever you choose. Expand **Export history** to inspect or delete
+   prior app-managed exports.
 
 Supported local audio types are WAV, MP3, M4A, AAC, FLAC, and OGG. The app does
 not include music or infer that you have a license. U3.3 produces a responsive
-editing proxy; the separately requested full-resolution MP4 export belongs to
-U3.4.
+editing proxy; U3.4 renders a separate full-resolution H.264/AAC MP4 only after
+you request it. A vertical export is 1080×1920, horizontal is 1920×1080, square
+is 1080×1080, and 4:5 portrait is 1080×1350.
 
 ### Import and inspect a Match Replay
 

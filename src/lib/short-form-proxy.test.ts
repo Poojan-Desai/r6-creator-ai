@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildShortFormProxyPlan } from "@/lib/short-form-proxy";
+import {
+  buildShortFormExportPlan,
+  buildShortFormProxyPlan,
+} from "@/lib/short-form-proxy";
 import {
   addTimelineItem,
   createDefaultTimelineDocument,
@@ -136,4 +139,49 @@ describe("U3 low-resolution proxy render plan", () => {
       }),
     ).toThrow(/at least one source-video or card/i);
   });
+});
+
+describe("U3 full-resolution export render plan", () => {
+  it.each([
+    ["VERTICAL_9_16", 1080, 1920],
+    ["HORIZONTAL_16_9", 1920, 1080],
+    ["SQUARE_1_1", 1080, 1080],
+    ["PORTRAIT_4_5", 1080, 1350],
+  ] as const)(
+    "maps %s to %d×%d H.264 export settings",
+    (ratio, width, height) => {
+      const document = createDefaultTimelineDocument({
+        sourceProjectId: "video",
+        sourceStartSeconds: 2,
+        sourceEndSeconds: 5,
+        aspectRatio: ratio,
+        targetDurationSeconds: 15,
+      });
+      const plan = buildShortFormExportPlan({
+        document,
+        sources: [
+          {
+            id: "video",
+            absolutePath: "/safe/source.mp4",
+            audioStreamIndex: 1,
+          },
+        ],
+        media: [],
+        outputPath: "/safe/final.mp4",
+      });
+      expect(plan.width).toBe(width);
+      expect(plan.height).toBe(height);
+      expect(plan.arguments).toContain("medium");
+      expect(plan.arguments).toContain("20");
+      expect(plan.arguments).toContain("192k");
+      expect(plan.specification).toMatchObject({
+        renderMode: "EXPORT",
+        width,
+        height,
+        videoCodec: "h264",
+        audioCodec: "aac",
+        videoCrf: 20,
+      });
+    },
+  );
 });

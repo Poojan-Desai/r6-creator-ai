@@ -10,6 +10,7 @@ import {
 import { z } from "zod";
 
 import {
+  shortFormExportDirectory,
   shortFormProxyDirectory,
   studioMediaDirectory,
 } from "@/lib/data-paths";
@@ -890,6 +891,10 @@ export async function deleteStudioProject(id: string) {
                 where: { status: { in: ["QUEUED", "RUNNING"] } },
                 select: { id: true },
               },
+              exportJobs: {
+                where: { status: { in: ["QUEUED", "RUNNING"] } },
+                select: { id: true },
+              },
             },
           },
         },
@@ -903,21 +908,30 @@ export async function deleteStudioProject(id: string) {
       "STUDIO_PROJECT_NOT_FOUND",
     );
   }
-  if ((project.shortFormProduction?.timeline?.proxyJobs.length ?? 0) > 0) {
+  if (
+    (project.shortFormProduction?.timeline?.proxyJobs.length ?? 0) > 0 ||
+    (project.shortFormProduction?.timeline?.exportJobs.length ?? 0) > 0
+  ) {
     throw new AppError(
-      "Cancel the active preview before deleting this unified project.",
+      "Cancel the active preview or export before deleting this unified project.",
       409,
-      "STUDIO_PROJECT_PREVIEW_ACTIVE",
+      "STUDIO_PROJECT_RENDER_ACTIVE",
     );
   }
   const timelineId = project.shortFormProduction?.timeline?.id;
   await db.studioProject.delete({ where: { id } });
   await rm(studioMediaDirectory(id), { recursive: true, force: true });
   if (timelineId) {
-    await rm(shortFormProxyDirectory(timelineId), {
-      recursive: true,
-      force: true,
-    });
+    await Promise.all([
+      rm(shortFormProxyDirectory(timelineId), {
+        recursive: true,
+        force: true,
+      }),
+      rm(shortFormExportDirectory(timelineId), {
+        recursive: true,
+        force: true,
+      }),
+    ]);
   }
 }
 

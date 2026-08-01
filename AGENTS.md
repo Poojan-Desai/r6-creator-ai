@@ -30,6 +30,11 @@ this repository.
 - Short-form preview proxies are explicit user actions, low resolution, and
   pinned to an immutable saved timeline revision. Never describe a proxy as the
   U3.4 full-resolution export or render it after every timeline edit.
+- Short-form final exports are separate explicit jobs pinned to an immutable
+  timeline revision. Persist render settings and history, validate the probed
+  MP4 before completion, stream playback/downloads, and never remove a completed
+  export except through a visible user deletion or its owning test-project
+  cleanup.
 - Phase 3B.2-M map knowledge is versioned and inspectable. Preserve historical
   layouts, source citations, provenance, confidence, and normalized geometry.
   Never silently replace a map version or present personal/community callouts

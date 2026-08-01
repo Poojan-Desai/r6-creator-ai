@@ -20,6 +20,7 @@ import {
   Unlock,
 } from "lucide-react";
 
+import { ShortFormExportPanel } from "@/components/short-form-export-panel";
 import { ShortFormProxyPanel } from "@/components/short-form-proxy-panel";
 import { StudioAudioPanel } from "@/components/studio-audio-panel";
 import type { ShortFormTimelineState } from "@/lib/short-form-timeline";
@@ -521,6 +522,13 @@ export function ShortFormEditorWorkspace({
             state={state}
             onState={setState}
             canRender={saveState === "saved" || saveState === "idle"}
+          />
+
+          <ShortFormExportPanel
+            studioProjectId={studioProjectId}
+            state={state}
+            onState={setState}
+            canExport={saveState === "saved" || saveState === "idle"}
           />
 
           <details className="mt-5 rounded-xl border border-white/8 bg-black/15 p-4">

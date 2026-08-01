@@ -1,4 +1,5 @@
 import type {
+  ShortFormExportJob,
   ShortFormProxyJob,
   ShortFormTimelineRevision,
   StudioMediaAsset,
@@ -7,6 +8,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
+import { reconcileShortFormExportJobs } from "@/lib/short-form-exports";
 import { reconcileShortFormProxyJobs } from "@/lib/short-form-proxy";
 import {
   createDefaultTimelineDocument,
@@ -62,6 +64,29 @@ export type ShortFormProxyJobDto = {
   updatedAt: string;
 };
 
+export type ShortFormExportJobDto = {
+  id: string;
+  timelineRevisionId: string;
+  status: ShortFormExportJob["status"];
+  progress: number;
+  stage: string;
+  pipelineVersion: string;
+  outputFilename: string;
+  relativePath: string | null;
+  fileSizeBytes: number | null;
+  width: number | null;
+  height: number | null;
+  durationSeconds: number | null;
+  videoCodec: string | null;
+  audioCodec: string | null;
+  errorMessage: string | null;
+  cancelRequestedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ShortFormTimelineState = {
   available: boolean;
   message: string;
@@ -71,6 +96,7 @@ export type ShortFormTimelineState = {
   revisions: ShortFormTimelineRevisionDto[];
   mediaAssets: StudioMediaAssetDto[];
   proxyJobs: ShortFormProxyJobDto[];
+  exportJobs: ShortFormExportJobDto[];
 };
 
 function parseDocument(value: string) {
@@ -134,10 +160,39 @@ function serializeProxyJob(job: ShortFormProxyJob): ShortFormProxyJobDto {
   };
 }
 
+function serializeExportJob(job: ShortFormExportJob): ShortFormExportJobDto {
+  return {
+    id: job.id,
+    timelineRevisionId: job.timelineRevisionId,
+    status: job.status,
+    progress: job.progress,
+    stage: job.stage,
+    pipelineVersion: job.pipelineVersion,
+    outputFilename: job.outputFilename,
+    relativePath: job.relativePath,
+    fileSizeBytes:
+      job.fileSizeBytes === null ? null : Number(job.fileSizeBytes),
+    width: job.width,
+    height: job.height,
+    durationSeconds: job.durationSeconds,
+    videoCodec: job.videoCodec,
+    audioCodec: job.audioCodec,
+    errorMessage: job.errorMessage,
+    cancelRequestedAt: job.cancelRequestedAt?.toISOString() ?? null,
+    startedAt: job.startedAt?.toISOString() ?? null,
+    completedAt: job.completedAt?.toISOString() ?? null,
+    createdAt: job.createdAt.toISOString(),
+    updatedAt: job.updatedAt.toISOString(),
+  };
+}
+
 export async function getShortFormTimelineState(
   studioProjectId: string,
 ): Promise<ShortFormTimelineState> {
-  await reconcileShortFormProxyJobs();
+  await Promise.all([
+    reconcileShortFormProxyJobs(),
+    reconcileShortFormExportJobs(),
+  ]);
   const project = await db.studioProject.findUnique({
     where: { id: studioProjectId },
     include: {
@@ -147,6 +202,7 @@ export async function getShortFormTimelineState(
             include: {
               revisions: { orderBy: { version: "desc" }, take: 50 },
               proxyJobs: { orderBy: { createdAt: "desc" }, take: 20 },
+              exportJobs: { orderBy: { createdAt: "desc" }, take: 50 },
             },
           },
         },
@@ -176,6 +232,7 @@ export async function getShortFormTimelineState(
     revisions,
     mediaAssets: project.mediaAssets.map(serializeMediaAsset),
     proxyJobs: timeline?.proxyJobs.map(serializeProxyJob) ?? [],
+    exportJobs: timeline?.exportJobs.map(serializeExportJob) ?? [],
   };
 }
 
