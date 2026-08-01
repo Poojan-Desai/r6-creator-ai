@@ -488,6 +488,8 @@ make voiceprints, clone voices, or transcribe unselected teammate audio.
 
 #### U5.1 — Evidence-bounded scripts and Facts Review
 
+Status: **implemented and verified on August 1, 2026**.
+
 - Add a dedicated Voiceover Studio route shared by short- and long-form
   projects. Keep existing U3 writing revisions and U4 plans immutable.
 - Build a local script provider contract that returns three hooks, full and
@@ -500,6 +502,16 @@ make voiceprints, clone voices, or transcribe unselected teammate audio.
   unknown is never silently promoted.
 - Save script revisions, facts snapshots, provider/version, target
   short/long-form revision, and manual edits in additive SQLite records.
+
+The real saved 20-minute long-form project opened a dedicated Voiceover Studio
+with the six required fact categories and explicit unknown context. The local
+provider generated three hooks, full/short scripts, natural/high-energy/
+storytelling/educational variants, live-audio-only guidance, ten long-form
+section narrations, pronunciation/pacing notes, estimated speaking duration,
+facts used, and unknowns. A manual hook edit became immutable revision 2 and
+survived a complete application restart. The browser console remained clean,
+and provider tests prove that an inference is not promoted into the script as
+a fact.
 
 #### U5.2 — Local recording, import, and take management
 

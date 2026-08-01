@@ -388,15 +388,10 @@ export default async function StudioProjectPage({ params }: Props) {
             <WorkflowCard
               icon={Mic2}
               title="Voiceover"
-              status={
-                hasRecording ? "U3.3 · Import ready" : "Recording required"
-              }
-              description={
-                hasRecording
-                  ? "Import a voiceover you recorded or may use, then place it on the saved short-form timeline."
-                  : "Voiceover placement requires a playable screen-recording timeline."
-              }
-              href={hasRecording ? `/studio/${project.id}/shorts` : undefined}
+              status="U5.1 · Facts and scripts ready"
+              description="Review facts, create original local narration variants, and preserve immutable script revisions before recording."
+              href={`/studio/${project.id}/voiceover`}
+              ready
             />
             <WorkflowCard
               icon={ScanSearch}

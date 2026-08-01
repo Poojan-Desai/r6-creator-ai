@@ -142,6 +142,46 @@ enum LongFormRenderStatus {
   ERROR
 }
 
+enum VoiceoverTargetType {
+  SHORT_FORM
+  LONG_FORM
+}
+
+enum VoiceoverTone {
+  NATURAL
+  HIGH_ENERGY
+  STORYTELLING
+  EDUCATIONAL
+}
+
+enum VoiceoverFactCategory {
+  VERIFIED_REPLAY_FACT
+  VIDEO_OBSERVATION
+  TRANSCRIPT_STATEMENT
+  USER_CONFIRMED_CONTEXT
+  INFERENCE
+  UNKNOWN
+}
+
+enum VoiceoverTakeStatus {
+  READY
+  PROCESSING
+  ERROR
+}
+
+enum VoiceoverJobKind {
+  PROCESS
+  TRANSCRIBE
+}
+
+enum VoiceoverJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -2296,6 +2336,7 @@ model StudioProject {
   shortFormProduction    ShortFormProduction?
   longFormProduction     LongFormProduction?
   mediaAssets            StudioMediaAsset[]
+  voiceoverProduction    VoiceoverProduction?
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2381,14 +2422,14 @@ model ShortFormTimeline {
 }
 
 model ShortFormTimelineRevision {
-  id             String              @id @default(cuid())
+  id             String               @id @default(cuid())
   timelineId     String
-  timeline       ShortFormTimeline   @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  timeline       ShortFormTimeline    @relation(fields: [timelineId], references: [id], onDelete: Cascade)
   version        Int
   reason         String
   documentJson   String
-  renderSpecJson String              @default("{}")
-  createdAt      DateTime            @default(now())
+  renderSpecJson String               @default("{}")
+  createdAt      DateTime             @default(now())
   proxyJobs      ShortFormProxyJob[]
   exportJobs     ShortFormExportJob[]
 
@@ -2397,21 +2438,138 @@ model ShortFormTimelineRevision {
 }
 
 model StudioMediaAsset {
-  id                  String          @id @default(cuid())
-  studioProjectId     String
-  studioProject       StudioProject   @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
-  kind                StudioMediaKind
-  name                String
-  originalFilename    String
-  mimeType            String
-  relativePath        String
-  fileSizeBytes       BigInt
-  durationSeconds     Float
-  permissionConfirmed Boolean
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  id                     String          @id @default(cuid())
+  studioProjectId        String
+  studioProject          StudioProject   @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  kind                   StudioMediaKind
+  name                   String
+  originalFilename       String
+  mimeType               String
+  relativePath           String
+  fileSizeBytes          BigInt
+  durationSeconds        Float
+  permissionConfirmed    Boolean
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  sourceVoiceoverTake    VoiceoverTake?  @relation("VoiceoverTakeSource")
+  processedVoiceoverTake VoiceoverTake?  @relation("VoiceoverTakeProcessed")
 
   @@index([studioProjectId, kind, createdAt])
+}
+
+model VoiceoverProduction {
+  id                   String                    @id @default(cuid())
+  studioProjectId      String                    @unique
+  studioProject        StudioProject             @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  targetType           VoiceoverTargetType       @default(SHORT_FORM)
+  tone                 VoiceoverTone             @default(NATURAL)
+  currentScriptVersion Int                       @default(0)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  scriptRevisions      VoiceoverScriptRevision[]
+  facts                VoiceoverFact[]
+  takes                VoiceoverTake[]
+
+  @@index([targetType, updatedAt])
+}
+
+model VoiceoverScriptRevision {
+  id                String              @id @default(cuid())
+  productionId      String
+  production        VoiceoverProduction @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  version           Int
+  reason            String
+  providerId        String
+  providerVersion   String
+  targetRevisionId  String?
+  packageJson       String
+  factsSnapshotJson String
+  createdAt         DateTime            @default(now())
+
+  @@unique([productionId, version])
+  @@index([productionId, createdAt])
+}
+
+model VoiceoverFact {
+  id               String                @id @default(cuid())
+  productionId     String
+  production       VoiceoverProduction   @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  category         VoiceoverFactCategory
+  summary          String
+  timestampSeconds Float?
+  confidence       Float?
+  sourceId         String?
+  correction       String?
+  userConfirmed    Boolean               @default(false)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([productionId, category, createdAt])
+}
+
+model VoiceoverTake {
+  id                    String                    @id @default(cuid())
+  productionId          String
+  production            VoiceoverProduction       @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  sourceAssetId         String                    @unique
+  sourceAsset           StudioMediaAsset          @relation("VoiceoverTakeSource", fields: [sourceAssetId], references: [id], onDelete: Restrict)
+  processedAssetId      String?                   @unique
+  processedAsset        StudioMediaAsset?         @relation("VoiceoverTakeProcessed", fields: [processedAssetId], references: [id], onDelete: SetNull)
+  name                  String
+  scriptSectionKey      String?
+  status                VoiceoverTakeStatus       @default(READY)
+  isActive              Boolean                   @default(false)
+  trimStartSeconds      Float                     @default(0)
+  trimEndSeconds        Float?
+  normalize             Boolean                   @default(false)
+  noiseReduction        Boolean                   @default(false)
+  gainDb                Float                     @default(0)
+  alignmentStartSeconds Float                     @default(0)
+  errorMessage          String?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  jobs                  VoiceoverJob[]
+  captions              VoiceoverCaptionSegment[]
+
+  @@index([productionId, isActive, createdAt])
+  @@index([productionId, scriptSectionKey])
+}
+
+model VoiceoverJob {
+  id                String             @id @default(cuid())
+  takeId            String
+  take              VoiceoverTake      @relation(fields: [takeId], references: [id], onDelete: Cascade)
+  kind              VoiceoverJobKind
+  status            VoiceoverJobStatus @default(QUEUED)
+  progress          Int                @default(0)
+  stage             String             @default("Waiting to start")
+  processorVersion  String
+  settingsJson      String             @default("{}")
+  errorMessage      String?
+  cancelRequestedAt DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([takeId, createdAt])
+  @@index([status, updatedAt])
+}
+
+model VoiceoverCaptionSegment {
+  id           String        @id @default(cuid())
+  takeId       String
+  take         VoiceoverTake @relation(fields: [takeId], references: [id], onDelete: Cascade)
+  segmentOrder Int
+  startSeconds Float
+  endSeconds   Float
+  text         String
+  originalText String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([takeId, segmentOrder])
+  @@index([takeId, startSeconds])
 }
 
 model ShortFormProxyJob {
@@ -2474,26 +2632,26 @@ model ShortFormExportJob {
 }
 
 model LongFormProduction {
-  id                         String                   @id @default(cuid())
-  studioProjectId            String                   @unique
-  studioProject              StudioProject            @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
-  status                     LongFormProductionStatus @default(DRAFT)
-  targetDurationSeconds      Float                    @default(1500)
-  storytellingStyle          LongFormStoryStyle       @default(STORYTELLING)
-  energyLevel                Int                      @default(60)
-  humorLevel                 Int                      @default(40)
-  educationalLevel           Int                      @default(30)
-  liveGameplayPercent        Int                      @default(75)
-  voiceoverPercent           Int                      @default(25)
-  matchOrRoundLimit          Int                      @default(4)
-  excludeWeakSections        Boolean                  @default(true)
-  includeLosses              Boolean                  @default(true)
-  chronologicalOrder         Boolean                  @default(true)
-  currentVersion             Int                      @default(0)
-  createdAt                  DateTime                 @default(now())
-  updatedAt                  DateTime                 @updatedAt
-  revisions                  LongFormProductionRevision[]
-  timeline                   LongFormTimeline?
+  id                    String                       @id @default(cuid())
+  studioProjectId       String                       @unique
+  studioProject         StudioProject                @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  status                LongFormProductionStatus     @default(DRAFT)
+  targetDurationSeconds Float                        @default(1500)
+  storytellingStyle     LongFormStoryStyle           @default(STORYTELLING)
+  energyLevel           Int                          @default(60)
+  humorLevel            Int                          @default(40)
+  educationalLevel      Int                          @default(30)
+  liveGameplayPercent   Int                          @default(75)
+  voiceoverPercent      Int                          @default(25)
+  matchOrRoundLimit     Int                          @default(4)
+  excludeWeakSections   Boolean                      @default(true)
+  includeLosses         Boolean                      @default(true)
+  chronologicalOrder    Boolean                      @default(true)
+  currentVersion        Int                          @default(0)
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  revisions             LongFormProductionRevision[]
+  timeline              LongFormTimeline?
 
   @@index([status, updatedAt])
 }
@@ -2507,9 +2665,9 @@ model LongFormProductionRevision {
   plannerVersion       String
   settingsJson         String
   planJson             String
-  factsSnapshotJson    String              @default("{}")
-  evidenceSnapshotJson String              @default("{}")
-  createdAt            DateTime            @default(now())
+  factsSnapshotJson    String             @default("{}")
+  evidenceSnapshotJson String             @default("{}")
+  createdAt            DateTime           @default(now())
 
   @@unique([productionId, version])
   @@index([productionId, createdAt])
@@ -2530,14 +2688,14 @@ model LongFormTimeline {
 }
 
 model LongFormTimelineRevision {
-  id             String           @id @default(cuid())
+  id             String              @id @default(cuid())
   timelineId     String
-  timeline       LongFormTimeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  timeline       LongFormTimeline    @relation(fields: [timelineId], references: [id], onDelete: Cascade)
   version        Int
   reason         String
   documentJson   String
-  renderSpecJson String           @default("{}")
-  createdAt      DateTime         @default(now())
+  renderSpecJson String              @default("{}")
+  createdAt      DateTime            @default(now())
   renderJobs     LongFormRenderJob[]
 
   @@unique([timelineId, version])
