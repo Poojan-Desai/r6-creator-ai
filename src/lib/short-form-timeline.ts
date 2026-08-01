@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
+import { reconcileShortFormProxyJobs } from "@/lib/short-form-proxy";
 import {
   createDefaultTimelineDocument,
   normalizeTimelineDocument,
@@ -136,6 +137,7 @@ function serializeProxyJob(job: ShortFormProxyJob): ShortFormProxyJobDto {
 export async function getShortFormTimelineState(
   studioProjectId: string,
 ): Promise<ShortFormTimelineState> {
+  await reconcileShortFormProxyJobs();
   const project = await db.studioProject.findUnique({
     where: { id: studioProjectId },
     include: {

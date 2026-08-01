@@ -27,6 +27,9 @@ this repository.
 - Do not add voice cloning, speaker identification, automatic cloud upload,
   social publishing, learned ranking, OpenAI integration, or unsupported
   performance claims during Phase 3B.
+- Short-form preview proxies are explicit user actions, low resolution, and
+  pinned to an immutable saved timeline revision. Never describe a proxy as the
+  U3.4 full-resolution export or render it after every timeline edit.
 - Phase 3B.2-M map knowledge is versioned and inspectable. Preserve historical
   layouts, source citations, provenance, confidence, and normalized geometry.
   Never silently replace a map version or present personal/community callouts

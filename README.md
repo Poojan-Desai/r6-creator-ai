@@ -47,9 +47,17 @@ free `whisper.cpp` program and a local model on this Mac.
 - Conservative automatic offset suggestions only when both the recording and
   replay contain genuine compatible timestamps; suggestions are never accepted
   automatically
-- Honest stage boundaries: U1 project setup and U2 synchronization are
-  available; later sections say planned, not configured, not connected, or
-  unavailable instead of displaying fake results
+- Evidence-backed short-form candidate review, locally generated original
+  writing, and a non-destructive editor with immutable timeline revisions
+- Trim, split, reorder, duplicate, speed, freeze, crop/reframe, editable
+  keyframes, overlays, captions, cards, transitions, volume, ducking, and fades
+- Permission-gated local voiceover and user-supplied music uploads with streamed
+  storage and byte-range playback
+- Explicit low-resolution FFmpeg proxy rendering with progress, cancellation,
+  restart recovery, cleanup, caching per saved revision, and playable MP4 output
+- Honest stage boundaries: U1 through U3.3 are available; final full-resolution
+  short export and later studios remain clearly unavailable until their
+  verified stages instead of displaying fake results
 - Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection
 - Replay magic-byte, duplicate, archive-traversal, symbolic-link, entry-count,
@@ -337,8 +345,35 @@ evidence before using replay facts in later writing or coaching.
 
 Writing is local and template-based in this stage. It deliberately writes
 around unknown outcomes, map/operator details, player count, intent, and match
-stakes. U3.2 saves a story and writing plan; it does not yet render an edited
-preview or final short. Those are the next U3 stages.
+stakes.
+
+### Edit and preview a short
+
+1. Finish the candidate review and local story-plan steps above, then scroll to
+   **Shape the edit, preserve the source**.
+2. Select a timeline item to trim it, change speed, add a freeze, choose a crop
+   or reframe, adjust volume and fades, or lock it. Use the timeline buttons to
+   split, reorder, duplicate, or delete the selected item.
+3. Add an intro card, ending card, text overlay, or caption with the buttons
+   above the tracks. A centered automatic reframe is only an editable starting
+   suggestion; it does not claim to track players.
+4. Use **Undo** or **Redo** while editing. The page autosaves after a short
+   pause, and **Save now** is available when you want immediate confirmation.
+   Every save creates an immutable local revision; the original recording is
+   never changed.
+5. To add audio, choose **My voiceover** or **Music I may use**, name it, choose
+   a supported local audio file, confirm you recorded, own, or may use it, and
+   click **Save local audio**. Then click **Add to timeline**.
+6. Click **Render preview** only when you want a low-resolution preview. The
+   page remains usable while FFmpeg works, shows progress, and offers
+   **Cancel preview**. A cancelled or interrupted render keeps no partial MP4.
+7. Play the finished proxy directly on the page. Reopening the same saved
+   revision reuses its proxy instead of rendering again.
+
+Supported local audio types are WAV, MP3, M4A, AAC, FLAC, and OGG. The app does
+not include music or infer that you have a license. U3.3 produces a responsive
+editing proxy; the separately requested full-resolution MP4 export belongs to
+U3.4.
 
 ### Import and inspect a Match Replay
 

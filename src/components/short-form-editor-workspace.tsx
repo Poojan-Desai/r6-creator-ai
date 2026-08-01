@@ -20,6 +20,8 @@ import {
   Unlock,
 } from "lucide-react";
 
+import { ShortFormProxyPanel } from "@/components/short-form-proxy-panel";
+import { StudioAudioPanel } from "@/components/studio-audio-panel";
 import type { ShortFormTimelineState } from "@/lib/short-form-timeline";
 import {
   addTimelineItem,
@@ -507,30 +509,19 @@ export function ShortFormEditorWorkspace({
             onSelect={setSelectedItemId}
           />
 
-          <div className="mt-5 rounded-xl border border-white/8 bg-black/15 p-4">
-            <p className="text-xs font-bold tracking-wide text-slate-300 uppercase">
-              Local voiceover and licensed music
-            </p>
-            <p className="mt-2 text-xs leading-5 text-slate-600">
-              Audio uploads arrive in the proxy-render checkpoint. Only audio
-              you record, own, or may use can be added. The app never supplies
-              copyrighted music.
-            </p>
-            {state.mediaAssets.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {state.mediaAssets.map((asset) => (
-                  <button
-                    key={asset.id}
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => addAudio(asset.kind, asset.id)}
-                  >
-                    <Plus size={13} /> {asset.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <StudioAudioPanel
+            studioProjectId={studioProjectId}
+            assets={state.mediaAssets}
+            onState={setState}
+            onAdd={addAudio}
+          />
+
+          <ShortFormProxyPanel
+            studioProjectId={studioProjectId}
+            state={state}
+            onState={setState}
+            canRender={saveState === "saved" || saveState === "idle"}
+          />
 
           <details className="mt-5 rounded-xl border border-white/8 bg-black/15 p-4">
             <summary className="cursor-pointer text-xs font-semibold text-slate-300">

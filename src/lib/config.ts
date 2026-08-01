@@ -11,6 +11,13 @@ const bytesSchema = z.coerce
   .max(Number.MAX_SAFE_INTEGER)
   .default(20 * 1024 * 1024 * 1024);
 
+const audioBytesSchema = z.coerce
+  .number()
+  .int()
+  .positive()
+  .max(Number.MAX_SAFE_INTEGER)
+  .default(1024 * 1024 * 1024);
+
 function optionalExecutable(
   value: string | undefined,
   fallback: string | null,
@@ -27,6 +34,9 @@ const dataRoot = path.resolve(
 export const appConfig = {
   dataRoot,
   maxUploadBytes: bytesSchema.parse(process.env.R6_MAX_UPLOAD_BYTES),
+  maxStudioAudioBytes: audioBytesSchema.parse(
+    process.env.R6_MAX_STUDIO_AUDIO_BYTES,
+  ),
   ffmpegPath: optionalExecutable(process.env.FFMPEG_PATH, ffmpegStatic),
   ffprobePath: optionalExecutable(process.env.FFPROBE_PATH, ffprobeStatic.path),
   whisperCliPath:

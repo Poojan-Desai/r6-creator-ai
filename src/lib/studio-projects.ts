@@ -1,3 +1,5 @@
+import { rm } from "node:fs/promises";
+
 import {
   Prisma,
   type StudioInputKind,
@@ -7,6 +9,10 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 
+import {
+  shortFormProxyDirectory,
+  studioMediaDirectory,
+} from "@/lib/data-paths";
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 
@@ -875,7 +881,20 @@ export async function findStudioProject(id: string) {
 export async function deleteStudioProject(id: string) {
   const project = await db.studioProject.findUnique({
     where: { id },
-    select: { id: true },
+    include: {
+      shortFormProduction: {
+        include: {
+          timeline: {
+            include: {
+              proxyJobs: {
+                where: { status: { in: ["QUEUED", "RUNNING"] } },
+                select: { id: true },
+              },
+            },
+          },
+        },
+      },
+    },
   });
   if (!project) {
     throw new AppError(
@@ -884,7 +903,22 @@ export async function deleteStudioProject(id: string) {
       "STUDIO_PROJECT_NOT_FOUND",
     );
   }
+  if ((project.shortFormProduction?.timeline?.proxyJobs.length ?? 0) > 0) {
+    throw new AppError(
+      "Cancel the active preview before deleting this unified project.",
+      409,
+      "STUDIO_PROJECT_PREVIEW_ACTIVE",
+    );
+  }
+  const timelineId = project.shortFormProduction?.timeline?.id;
   await db.studioProject.delete({ where: { id } });
+  await rm(studioMediaDirectory(id), { recursive: true, force: true });
+  if (timelineId) {
+    await rm(shortFormProxyDirectory(timelineId), {
+      recursive: true,
+      force: true,
+    });
+  }
 }
 
 export async function getStudioProjectOptions() {

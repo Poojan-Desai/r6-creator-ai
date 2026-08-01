@@ -250,6 +250,25 @@ and browser inspection passed.
   ownership/licensing confirmation. Do not infer a license or use bundled
   copyrighted music.
 
+Verified result: the browser created a versioned vertical edit from a reviewed
+candidate in the real 20-minute recording, split the source, changed speed,
+added a freeze frame, saved explicit reframe keyframes, and added an intro card
+and timed text overlay. Undo, redo, debounced autosave, manual save, and seven
+immutable revisions worked without changing the source recording. A
+copyright-free synthetic voiceover streamed into local storage after explicit
+permission confirmation, played through HTTP byte ranges, joined the timeline,
+and ducked gameplay audio. An explicit proxy request rendered the edited
+17.4-second sequence as a 360×640 fast-start MP4 in about half a second; its
+duration, dimensions, and persisted render specification were probed from the
+real output. A cancelled render kept no partial MP4. A simulated interrupted
+render became a readable restart error and its temporary directory was removed,
+while the last valid proxy remained available. Timeline revision 7, voiceover,
+render history, and proxy playback all survived a complete application restart.
+The browser console contained no warnings or errors. Formatting, ESLint, strict
+TypeScript, 201 tests across 44 files, the production build, all 19 migrations,
+SQLite integrity, foreign keys, and preserved Phase 1–U3.2 record counts passed.
+This is a low-resolution editing proxy, not the full-resolution U3.4 export.
+
 #### U3.4 — Deterministic export jobs
 
 - Render 9:16, 16:9, 1:1, and 4:5 MP4s with FFmpeg from the saved timeline.
