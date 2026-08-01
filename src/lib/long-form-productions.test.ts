@@ -91,6 +91,97 @@ describe("U4 evidence-bounded long-form planning", () => {
     expect(plan.metrics.estimatedRemovedSeconds).toBe(0);
   });
 
+  it("plans across multiple recordings and keeps chronological ordering optional", () => {
+    const recordings = [
+      {
+        id: "recording-one",
+        name: "First match",
+        durationSeconds: 700,
+        sortOrder: 0,
+      },
+      {
+        id: "recording-two",
+        name: "Second match",
+        durationSeconds: 650,
+        sortOrder: 1,
+      },
+      {
+        id: "recording-three",
+        name: "Final match",
+        durationSeconds: 300,
+        sortOrder: 2,
+      },
+    ];
+    const candidates = [
+      {
+        candidateId: "late-high-potential",
+        label: "Late high-action candidate",
+        projectId: "recording-three",
+        startSeconds: 90,
+        peakSeconds: 100,
+        endSeconds: 115,
+        eventConfidence: 0.82,
+        contentPotentialScore: 91,
+        reviewDecision: "USEFUL" as const,
+        evidence: ["A late action interval was reviewed as useful."],
+        unknowns: ["The exact event outcome is not confirmed."],
+      },
+      {
+        candidateId: "early-lower-potential",
+        label: "Early reaction candidate",
+        projectId: "recording-one",
+        startSeconds: 30,
+        peakSeconds: 35,
+        endSeconds: 43,
+        eventConfidence: 0.68,
+        contentPotentialScore: 57,
+        reviewDecision: "USEFUL" as const,
+        evidence: ["An early reaction interval was reviewed as useful."],
+        unknowns: ["The exact gameplay cause is not confirmed."],
+      },
+    ];
+
+    const chronological = createEvidenceBoundedLongFormPlan({
+      projectName: "Three-match session",
+      focusAreas: ["Full ranked-match story"],
+      contentInstructions: null,
+      context: [],
+      recordings,
+      candidates,
+      selectedMatchesAndRounds: [],
+      settings: defaultSettings,
+    });
+    const reordered = createEvidenceBoundedLongFormPlan({
+      projectName: "Three-match session",
+      focusAreas: ["Full ranked-match story"],
+      contentInstructions: null,
+      context: [],
+      recordings,
+      candidates,
+      selectedMatchesAndRounds: [],
+      settings: {
+        ...defaultSettings,
+        chronologicalOrder: false,
+      },
+    });
+
+    expect(
+      new Set(
+        chronological.sections.flatMap((section) =>
+          section.sourceRanges.map((range) => range.projectId),
+        ),
+      ),
+    ).toEqual(new Set(["recording-one", "recording-two"]));
+    expect(
+      chronological.importantMoments.map((moment) => moment.candidateId),
+    ).toEqual(["early-lower-potential", "late-high-potential"]);
+    expect(
+      reordered.importantMoments.map((moment) => moment.candidateId),
+    ).toEqual(["late-high-potential", "early-lower-potential"]);
+    expect(chronological.proposedDurationSeconds).toBe(1_200);
+    expect(reordered.proposedDurationSeconds).toBe(1_200);
+  });
+
   it("requires live gameplay and voiceover shares to total 100 percent", () => {
     expect(() =>
       longFormSettingsSchema.parse({

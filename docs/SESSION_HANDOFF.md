@@ -5,8 +5,8 @@
 Branch `codex/phase-3` preserves the replay R2 foundation at tag
 `replay-r2-foundation-stable` (`0730820`) and the verified real-parser
 correction at tag `real-replay-foundation-stable` (commit `93d1b62`). The
-authoritative active sequence is now U1–U8 for one unified Creator Studio and
-Coaching Lab. U1 is verified. U2 replay/video synchronization is the active
+authoritative active sequence is U1–U8 for one unified Creator Studio and
+Coaching Lab. U1 through U4 are verified. U5 Voiceover Studio is the active
 stage.
 
 A consistent pre-U1 migration backup exists at
@@ -124,17 +124,45 @@ weapons, shots, damage, gadgets, camera target, original pixels/audio, and
 virtual POV remain unavailable. No candidate detection, review-time reduction,
 views, or virality claim follows from replay parsing.
 
+## Completed in U4
+
+- Added versioned 20/25/30/custom long-form settings and deterministic,
+  evidence-bounded plans across one or more linked recordings.
+- Added separate immutable long-form timeline revisions, section locks,
+  source-boundary editing, reorder/duplicate/delete, cards, captions,
+  explanations, speed, freeze, framing, local audio, undo, visible duration
+  metrics, and exact fitting of unlocked ranges.
+- Added bounded local preview and final render jobs with cancellation, child
+  process termination, restart reconciliation, cleanup, byte-range playback,
+  safe downloads, history, deletion, and Apple Silicon VideoToolbox with a
+  deterministic software fallback.
+- Real browser verification produced a 1,200.022-second 640×360 preview and a
+  1,200.019-second 1920×1080 H.264/AAC final file of 1,189,420,042 bytes.
+  Playback, seeking, download, HTTP 206, source preservation, and clean console
+  diagnostics passed.
+- A three-recording 20:00 plan crossed local source boundaries and retained
+  separate chronological and reordered planner revisions. A server restart
+  during segment 7 of 17 turned the active job into an honest interrupted
+  error, removed all partial segments, and preserved the plan/timeline.
+- The restart exercise exposed a later-recording zero-source-offset bug. The
+  fix uses an explicit item-local segment offset, is covered by a deterministic
+  regression, and is versioned as `u4-segmented-ffmpeg-v2`.
+- The temporary multi-recording verification wrapper and one cancelled render
+  history row were removed. No source video, replay, reference, completed
+  output, or historical workflow was removed.
+- Formatting, ESLint, strict TypeScript, 226 tests across 52 files, the
+  production build, 23 migrations, SQLite integrity, and foreign-key checks
+  passed.
+
 ## Exact next action
 
-Begin U4 long-form Creator Studio from the verified U3 checkpoint. Reuse the
-immutable short-form story, timeline, local audio, proxy, and export
-infrastructure where the model fits, but keep long-form plans and renders in
-separate versioned records. Support 20-, 25-, 30-minute, and custom targets from
-one or more real recordings. Never fill missing source coverage with invented
-gameplay, replay pixels, or unsupported match facts.
+Begin U5 Voiceover Studio from the stable U4 checkpoint. First add additive
+script/facts/take/section records and local APIs, then build browser recording
+and permission-gated import, deterministic processing and alignment, final
+narration transcription/captions, and gameplay-audio ducking. Reuse the
+existing selected-track Whisper, local media assets, timeline audio, job,
+streaming, and FFmpeg infrastructure. Do not clone voices, identify speakers,
+make voiceprints, or invent unknown gameplay facts.
 
-U3 is verified through a real 1080×1920 H.264/AAC browser export from the
-existing 20-minute recording, a generated 1920×1080 export, 207 tests across 45
-files, the production build, cancellation, restart recovery, cleanup, and clean
-browser diagnostics. Commits `2632cec`, `f79eafa`, `688738c`, `945061b`, and
-`7248689` preserve its focused substages.
+U4 is preserved by focused commits `a4e7b83`, `4b72960`, and `7ac89c4`, plus
+the final checkpoint commit and stable tag created after this handoff update.

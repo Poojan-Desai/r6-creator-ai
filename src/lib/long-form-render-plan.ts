@@ -21,7 +21,7 @@ import {
   type TimelineItem,
 } from "@/lib/timeline-document";
 
-export const LONG_FORM_RENDER_PIPELINE_VERSION = "u4-segmented-ffmpeg-v1";
+export const LONG_FORM_RENDER_PIPELINE_VERSION = "u4-segmented-ffmpeg-v2";
 export const LONG_FORM_SEGMENT_MAX_SECONDS = 120;
 
 export type LongFormRenderSegment = {
@@ -172,6 +172,7 @@ function baseTimelineItem(input: {
   order: number;
   timelineStartSeconds: number;
   durationSeconds: number;
+  sourceLocalStartSeconds?: number;
   firstSlice?: boolean;
   lastSlice?: boolean;
 }): TimelineItem {
@@ -180,7 +181,8 @@ function baseTimelineItem(input: {
     item.kind === "SOURCE_VIDEO"
       ? sourceSlice(
           item,
-          input.timelineStartSeconds - item.timelineStartSeconds,
+          input.sourceLocalStartSeconds ??
+            input.timelineStartSeconds - item.timelineStartSeconds,
           input.durationSeconds,
         )
       : null;
@@ -272,6 +274,7 @@ export function splitLongFormTimelineForRendering(
         order: 0,
         timelineStartSeconds: 0,
         durationSeconds,
+        sourceLocalStartSeconds: consumed,
         firstSlice: consumed < 0.0001,
         lastSlice: consumed + durationSeconds >= item.durationSeconds - 0.0001,
       });

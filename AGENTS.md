@@ -43,6 +43,10 @@ this repository.
   historical abilities/loadouts and keep official specialties separate from
   community or personal roles. Never infer an operator, weapon, gadget, or
   ability use from footage during Phase 3B.2.
+- Unified U4 is verified. Preserve its evidence-bounded planner, lockable
+  timeline, segmented preview/export jobs, completed real 20-minute outputs,
+  restart cleanup, and `u4-segmented-ffmpeg-v2` cross-recording source-offset
+  behavior while U5 adds Voiceover Studio.
 - Personal Version 1 is one unified Creator Studio and Coaching Lab. Gameplay
   MP4 is the primary visual source; Match Replay is optional structured
   evidence; a permitted reference is optional structural guidance. Preserve

@@ -350,7 +350,7 @@ migrations, SQLite integrity `ok`, and no foreign-key violations.
 
 ### U4 — 20–30 minute Long-Form Studio
 
-Status: **active from stable tag `unified-u3-short-form-stable`**.
+Status: **verified on August 1, 2026; U5 is now active**.
 
 Plan and render approximately 20-, 25-, 30-minute, or custom videos from one or
 more recordings. Store premise, teaser, chapters, selected matches/rounds,
@@ -441,6 +441,8 @@ and all render temporary directories were removed.
 
 #### U4.4 — Long-form verification and checkpoint
 
+Status: **verified on August 1, 2026**.
+
 - Use legally usable sufficient source media to create, preview, and export one
   real approximately 20-minute 1080p MP4. Probe codecs, resolution, duration,
   disk use, byte ranges, and browser playback.
@@ -451,9 +453,33 @@ and all render temporary directories were removed.
   migration-from-U3, SQLite integrity/foreign keys, browser-console inspection,
   documentation, focused commits, and a stable U4 tag.
 
+Final checkpoint verification used three owned local recordings in one exact
+20:00 plan. The plan crossed source boundaries, preserved separate
+chronological and reordered revisions, and retained all three original files.
+The saved 20:00 single-recording edit also retained its locked section, exact
+duration fit, completed 640×360 preview, and completed 1920×1080 export after a
+full application restart. Render history deletion removed only a cancelled
+history record; completed outputs remained playable and downloadable.
+
+A real restart was triggered while a 17-segment multi-recording preview was
+rendering. On startup the job changed from running to an honest interrupted
+error, its partial files were removed, and the timeline and planner revisions
+remained intact. That exercise exposed and fixed a cross-recording segment
+offset bug: later sources beginning at source time zero now use an explicit
+item-local offset. The render pipeline is versioned
+`u4-segmented-ffmpeg-v2`, with a deterministic regression test.
+
+The final export remains 1,200.019 seconds, 1920×1080 H.264/AAC, and
+1,189,420,042 bytes. HTTP byte ranges returned 206, the browser loaded and
+played the media after restart, the console contained no warnings or errors,
+the original source SHA-256 remained
+`757d39dd6840c33d5eb8282100e15289beffad5f0ef219a38bfe289e34fbc8bf`,
+render temporary storage was empty, SQLite integrity was `ok`, foreign keys
+were clean, and all 23 additive migrations were current.
+
 ### U5 — Voiceover Studio
 
-Status: not started.
+Status: **active from the stable U4 checkpoint**.
 
 Extend the verified local creator-track transcription foundation with
 record/import/take management, waveform/timeline placement, trimming, gain,

@@ -24,6 +24,12 @@ result, and readable error. Cancellation terminates the active child process
 with a bounded forced-kill fallback. Partial files and segment directories are
 removed after success, cancellation, failure, or restart reconciliation.
 
+Pipeline version `u4-segmented-ffmpeg-v2` passes each segment's explicit
+item-local source offset into the short-form render plan. This preserves valid
+zero-based ranges when a long timeline crosses from one recording to another;
+the earlier v1 calculation could subtract the global timeline offset from a
+later recording's local source time.
+
 ## Why
 
 A single filter graph for a 20–30 minute edit becomes difficult to inspect,

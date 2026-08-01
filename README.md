@@ -58,8 +58,17 @@ free `whisper.cpp` program and a local model on this Mac.
 - Explicit full-resolution H.264/AAC short export at 1080×1920, 1920×1080,
   1080×1080, or 1080×1350 with progress, cancellation, restart recovery,
   byte-range playback, safe download names, history, and deletion
-- Honest stage boundaries: U1 through U3.4 are available; long-form, expanded
-  voiceover, coaching, and later shared workflows remain clearly unavailable
+- Evidence-bounded 20-, 25-, 30-minute, and custom long-form planning across
+  one or more linked recordings, with chronological/reordered preferences,
+  immutable revisions, explicit source shortfalls, and no invented footage
+- A lockable non-destructive horizontal long-form timeline with exact duration
+  fitting, cards, overlays, captions, speed, freeze, framing, local audio,
+  undo, and immutable edit history
+- Segmented 640×360 long-form preview and 1920×1080 H.264/AAC export jobs with
+  progress, cancellation, restart recovery, byte-range playback, safe
+  download, history, deletion, and temporary cleanup
+- Honest stage boundaries: U1 through U4 are available; expanded Voiceover
+  Studio, Coaching Lab, and later shared workflows remain clearly unavailable
   until their verified stages instead of displaying fake results
 - Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection

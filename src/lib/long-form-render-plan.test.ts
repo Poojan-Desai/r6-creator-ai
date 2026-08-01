@@ -91,6 +91,38 @@ describe("long-form segmented render planning", () => {
     expect(segments[1]?.document.items[1]?.timelineStartSeconds).toBe(0);
   });
 
+  it("keeps a later recording that starts at source zero inside valid bounds", () => {
+    const input = document(305);
+    input.sources.push({
+      projectId: "second-video",
+      name: "Second owned recording",
+      durationSeconds: 20,
+    });
+    input.items.push(
+      createLongFormTimelineItem({
+        id: "second-source",
+        kind: "SOURCE_VIDEO",
+        track: "VIDEO",
+        sectionId: "section",
+        order: 1,
+        durationSeconds: 20,
+        sourceProjectId: "second-video",
+        sourceStartSeconds: 0,
+        sourceEndSeconds: 20,
+      }),
+    );
+    const normalized = normalizeLongFormTimeline(input);
+
+    const segments = splitLongFormTimelineForRendering(normalized, 120);
+
+    expect(segments).toHaveLength(4);
+    expect(
+      segments[3]?.document.items[0]?.sourceStartSeconds,
+    ).toBeGreaterThanOrEqual(0);
+    expect(segments[3]?.document.items[0]?.sourceStartSeconds).toBe(0);
+    expect(segments[3]?.document.items[0]?.sourceEndSeconds).toBe(20);
+  });
+
   it("builds preview and export manifests with separate dimensions", () => {
     const source = {
       id: "video",

@@ -3,14 +3,14 @@
 - **Current branch:** `codex/phase-3`
 - **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
   and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
-- **Current phase:** U4 — long-form Creator Studio planning
+- **Current phase:** U5 — Voiceover Studio
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
-  gate, U1 unified projects, U2 synchronization, and U3 short-form Creator
-  Studio
-- **Current active task:** Begin U4 from the verified U3 checkpoint with a
-  versioned 20–30 minute multi-recording planner and honest source-availability
-  rules; preserve all short-form exports and earlier workflows
+  gate, U1 unified projects, U2 synchronization, U3 short-form Creator Studio,
+  and U4 long-form Creator Studio
+- **Current active task:** Extend the verified local transcription and
+  timeline-audio foundations into a complete local Voiceover Studio while
+  preserving every short- and long-form result
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
   reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
   plus the reviewed `compat-1` operator-roster patch
@@ -18,7 +18,7 @@
 - **Audit-only provider:** `wnc-replay/replay-tool` commit
   `dd535f6499069c8268841fda76c68a04b19ba104`; it remains unintegrated because
   the repository has no top-level license
-- **Migration version:** `20260801065000_short_form_export_jobs`, applied
+- **Migration version:** `20260801075500_long_form_render_jobs`, applied
   additively after private pre-U1 through pre-U3.4 SQLite backups with matching
   legacy row counts, integrity `ok`, and clean foreign keys
 - **Current real-replay compatibility:** One user-approved nine-round
@@ -44,8 +44,8 @@
   preserved the prior valid canonical match. A deliberately interrupted real
   run became a recoverable error after restart, leaked no temporary output, and
   also preserved the prior match.
-- **Automated validation:** Formatting, ESLint, strict TypeScript, 207 tests
-  across 45 files, and the warning-free production build passed on August 1, 2026.
+- **Automated validation:** Formatting, ESLint, strict TypeScript, 226 tests
+  across 52 files, and the warning-free production build passed on August 1, 2026.
 - **Pre-U1 safety:** The Git tree was clean before work. A consistent private
   SQLite backup was created at
   `data/backups/r6-creator.pre-unified-u1-20260731.db`; integrity was `ok` and
@@ -106,6 +106,27 @@
   and exports were deleted through app-owned controls after verification. All
   five source projects, ten historical analysis jobs, and four references
   remain.
+- **U4 implementation:** Long-form projects support evidence-bounded
+  20/25/30/custom planning across multiple recordings, chronological/reordered
+  preferences, immutable planner history, a separate lockable timeline,
+  deterministic duration fitting, local audio, segmented preview rendering,
+  and 1920×1080 H.264/AAC exports.
+- **U4 real-media proof:** The owned 20:38 recording produced a 1,200.022-second
+  640×360 preview and a 1,200.019-second 1920×1080 H.264/AAC export. The final
+  file is 1,189,420,042 bytes, loads and seeks in the browser, downloads safely,
+  and returns HTTP 206 ranges. A locked section survived exact 20:00 fitting,
+  and the source SHA-256 remained unchanged.
+- **U4 multi-recording proof:** A real 20:00 planner revision crossed three
+  owned recordings and saved separate chronological and reordered revisions.
+  A render interrupted during segment 7 of 17 recovered as an honest error
+  after restart, removed every partial segment, and retained its plan and
+  timeline. The exercise found and fixed the later-recording zero-offset edge
+  case in versioned pipeline `u4-segmented-ffmpeg-v2`.
+- **U4 cleanup and persistence:** A cancelled history row and the temporary
+  multi-recording wrapper were deleted without deleting source records. The
+  completed preview/export, locked timeline, planner history, five source
+  projects, and all prior references/replays remain. Render temporary storage
+  is empty.
 
 ## Latest real replay verification
 
