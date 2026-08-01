@@ -17,8 +17,9 @@ import {
   ScanSearch,
   ShieldCheck,
   Trash2,
+  XCircle,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { CoachingState } from "@/lib/coaching";
 import { formatDuration } from "@/lib/time";
@@ -33,6 +34,15 @@ type CategoryOption = {
 type ValueLabel = { value: string; label: string };
 
 type Finding = CoachingState["findings"][number];
+
+type CoachingRule = {
+  id: string;
+  name: string;
+  description: string;
+  requiredInput: "recording" | "replay" | "combined";
+  reliability: "bounded" | "experimental" | "unsupported-without-evidence";
+  applicable: boolean;
+};
 
 const evidenceLabels: Record<string, string> = {
   DIRECT_VIDEO_OBSERVATION: "Direct visible observation",
@@ -61,15 +71,21 @@ export function CoachingLabWorkspace({
   categories,
   severities,
   decisions,
+  rules,
 }: {
   studioProjectId: string;
   initialState: CoachingState;
   categories: ReadonlyArray<CategoryOption>;
   severities: ReadonlyArray<ValueLabel>;
   decisions: ReadonlyArray<ValueLabel>;
+  rules: ReadonlyArray<CoachingRule>;
 }) {
   const [state, setState] = useState(initialState);
   const [busy, setBusy] = useState(false);
+  const [analysisActionBusy, setAnalysisActionBusy] = useState(false);
+  const [enabledRuleIds, setEnabledRuleIds] = useState(
+    rules.filter((rule) => rule.applicable).map((rule) => rule.id),
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -119,6 +135,71 @@ export function CoachingLabWorkspace({
   const selectedCategory = categories.find(
     (category) => category.value === form.category,
   );
+  const activeAnalysis = state.analyses.find((analysis) =>
+    ["QUEUED", "RUNNING"].includes(analysis.status),
+  );
+
+  useEffect(() => {
+    if (!activeAnalysis) return;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const response = await fetch(
+            `/api/studio-projects/${studioProjectId}/coaching/analyses`,
+            { cache: "no-store" },
+          );
+          const body = (await response.json()) as {
+            coaching?: CoachingState;
+          };
+          if (response.ok && body.coaching) setState(body.coaching);
+        } catch {
+          // A later poll or normal navigation can recover the persisted job.
+        }
+      })();
+    }, 800);
+    return () => window.clearInterval(timer);
+  }, [activeAnalysis, studioProjectId]);
+
+  async function runAnalysisAction(
+    path: string,
+    method: "POST" | "DELETE",
+    successMessage: string,
+    payload?: Record<string, unknown>,
+  ) {
+    setAnalysisActionBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/analyses${path}`,
+        {
+          method,
+          headers: payload ? { "Content-Type": "application/json" } : undefined,
+          body: payload ? JSON.stringify(payload) : undefined,
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMessage(successMessage);
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setAnalysisActionBusy(false);
+    }
+  }
+
+  async function startAnalysis() {
+    await runAnalysisAction(
+      "",
+      "POST",
+      "Local coaching analysis started. You can keep using this page while the rules run.",
+      { enabledRuleIds },
+    );
+  }
 
   async function createFinding() {
     setBusy(true);
@@ -453,6 +534,129 @@ export function CoachingLabWorkspace({
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="panel overflow-hidden">
+        <div className="border-b border-white/8 p-5 sm:p-6">
+          <p className="section-kicker">U6.3 · Local background analysis</p>
+          <h2 className="font-display mt-1 text-3xl font-bold text-white uppercase">
+            Choose inspectable coaching rules
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500">
+            Every rule uses saved local evidence and runs independently. Replay
+            facts, direct video measurements, transcript support, inferences,
+            and missing context remain separate. An unavailable or failed rule
+            cannot stop the other selected rules.
+          </p>
+        </div>
+        <div className="grid gap-3 p-5 sm:p-6 lg:grid-cols-2">
+          {rules.map((rule) => (
+            <label
+              key={rule.id}
+              className={`flex items-start gap-3 rounded-2xl border p-4 ${
+                rule.applicable
+                  ? "border-white/8 bg-black/15"
+                  : "border-amber-300/15 bg-amber-300/5"
+              }`}
+            >
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={enabledRuleIds.includes(rule.id)}
+                disabled={
+                  !rule.applicable ||
+                  Boolean(activeAnalysis) ||
+                  analysisActionBusy
+                }
+                onChange={(event) =>
+                  setEnabledRuleIds((current) =>
+                    event.target.checked
+                      ? [...current, rule.id]
+                      : current.filter((id) => id !== rule.id),
+                  )
+                }
+              />
+              <span>
+                <span className="block text-sm font-semibold text-white">
+                  {rule.name}
+                </span>
+                <span className="mt-1 block text-[10px] font-bold tracking-[0.1em] text-slate-600 uppercase">
+                  {rule.requiredInput} · {rule.reliability.replaceAll("-", " ")}
+                  {!rule.applicable ? " · unavailable for this project" : ""}
+                </span>
+                <span className="mt-2 block text-xs leading-5 text-slate-400">
+                  {rule.description}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="border-t border-white/8 p-5 sm:p-6">
+          <button
+            type="button"
+            className="primary-button"
+            disabled={
+              Boolean(activeAnalysis) ||
+              analysisActionBusy ||
+              enabledRuleIds.length === 0
+            }
+            onClick={() => void startAnalysis()}
+          >
+            {activeAnalysis || analysisActionBusy ? (
+              <LoaderCircle className="animate-spin" size={16} />
+            ) : (
+              <ScanSearch size={16} />
+            )}
+            {activeAnalysis
+              ? "Analysis running"
+              : "Run local coaching analysis"}
+          </button>
+          {activeAnalysis && (
+            <div
+              className="mt-5 rounded-2xl border border-[#b8ff2c]/20 bg-[#b8ff2c]/5 p-4"
+              aria-live="polite"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    {activeAnalysis.stage}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {activeAnalysis.completedRuleCount} rule
+                    {activeAnalysis.completedRuleCount === 1 ? "" : "s"}{" "}
+                    completed · {activeAnalysis.failedRuleCount} isolated
+                    failure
+                    {activeAnalysis.failedRuleCount === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={analysisActionBusy}
+                  onClick={() =>
+                    void runAnalysisAction(
+                      `/${activeAnalysis.id}/cancel`,
+                      "POST",
+                      "Cancellation requested. Partial findings will be removed.",
+                    )
+                  }
+                >
+                  <XCircle size={15} /> Cancel
+                </button>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/8">
+                <div
+                  className="h-full bg-[#b8ff2c]"
+                  style={{ width: `${activeAnalysis.progress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                {activeAnalysis.progress}% complete. This page stays usable
+                while local rules run.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1397,21 +1601,87 @@ export function CoachingLabWorkspace({
             {state.analyses.map((analysis) => (
               <div
                 key={analysis.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/15 p-4"
+                className="rounded-xl border border-white/8 bg-black/15 p-4"
               >
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    {analysis.analysisVersion}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {analysis.ruleSetVersion} · {analysis.inputMode} ·{" "}
-                    {analysis.findingCount} finding
-                    {analysis.findingCount === 1 ? "" : "s"}
-                  </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      {analysis.analysisVersion}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      {analysis.ruleSetVersion} · {analysis.inputMode} ·{" "}
+                      {analysis.findingCount} finding
+                      {analysis.findingCount === 1 ? "" : "s"} ·{" "}
+                      {analysis.completedRuleCount} completed ·{" "}
+                      {analysis.failedRuleCount} failed
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {analysis.stage}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.08em] text-[#d8ff8a] uppercase">
+                    <History size={14} /> {analysis.status}
+                  </span>
                 </div>
-                <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.08em] text-[#d8ff8a] uppercase">
-                  <History size={14} /> {analysis.status}
-                </span>
+                {analysis.errorMessage && (
+                  <p className="mt-3 rounded-lg border border-red-300/20 bg-red-300/5 p-3 text-xs leading-5 text-red-100">
+                    {analysis.errorMessage}
+                  </p>
+                )}
+                {analysis.warnings.length > 0 && (
+                  <details className="mt-3 rounded-lg border border-amber-300/15 bg-amber-300/5 p-3">
+                    <summary className="cursor-pointer text-xs font-semibold text-amber-100">
+                      {analysis.warnings.length} warning
+                      {analysis.warnings.length === 1 ? "" : "s"} and evidence
+                      boundaries
+                    </summary>
+                    <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-50/70">
+                      {analysis.warnings.map((warning, index) => (
+                        <li key={`${analysis.id}-warning-${index}`}>
+                          {warning}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+                {!["QUEUED", "RUNNING"].includes(analysis.status) && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={analysisActionBusy || Boolean(activeAnalysis)}
+                      onClick={() =>
+                        void runAnalysisAction(
+                          `/${analysis.id}/retry`,
+                          "POST",
+                          "Started a new analysis version with the same rule selection.",
+                        )
+                      }
+                    >
+                      <RotateCcw size={14} /> Retry as new version
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button text-red-200"
+                      disabled={analysisActionBusy || Boolean(activeAnalysis)}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Delete this analysis version and all findings created by it? Human findings from other versions remain.",
+                          )
+                        ) {
+                          void runAnalysisAction(
+                            `/${analysis.id}`,
+                            "DELETE",
+                            "Deleted the selected analysis version and its findings.",
+                          );
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} /> Delete analysis
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

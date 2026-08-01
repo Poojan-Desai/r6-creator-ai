@@ -600,6 +600,18 @@ function serializeCoachingProject(project: CoachingProject) {
       createdAt: measurement.createdAt.toISOString(),
     })),
     analyses: project.coachingAnalyses.map((analysis) => ({
+      ...(() => {
+        const detectorVersions = parseJson(analysis.detectorVersionsJson);
+        return {
+          enabledRuleIds:
+            isRecord(detectorVersions) &&
+            Array.isArray(detectorVersions.enabledRuleIds)
+              ? detectorVersions.enabledRuleIds.filter(
+                  (item): item is string => typeof item === "string",
+                )
+              : [],
+        };
+      })(),
       id: analysis.id,
       inputMode: analysis.inputMode,
       status: analysis.status,
@@ -607,9 +619,14 @@ function serializeCoachingProject(project: CoachingProject) {
       stage: analysis.stage,
       analysisVersion: analysis.analysisVersion,
       ruleSetVersion: analysis.ruleSetVersion,
+      currentRuleId: analysis.currentRuleId,
+      completedRuleCount: analysis.completedRuleCount,
+      failedRuleCount: analysis.failedRuleCount,
       findingCount: analysis._count.findings,
       warnings: parseStringArray(analysis.warningsJson),
       errorMessage: analysis.errorMessage,
+      cancelRequestedAt: analysis.cancelRequestedAt?.toISOString() ?? null,
+      startedAt: analysis.startedAt?.toISOString() ?? null,
       createdAt: analysis.createdAt.toISOString(),
       completedAt: analysis.completedAt?.toISOString() ?? null,
     })),

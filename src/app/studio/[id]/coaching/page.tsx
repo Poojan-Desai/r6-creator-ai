@@ -10,6 +10,10 @@ import {
   COACHING_SEVERITIES,
   getCoachingState,
 } from "@/lib/coaching";
+import {
+  coachingRuleAvailability,
+  reconcileCoachingAnalyses,
+} from "@/lib/coaching-analysis";
 import { findStudioProject } from "@/lib/studio-projects";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +24,7 @@ export default async function CoachingLabPage({ params }: Props) {
   const { id } = await params;
   const project = await findStudioProject(id);
   if (!project) notFound();
+  await reconcileCoachingAnalyses();
   const coaching = await getCoachingState(project.id);
 
   return (
@@ -55,6 +60,7 @@ export default async function CoachingLabPage({ params }: Props) {
             categories={COACHING_FINDING_CATEGORIES}
             severities={COACHING_SEVERITIES}
             decisions={COACHING_DECISIONS}
+            rules={coachingRuleAvailability(project.inputMode)}
           />
         </div>
       </div>

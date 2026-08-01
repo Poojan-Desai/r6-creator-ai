@@ -1,6 +1,9 @@
+import { getCoachingState } from "@/lib/coaching";
+import {
+  reconcileCoachingAnalyses,
+  startCoachingAnalysis,
+} from "@/lib/coaching-analysis";
 import { apiError } from "@/lib/errors";
-import { createHumanReviewedFinding, getCoachingState } from "@/lib/coaching";
-import { reconcileCoachingAnalyses } from "@/lib/coaching-analysis";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,14 +23,13 @@ export async function GET(_request: Request, { params }: Context) {
 export async function POST(request: Request, { params }: Context) {
   try {
     const { id } = await params;
+    const analysisId = await startCoachingAnalysis(
+      id,
+      await request.json().catch(() => ({})),
+    );
     return Response.json(
-      {
-        coaching: await createHumanReviewedFinding(
-          id,
-          await request.json().catch(() => ({})),
-        ),
-      },
-      { status: 201 },
+      { analysisId, coaching: await getCoachingState(id) },
+      { status: 202 },
     );
   } catch (error) {
     return apiError(error);
