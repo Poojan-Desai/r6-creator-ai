@@ -3,15 +3,14 @@
 - **Current branch:** `codex/phase-3`
 - **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
   and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
-- **Current phase:** U6 verified; U7 evidence fusion and progress tracking is
-  active
+- **Current phase:** U7 verified; U8 end-to-end release verification is active
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
   gate, U1 unified projects, U2 synchronization, U3 short-form Creator Studio,
-  U4 long-form Creator Studio, U5 Voiceover Studio, and U6 Coaching Lab
-- **Current active task:** Implement U7.1 shared evidence inspection and U7.2
-  versioned local player-progress snapshots without turning inference or
-  correlation into fact
+  U4 long-form Creator Studio, U5 Voiceover Studio, U6 Coaching Lab, and U7
+  evidence fusion and local progress
+- **Current active task:** Run the U8 retained real-media, benchmark/claim,
+  restart, cleanup, beginner-documentation, and release gates
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
   reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
   plus the reviewed `compat-1` operator-roster patch
@@ -19,7 +18,7 @@
 - **Audit-only provider:** `wnc-replay/replay-tool` commit
   `dd535f6499069c8268841fda76c68a04b19ba104`; it remains unintegrated because
   the repository has no top-level license
-- **Migration version:** `20260801185541_coaching_measurements`, applied
+- **Migration version:** `20260801195438_player_progress_foundation`, applied
   additively after private pre-U1 through pre-U3.4 SQLite backups with matching
   legacy row counts, integrity `ok`, and clean foreign keys
 - **Current real-replay compatibility:** One user-approved nine-round
@@ -45,8 +44,8 @@
   preserved the prior valid canonical match. A deliberately interrupted real
   run became a recoverable error after restart, leaked no temporary output, and
   also preserved the prior match.
-- **Automated validation:** Formatting, ESLint, strict TypeScript, 259 tests
-  across 61 files, and the warning-free production build passed on August 1, 2026.
+- **Automated validation:** Formatting, ESLint, strict TypeScript, 266 tests
+  across 64 files, and the warning-free production build passed on August 1, 2026.
 - **Pre-U1 safety:** The Git tree was clean before work. A consistent private
   SQLite backup was created at
   `data/backups/r6-creator.pre-unified-u1-20260731.db`; integrity was `ok` and
@@ -164,6 +163,19 @@
   recovered as an honest error with zero partial findings. The browser console
   remained empty after restart. These results support the exercised local
   evidence paths, not universal tactical-diagnosis accuracy.
+- **U7 shared evidence:** The real combined project exposes 88 source-linked
+  statements under one seven-class contract: 22 verified replay facts, five
+  direct video observations, no transcript statements, one user-confirmed
+  context item, six inferences, no conflicts, and 54 explicit unknowns.
+- **U7 progress proof:** A local profile saved two immutable snapshots,
+  including a combined Lair/Ash window, one user note, and one completed
+  measurable goal. The selected-player window shows 12 provider-supported
+  kills, six headshot flags, three defuser events, and six visibly inferred
+  deaths. One supported match remains an insufficient first/latest sample.
+- **U7 persistence:** All evidence, both snapshot versions, the note, and the
+  completed goal survived a full development-server restart. The fresh browser
+  console was empty; all 29 migrations were current; SQLite integrity and
+  foreign keys passed.
 
 ## Latest real replay verification
 

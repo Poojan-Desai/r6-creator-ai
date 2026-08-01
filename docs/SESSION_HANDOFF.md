@@ -6,8 +6,8 @@ Branch `codex/phase-3` preserves the replay R2 foundation at tag
 `replay-r2-foundation-stable` (`0730820`) and the verified real-parser
 correction at tag `real-replay-foundation-stable` (commit `93d1b62`). The
 authoritative active sequence is U1–U8 for one unified Creator Studio and
-Coaching Lab. U1 through U6 are verified. U7 shared evidence inspection and
-local player-progress tracking is the active stage.
+Coaching Lab. U1 through U7 are verified. U8 retained real-media and release
+verification is the active stage.
 
 A consistent pre-U1 migration backup exists at
 `data/backups/r6-creator.pre-unified-u1-20260731.db`. It passed SQLite integrity
@@ -187,16 +187,34 @@ views, or virality claim follows from replay parsing.
   warning-free production build, current migrations, SQLite integrity, clean
   foreign keys, and an empty browser console passed.
 
+## Completed in U7
+
+- Added a seven-class shared evidence contract and project Evidence Inspector
+  with source links, timestamps, confidence, corrections, versions, capability
+  boundaries, workflow readiness, filtering, and search.
+- Added additive local player profiles, immutable progress snapshots, snapshot
+  project links, transparent metrics, user notes, and measurable practice goals.
+- Progress metrics isolate the selected player and use only validated or
+  user-confirmed replay events. Direct kill/headshot/defuser feedback stays
+  separate from likely-death inference and unavailable side/geometry/timing.
+- Real browser verification saved an all-project snapshot and a filtered
+  combined Lair/Ash snapshot, one evidence-based note, and one completed goal.
+  The one-match first/latest comparison correctly remained insufficient.
+- All records and 88 shared evidence statements survived a full restart. The
+  clean browser session had no warnings or errors.
+- Formatting, ESLint, strict TypeScript, 266 tests across 64 files, the
+  production build, all 29 migrations, SQLite integrity, and foreign keys
+  passed.
+
 ## Exact next action
 
-Implement U7.1 from the stable U6 checkpoint: define one shared typed evidence
-statement for creator and coaching surfaces, add a reusable Evidence Inspector,
-then add immutable player-progress snapshots whose metrics cite supported replay
-facts, explicit coaching decisions, measurements, provider/detector versions,
-filters, and sample sizes. Keep unsupported timing, side, geometry, or player
-identity unavailable. Do not describe a changed metric or correlation as proof
-of improvement.
+Run U8 from the stable U7 checkpoint: extend the benchmark/claim audit, reopen
+retained real short/long/replay/voiceover/coaching/progress outputs, verify
+playback and persistence through another full restart, audit cleanup and source
+preservation, add beginner release walkthroughs, and run the complete release
+gate. Do not claim the combined synchronization proof is current unless a
+matching recording/replay pair with usable timing is actually available.
 
-U6 is preserved by focused commits `4de7acf`, `375b559`, `ce5b051`, and
-`4928a8f`, plus the final documentation checkpoint and stable tag
-`unified-u6-coaching-stable`.
+U7 is preserved by focused commits `cf2b7ed` and `003aeef`; add the final
+documentation checkpoint and `unified-u7-progress-stable` tag after the U7
+release-documentation gate passes.

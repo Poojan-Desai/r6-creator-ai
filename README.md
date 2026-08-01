@@ -89,9 +89,14 @@ free `whisper.cpp` program and a local model on this Mac.
   unknown
 - Local practice drills, playable review clips, immutable browser/print
   coaching reports, and checksummed JSON, Markdown, and PDF exports
-- Honest stage boundaries: U1 through U6 are available; U7 progress tracking
-  and U8 release verification remain clearly marked as active or planned
-  instead of displaying fake results
+- One shared Evidence Inspector that keeps replay facts, video observations,
+  transcript statements, user context, inferences, conflicts, and unknowns
+  visibly separate across creator and coaching workflows
+- Local Player Progress profiles with deliberate immutable snapshots,
+  map/operator/input-mode filters, first-five/latest-five comparisons, sample
+  sizes, source versions, measurable goals, and user notes
+- Honest stage boundaries: U1 through U7 are available; U8 release verification
+  remains active instead of displaying fake results
 - Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection
 - Replay magic-byte, duplicate, archive-traversal, symbolic-link, entry-count,

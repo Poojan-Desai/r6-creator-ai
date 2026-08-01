@@ -736,7 +736,7 @@ not proof that the application can diagnose every tactical mistake.
 
 ### U7 — Evidence fusion and progress tracking
 
-Status: **active on August 1, 2026**.
+Status: **verified on August 1, 2026; U8 is now active**.
 
 Unify evidence provenance, confidence, conflicts, workflow progress, job
 recovery, content/coaching status, and explicit user corrections. Retain the
@@ -793,15 +793,78 @@ unsupported rather than silently filling gaps.
   document unsupported comparisons honestly, commit focused changes, and create
   a stable U7 tag.
 
+The verified implementation classifies 88 saved creator/coaching statements
+under one seven-class contract and links each statement back to its source
+workflow. The real combined project keeps 22 replay facts, five direct video
+observations, one user-confirmed context item, six inferences, and 54 explicit
+unknowns separate. The local Player Progress workspace saved two immutable
+snapshot versions, including a combined Lair/Ash filter, plus a user note and a
+completed measurable goal. Supported selected-player facts include 12 kills,
+six headshot flags, and three defuser events; six likely deaths remain visibly
+labeled as inference. With one supported match, first-five/latest-five results
+correctly remain **Insufficient sample**. All records survived a complete
+application restart, the fresh browser console was empty, SQLite integrity and
+foreign keys passed, all 29 migrations were current, and formatting, ESLint,
+strict TypeScript, 266 tests across 64 files, and the production build passed.
+These are workflow and provenance results, not proof that the player's
+performance improved.
+
 ### U8 — End-to-end export, testing, and release
 
-Status: not started.
+Status: **active on August 1, 2026**.
 
 Verify complete real-media Creator Studio and Coaching Lab paths, playable media
 exports, report exports, cancellation, restart recovery, storage cleanup,
 database preservation, browser console cleanliness, beginner documentation, and
 a release tag. Interface-only or fixture-only proof does not complete Personal
 Version 1.
+
+#### U8.1 — Benchmark and claim audit
+
+- Extend the existing local benchmark labels for content and coaching review
+  without changing Phase 3B detector ground truth or claiming unsupported
+  recall.
+- Keep content usefulness, script fact errors, pacing, coaching correctness,
+  recommendation usefulness, and human review decisions separate from detector
+  event labels.
+- Report counts and insufficient samples before percentages, and document which
+  real-media proofs are historical retained outputs versus newly rechecked.
+
+#### U8.2 — End-to-end retained-output verification
+
+- Reopen the real short-form MP4, 20-minute long-form preview/final MP4,
+  replay-only recap evidence, combined evidence state, coaching review clip,
+  Voiceover Studio state, coaching reports, and progress snapshots.
+- Verify byte-range playback, media metadata, checksums where recorded,
+  app-owned download routes, immutable histories, database integrity, foreign
+  keys, restart reconciliation, and empty temporary processing roots.
+- Keep the combined synchronization proof explicitly outstanding when no
+  matching recording/replay pair with provider timestamps is available; do not
+  invent alignment from unrelated sources.
+
+#### U8.3 — Beginner release documentation
+
+- Add a click-by-click Personal Version 1 walkthrough, test checklist,
+  limitations, backup/reopen instructions, storage and deletion boundaries,
+  and exact local start/stop commands.
+- Explain recording-only, replay-only, and combined modes; local/cloud
+  boundaries; evidence classes; what each export contains; and why progress
+  changes do not prove improvement.
+- Audit navigation and workflow status so a beginner can locate inputs,
+  synchronization, transcript, candidates, story/script, editor, voiceover,
+  coaching, exports, evidence, progress, benchmarks, maps, and operators.
+
+#### U8.4 — Final release gate
+
+- Run all deterministic tests plus the complete formatting, lint, strict type,
+  production-build, migration, SQLite, storage-cleanup, browser-console, and
+  real-media smoke gates.
+- Preserve the source recordings, replay packages, references, completed
+  exports, reports, and progress history. Remove no user-selected files.
+- Commit the verified release documentation and create
+  `unified-personal-v1-testable` only when every available gate passes. State
+  any missing real matching recording/replay proof as a specific remaining
+  input, not as completed verification.
 
 After each U stage, run targeted tests plus `npm run format:check`,
 `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`; verify

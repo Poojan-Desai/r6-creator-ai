@@ -328,3 +328,18 @@ four role-separated loudness curves plus separate peak/silence curves. The real
 11-second Phase 2 speech project stored a transcript-evidence curve only after
 its actual transcript source was marked creator microphone. These are workflow
 and detector-behavior checks, not benchmark accuracy.
+
+## Unified U7 evidence/progress boundary — August 1, 2026
+
+The shared Evidence Inspector and Player Progress workspace reuse stored source
+facts, observations, user decisions, inferences, conflicts, and unknowns. They
+do not create detector ground truth and do not change Phase 3B precision,
+recall, F1, timestamp error, or footage-review-savings results.
+
+Browser verification counted 88 existing evidence statements and retained
+their seven evidence classes. One deliberately saved progress window contained
+one supported match, so first-five/latest-five comparisons display
+**Insufficient sample**. The 12 selected-player kill records and six headshot
+flags are provider facts for that match; the six likely deaths are explicitly
+stored and displayed as inference from kill-target feedback. None of these
+counts proves improvement, causation, or content performance.

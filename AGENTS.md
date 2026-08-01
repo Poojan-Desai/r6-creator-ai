@@ -56,7 +56,11 @@ this repository.
   capability disclosures, calibration history, conservative measurements,
   finding corrections, isolated analysis rules, review clips, practice drills,
   immutable reports, checksummed exports, cancellation, and restart recovery
-  while U7 adds shared evidence inspection and local progress tracking.
+  while later work reuses Coaching Lab evidence.
+- Unified U7 is verified. Preserve the seven-class shared evidence contract,
+  source links, confidence and capability boundaries, immutable local progress
+  snapshots, filter semantics, sample sizes, metric versions, user notes, and
+  practice goals while U8 performs release verification.
 - Progress metrics must name their source facts/measurements, versions, sample
   sizes, filters, and uncertainty. Never describe correlation or a changed
   metric as proof that the player improved.

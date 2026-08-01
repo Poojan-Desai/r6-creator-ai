@@ -30,16 +30,16 @@ unknowns remain separate.
 
 ## Unified execution sequence
 
-| Stage | Purpose                                                                                                   | Status      |
-| ----- | --------------------------------------------------------------------------------------------------------- | ----------- |
-| U1    | Unified projects, guided input selection, creator/coaching goals, and shared workspace                    | Verified    |
-| U2    | Versioned replay/video synchronization with multiple anchors, drift, manual correction, and confidence    | Verified    |
-| U3    | Short-form candidate review, story/script/voiceover/editing workflow, preview proxy, and playable exports | Verified    |
-| U4    | 20–30 minute multi-recording story planner, editor, proxy workflow, and playable 1080p export             | Verified    |
-| U5    | Local voiceover recording/import, takes, timeline placement, mix, and transcription                       | Verified    |
-| U6    | Evidence-backed Coaching Lab reviews and reports                                                          | Verified    |
-| U7    | Shared evidence fusion, provenance, conflicts, workflow progress, corrections, and recovery               | Active      |
-| U8    | Real-media end-to-end verification, cleanup, documentation, release commit, and verified release tag      | Not started |
+| Stage | Purpose                                                                                                   | Status   |
+| ----- | --------------------------------------------------------------------------------------------------------- | -------- |
+| U1    | Unified projects, guided input selection, creator/coaching goals, and shared workspace                    | Verified |
+| U2    | Versioned replay/video synchronization with multiple anchors, drift, manual correction, and confidence    | Verified |
+| U3    | Short-form candidate review, story/script/voiceover/editing workflow, preview proxy, and playable exports | Verified |
+| U4    | 20–30 minute multi-recording story planner, editor, proxy workflow, and playable 1080p export             | Verified |
+| U5    | Local voiceover recording/import, takes, timeline placement, mix, and transcription                       | Verified |
+| U6    | Evidence-backed Coaching Lab reviews and reports                                                          | Verified |
+| U7    | Shared evidence fusion, provenance, conflicts, workflow progress, corrections, and recovery               | Verified |
+| U8    | Real-media end-to-end verification, cleanup, documentation, release commit, and verified release tag      | Active   |
 
 ## Preserved replay capability boundary
 
