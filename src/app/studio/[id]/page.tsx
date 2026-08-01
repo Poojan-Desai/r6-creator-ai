@@ -355,8 +355,13 @@ export default async function StudioProjectPage({ params }: Props) {
             <WorkflowCard
               icon={Target}
               title="Candidate moments"
-              status="U3 · Not connected"
-              description="No unified-project moments have been generated. Existing detector evidence remains in each video workspace."
+              status={hasRecording ? "U3.1 · Ready" : "Recording required"}
+              description={
+                hasRecording
+                  ? "Fuse completed local detector evidence, inspect three separate scores, preview each range, and save human corrections."
+                  : "Match Replay facts alone cannot create a playable video candidate."
+              }
+              href={hasRecording ? `/studio/${project.id}/shorts` : undefined}
             />
             <WorkflowCard
               icon={FileText}

@@ -1310,11 +1310,14 @@ model CandidateMoment {
   id                        String                   @id @default(cuid())
   projectId                 String
   project                   Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  studioProjectId           String?
+  studioProject             StudioProject?           @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
   analysisJobId             String
   analysisJob               AnalysisJob              @relation(fields: [analysisJobId], references: [id], onDelete: Cascade)
   styleProfileId            String?
   styleProfile              CreatorStyleProfile?     @relation(fields: [styleProfileId], references: [id], onDelete: SetNull)
   category                  GroundTruthCategory
+  mainEvent                 String                   @default("Evidence-supported candidate")
   alternativeCategoriesJson String                   @default("[]")
   startSeconds              Float
   peakSeconds               Float
@@ -1323,9 +1326,14 @@ model CandidateMoment {
   contentPotentialScore     Float
   styleSimilarity           Float?
   scoreBreakdownJson        String                   @default("{}")
+  videoEvidenceJson         String                   @default("[]")
+  replayEvidenceJson        String                   @default("[]")
+  transcriptEvidenceJson    String                   @default("[]")
   explanation               String
   missingEvidenceJson       String                   @default("[]")
   detectorVersionsJson      String                   @default("{}")
+  fusionVersion             String                   @default("u3-candidate-fusion-v1")
+  synchronizationVersion    Int?
   note                      String?
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
@@ -1333,6 +1341,7 @@ model CandidateMoment {
   reviews                   CandidateReviewLabel[]
 
   @@index([projectId, startSeconds])
+  @@index([studioProjectId, contentPotentialScore])
   @@index([analysisJobId])
   @@index([category])
 }
@@ -2189,6 +2198,7 @@ model StudioProject {
   updatedAt              DateTime                     @updatedAt
   inputs                 StudioProjectInput[]
   synchronizations       ReplayVideoSynchronization[]
+  candidateMoments       CandidateMoment[]
 
   @@index([createdAt])
   @@index([status, updatedAt])

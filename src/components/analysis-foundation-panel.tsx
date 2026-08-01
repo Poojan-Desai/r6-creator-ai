@@ -251,7 +251,11 @@ export function AnalysisFoundationPanel({
   }
 
   return (
-    <section className="panel mt-8 p-5 sm:p-6" aria-labelledby="analysis-title">
+    <section
+      id="analysis-foundation"
+      className="panel mt-8 p-5 sm:p-6"
+      aria-labelledby="analysis-title"
+    >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="section-kicker">Phase 3B.2 · General local signals</p>
