@@ -405,6 +405,22 @@ export default async function StudioProjectPage({ params }: Props) {
               description="No coaching finding has been generated. Visible observations and replay facts must remain separate."
             />
             <WorkflowCard
+              icon={BookOpen}
+              title="Long-form studio"
+              status={
+                hasRecording ? "U4.1 · Planner ready" : "Recording required"
+              }
+              description={
+                hasRecording
+                  ? "Choose a 20–30 minute target, story balance, and evidence-bounded chapter structure with immutable local versions."
+                  : "A real screen recording is required for a playable long-form plan."
+              }
+              href={
+                hasRecording ? `/studio/${project.id}/long-form` : undefined
+              }
+              ready={hasRecording}
+            />
+            <WorkflowCard
               icon={Film}
               title="Exports"
               status={

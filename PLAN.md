@@ -360,6 +360,8 @@ explicit full-resolution export; never invent missing angles or replay pixels.
 
 #### U4.1 — Versioned settings and evidence-bounded planner
 
+Status: **implemented and verified on August 1, 2026**.
+
 - Add one additive long-form production per unified project without changing
   U3 records. Save target duration, storytelling style, energy, humor,
   educational/live-gameplay/voiceover amounts, match/round limit, weak-round
@@ -374,6 +376,15 @@ explicit full-resolution export; never invent missing angles or replay pixels.
   outcome, alternate camera angle, or gameplay segment.
 - Show requested duration, available source coverage, proposed duration,
   shortfall/overflow, and an explanation for every section.
+
+Verification used the owned 20:38 recording already stored as `Rainbow six
+sige Test`. The browser created a 20:00 plan with ten contiguous, bounded source
+sections, explicit missing-evidence warnings, title/thumbnail/description
+outputs, and two immutable settings revisions. Both revisions and the unified
+project survived a complete development-server restart. The browser console had
+no errors or warnings. Short-source tests confirm that the planner shortens its
+proposal rather than stretching footage, and the additive migration test
+preserves existing U3 records.
 
 #### U4.2 — Lockable long-form timeline and duration fitting
 
