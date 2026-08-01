@@ -486,6 +486,60 @@ record/import/take management, waveform/timeline placement, trimming, gain,
 fades, retakes, preview, and deterministic mixdown. Do not identify speakers,
 make voiceprints, clone voices, or transcribe unselected teammate audio.
 
+#### U5.1 — Evidence-bounded scripts and Facts Review
+
+- Add a dedicated Voiceover Studio route shared by short- and long-form
+  projects. Keep existing U3 writing revisions and U4 plans immutable.
+- Build a local script provider contract that returns three hooks, full and
+  shorter scripts, natural/high-energy/storytelling/educational variants,
+  live-audio-only guidance, section narration, pronunciation notes, pacing
+  notes, and estimated speaking duration.
+- Create an inspectable Facts Review with separate verified replay facts,
+  direct video observations, transcript statements, user-confirmed context,
+  inferences, and unknowns. Corrections are explicit user-confirmed facts; an
+  unknown is never silently promoted.
+- Save script revisions, facts snapshots, provider/version, target
+  short/long-form revision, and manual edits in additive SQLite records.
+
+#### U5.2 — Local recording, import, and take management
+
+- Record narration in the browser with a visible start/stop flow and upload the
+  resulting local blob through the same streamed, permission-gated storage
+  boundary as imported audio.
+- Store multiple named takes, optional script-section assignment, active-take
+  selection, replay, deletion, alignment start, and original/processed paths.
+- Accept only readable local audio containers, never retain an incomplete
+  upload, stream playback with HTTP byte ranges, and delete app-owned files
+  when a take is deleted.
+- Keep all audio local. Do not identify a speaker, create a voiceprint, or clone
+  any voice.
+
+#### U5.3 — Processing, captions, and timeline integration
+
+- Run trimming, EBU-style loudness normalization, conservative local FFmpeg
+  noise reduction, and narration transcription outside the request path with
+  persisted progress, cancellation, restart reconciliation, and temporary
+  cleanup.
+- Preserve the original take. Save processed output separately with the exact
+  trim, normalization, noise-reduction, gain, and duration settings.
+- Allow a section retake to replace only that section's active selection.
+  Align active takes to short- or long-form timeline time without rewriting
+  source recordings.
+- Generate editable timestamped captions from the final selected narration and
+  add them to the chosen timeline. Use gameplay-audio ducking only while
+  narration is active.
+
+#### U5.4 — Real verification and checkpoint
+
+- Verify browser recording when the available browser permits microphone
+  capture and always verify local import as the deterministic fallback.
+- Exercise multiple takes, naming, replay, active selection, section retake,
+  trim/normalize/noise reduction, cancellation, restart recovery, alignment,
+  captions, ducking, preview/export mix, deletion, and persistence.
+- Run formatting, ESLint, strict TypeScript, all tests, production build,
+  migration from U4, SQLite integrity/foreign keys, browser-console inspection,
+  documentation, focused commits, and a stable U5 tag.
+
 ### U6 — Coaching Lab
 
 Status: not started.
