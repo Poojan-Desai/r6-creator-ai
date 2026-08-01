@@ -25,6 +25,9 @@ export const dataPaths = {
   shortFormProxyTemp: path.join(appConfig.dataRoot, "short-form-proxy-temp"),
   shortFormExports: path.join(appConfig.dataRoot, "short-form-exports"),
   shortFormExportTemp: path.join(appConfig.dataRoot, "short-form-export-temp"),
+  longFormPreviews: path.join(appConfig.dataRoot, "long-form-previews"),
+  longFormExports: path.join(appConfig.dataRoot, "long-form-exports"),
+  longFormRenderTemp: path.join(appConfig.dataRoot, "long-form-render-temp"),
   replayTools: path.join(appConfig.dataRoot, "tools", "replay-parsers"),
   models: path.join(appConfig.dataRoot, "models"),
   transcriptionTemp: path.join(appConfig.dataRoot, "transcription-temp"),
@@ -49,6 +52,9 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.shortFormProxyTemp, { recursive: true }),
     mkdir(dataPaths.shortFormExports, { recursive: true }),
     mkdir(dataPaths.shortFormExportTemp, { recursive: true }),
+    mkdir(dataPaths.longFormPreviews, { recursive: true }),
+    mkdir(dataPaths.longFormExports, { recursive: true }),
+    mkdir(dataPaths.longFormRenderTemp, { recursive: true }),
     mkdir(dataPaths.replayTools, { recursive: true }),
     mkdir(dataPaths.models, { recursive: true }),
     mkdir(dataPaths.transcriptionTemp, { recursive: true }),
@@ -141,4 +147,18 @@ export function shortFormExportDirectory(timelineId: string) {
 
 export function shortFormExportTemporaryDirectory(jobId: string) {
   return path.join(dataPaths.shortFormExportTemp, jobId);
+}
+
+export function longFormRenderDirectory(
+  timelineId: string,
+  kind: "PREVIEW" | "EXPORT",
+) {
+  return path.join(
+    kind === "PREVIEW" ? dataPaths.longFormPreviews : dataPaths.longFormExports,
+    timelineId,
+  );
+}
+
+export function longFormRenderTemporaryDirectory(jobId: string) {
+  return path.join(dataPaths.longFormRenderTemp, jobId);
 }

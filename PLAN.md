@@ -416,6 +416,8 @@ inputs, and additive migration from U4.1.
 
 #### U4.3 — Segmented proxy and 1080p export jobs
 
+Status: **implemented and real-media verified on August 1, 2026**.
+
 - Render explicit low-resolution proxies and 1920×1080 H.264/AAC exports from
   immutable long-form timeline revisions. Process bounded segments so long
   recordings do not require full files in memory.
@@ -425,6 +427,17 @@ inputs, and additive migration from U4.1.
   download, history, deletion, and temporary cleanup.
 - Reuse permission-confirmed local audio and keep proxy/export storage separate.
   Never download music or reference media.
+
+The real saved 20:00 timeline rendered as fifteen bounded segments. A cancelled
+preview retained an inspectable cancelled history row and no partial file or
+temporary directory. The restarted preview completed at 640×360 H.264/AAC
+(1,200.022 seconds, 37,522,845 bytes). The final Apple Silicon export used
+`h264_videotoolbox` with a deterministic `libx264` fallback and completed at
+1920×1080 H.264/AAC (1,200.019 seconds, 1,189,420,042 bytes). Independent
+FFprobe checks, HTTP byte-range requests, browser metadata loading, playback,
+and seeking passed. The original source fingerprint remained
+`757d39dd6840c33d5eb8282100e15289beffad5f0ef219a38bfe289e34fbc8bf`,
+and all render temporary directories were removed.
 
 #### U4.4 — Long-form verification and checkpoint
 

@@ -1,4 +1,5 @@
 import type {
+  LongFormRenderJob,
   LongFormTimelineRevision,
   StudioMediaAsset,
 } from "@prisma/client";
@@ -7,6 +8,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import { longFormPlanSchema } from "@/lib/long-form-productions";
+import { reconcileLongFormRenderJobs } from "@/lib/long-form-renders";
 import {
   createLongFormTimelineFromPlan,
   longFormTimelineDocumentSchema,
@@ -48,6 +50,29 @@ export type LongFormMediaAssetDto = {
   createdAt: string;
 };
 
+export type LongFormRenderJobDto = {
+  id: string;
+  timelineRevisionId: string;
+  kind: LongFormRenderJob["kind"];
+  status: LongFormRenderJob["status"];
+  progress: number;
+  stage: string;
+  pipelineVersion: string;
+  renderSpecJson: string;
+  outputFilename: string;
+  relativePath: string | null;
+  fileSizeBytes: number | null;
+  width: number | null;
+  height: number | null;
+  durationSeconds: number | null;
+  videoCodec: string | null;
+  audioCodec: string | null;
+  segmentCount: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type LongFormTimelineState = {
   available: boolean;
   message: string;
@@ -57,6 +82,7 @@ export type LongFormTimelineState = {
   currentRevision: LongFormTimelineRevisionDto | null;
   revisions: LongFormTimelineRevisionDto[];
   mediaAssets: LongFormMediaAssetDto[];
+  renderJobs: LongFormRenderJobDto[];
 };
 
 function parseDocument(value: string) {
@@ -97,9 +123,36 @@ function serializeMediaAsset(asset: StudioMediaAsset): LongFormMediaAssetDto {
   };
 }
 
+function serializeRenderJob(job: LongFormRenderJob): LongFormRenderJobDto {
+  return {
+    id: job.id,
+    timelineRevisionId: job.timelineRevisionId,
+    kind: job.kind,
+    status: job.status,
+    progress: job.progress,
+    stage: job.stage,
+    pipelineVersion: job.pipelineVersion,
+    renderSpecJson: job.renderSpecJson,
+    outputFilename: job.outputFilename,
+    relativePath: job.relativePath,
+    fileSizeBytes:
+      job.fileSizeBytes === null ? null : Number(job.fileSizeBytes),
+    width: job.width,
+    height: job.height,
+    durationSeconds: job.durationSeconds,
+    videoCodec: job.videoCodec,
+    audioCodec: job.audioCodec,
+    segmentCount: job.segmentCount,
+    errorMessage: job.errorMessage,
+    createdAt: job.createdAt.toISOString(),
+    updatedAt: job.updatedAt.toISOString(),
+  };
+}
+
 export async function getLongFormTimelineState(
   studioProjectId: string,
 ): Promise<LongFormTimelineState> {
+  await reconcileLongFormRenderJobs();
   const project = await db.studioProject.findUnique({
     where: { id: studioProjectId },
     include: {
@@ -108,6 +161,7 @@ export async function getLongFormTimelineState(
           timeline: {
             include: {
               revisions: { orderBy: { version: "desc" }, take: 100 },
+              renderJobs: { orderBy: { createdAt: "desc" }, take: 100 },
             },
           },
         },
@@ -138,6 +192,7 @@ export async function getLongFormTimelineState(
     currentRevision: revisions[0] ?? null,
     revisions,
     mediaAssets: project.mediaAssets.map(serializeMediaAsset),
+    renderJobs: timeline?.renderJobs.map(serializeRenderJob) ?? [],
   };
 }
 

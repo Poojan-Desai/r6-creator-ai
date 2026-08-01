@@ -10,6 +10,7 @@ import {
 import { z } from "zod";
 
 import {
+  longFormRenderDirectory,
   shortFormExportDirectory,
   shortFormProxyDirectory,
   studioMediaDirectory,
@@ -899,6 +900,18 @@ export async function deleteStudioProject(id: string) {
           },
         },
       },
+      longFormProduction: {
+        include: {
+          timeline: {
+            include: {
+              renderJobs: {
+                where: { status: { in: ["QUEUED", "RUNNING"] } },
+                select: { id: true },
+              },
+            },
+          },
+        },
+      },
     },
   });
   if (!project) {
@@ -910,7 +923,8 @@ export async function deleteStudioProject(id: string) {
   }
   if (
     (project.shortFormProduction?.timeline?.proxyJobs.length ?? 0) > 0 ||
-    (project.shortFormProduction?.timeline?.exportJobs.length ?? 0) > 0
+    (project.shortFormProduction?.timeline?.exportJobs.length ?? 0) > 0 ||
+    (project.longFormProduction?.timeline?.renderJobs.length ?? 0) > 0
   ) {
     throw new AppError(
       "Cancel the active preview or export before deleting this unified project.",
@@ -918,16 +932,29 @@ export async function deleteStudioProject(id: string) {
       "STUDIO_PROJECT_RENDER_ACTIVE",
     );
   }
-  const timelineId = project.shortFormProduction?.timeline?.id;
+  const shortTimelineId = project.shortFormProduction?.timeline?.id;
+  const longTimelineId = project.longFormProduction?.timeline?.id;
   await db.studioProject.delete({ where: { id } });
   await rm(studioMediaDirectory(id), { recursive: true, force: true });
-  if (timelineId) {
+  if (shortTimelineId) {
     await Promise.all([
-      rm(shortFormProxyDirectory(timelineId), {
+      rm(shortFormProxyDirectory(shortTimelineId), {
         recursive: true,
         force: true,
       }),
-      rm(shortFormExportDirectory(timelineId), {
+      rm(shortFormExportDirectory(shortTimelineId), {
+        recursive: true,
+        force: true,
+      }),
+    ]);
+  }
+  if (longTimelineId) {
+    await Promise.all([
+      rm(longFormRenderDirectory(longTimelineId, "PREVIEW"), {
+        recursive: true,
+        force: true,
+      }),
+      rm(longFormRenderDirectory(longTimelineId, "EXPORT"), {
         recursive: true,
         force: true,
       }),

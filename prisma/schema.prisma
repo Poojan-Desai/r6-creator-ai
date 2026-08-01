@@ -129,6 +129,19 @@ enum LongFormTimelineStatus {
   ARCHIVED
 }
 
+enum LongFormRenderKind {
+  PREVIEW
+  EXPORT
+}
+
+enum LongFormRenderStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -2511,6 +2524,7 @@ model LongFormTimeline {
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
   revisions      LongFormTimelineRevision[]
+  renderJobs     LongFormRenderJob[]
 
   @@index([status, updatedAt])
 }
@@ -2524,9 +2538,44 @@ model LongFormTimelineRevision {
   documentJson   String
   renderSpecJson String           @default("{}")
   createdAt      DateTime         @default(now())
+  renderJobs     LongFormRenderJob[]
 
   @@unique([timelineId, version])
   @@index([timelineId, createdAt])
+}
+
+model LongFormRenderJob {
+  id                 String                   @id @default(cuid())
+  timelineId         String
+  timeline           LongFormTimeline         @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  timelineRevisionId String
+  timelineRevision   LongFormTimelineRevision @relation(fields: [timelineRevisionId], references: [id], onDelete: Cascade)
+  kind               LongFormRenderKind
+  status             LongFormRenderStatus     @default(QUEUED)
+  progress           Int                      @default(0)
+  stage              String                   @default("Waiting to render")
+  pipelineVersion    String
+  renderSpecJson     String                   @default("{}")
+  outputFilename     String
+  relativePath       String?
+  fileSizeBytes      BigInt?
+  width              Int?
+  height             Int?
+  durationSeconds    Float?
+  videoCodec         String?
+  audioCodec         String?
+  segmentCount       Int?
+  errorMessage       String?
+  cancelRequestedAt  DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([timelineId, createdAt])
+  @@index([status, updatedAt])
+  @@index([timelineRevisionId])
+  @@index([kind, status, createdAt])
 }
 
 model ReplayVideoSynchronization {

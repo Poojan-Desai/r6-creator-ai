@@ -23,6 +23,7 @@ import {
 import { useMemo, useState } from "react";
 
 import { LongFormAudioPanel } from "@/components/long-form-audio-panel";
+import { LongFormRenderPanel } from "@/components/long-form-render-panel";
 import type { LongFormTimelineState } from "@/lib/long-form-timeline";
 import {
   addLongFormTimelineItem,
@@ -536,6 +537,13 @@ export function LongFormEditorWorkspace({
             assets={state.mediaAssets}
             onState={setState}
             onAdd={(kind, id) => addItem(kind, id)}
+          />
+
+          <LongFormRenderPanel
+            studioProjectId={studioProjectId}
+            state={state}
+            onState={setState}
+            canRender={!dirty && !busy}
           />
 
           <div className="mt-6">
