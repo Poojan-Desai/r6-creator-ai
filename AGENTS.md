@@ -46,7 +46,12 @@ this repository.
 - Unified U4 is verified. Preserve its evidence-bounded planner, lockable
   timeline, segmented preview/export jobs, completed real 20-minute outputs,
   restart cleanup, and `u4-segmented-ffmpeg-v2` cross-recording source-offset
-  behavior while U5 adds Voiceover Studio.
+  behavior.
+- Unified U5 is verified. Preserve its evidence-bounded scripts, local
+  record/import take library, original narration assets, versioned processed
+  copies, editable local captions, deterministic section replacement,
+  gameplay-audio ducking, multi-line captions, cancellation, and restart
+  cleanup while U6 adds Coaching Lab.
 - Personal Version 1 is one unified Creator Studio and Coaching Lab. Gameplay
   MP4 is the primary visual source; Match Replay is optional structured
   evidence; a permitted reference is optional structural guidance. Preserve

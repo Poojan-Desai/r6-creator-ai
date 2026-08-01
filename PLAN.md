@@ -479,7 +479,7 @@ were clean, and all 23 additive migrations were current.
 
 ### U5 — Voiceover Studio
 
-Status: **active from the stable U4 checkpoint**.
+Status: **verified on August 1, 2026**.
 
 Extend the verified local creator-track transcription foundation with
 record/import/take management, waveform/timeline placement, trimming, gain,
@@ -586,6 +586,8 @@ error counts were both zero.
 
 #### U5.4 — Real verification and checkpoint
 
+Status: **verified on August 1, 2026**.
+
 - Verify browser recording when the available browser permits microphone
   capture and always verify local import as the deterministic fallback.
 - Exercise multiple takes, naming, replay, active selection, section retake,
@@ -594,6 +596,23 @@ error counts were both zero.
 - Run formatting, ESLint, strict TypeScript, all tests, production build,
   migration from U4, SQLite integrity/foreign keys, browser-console inspection,
   documentation, focused commits, and a stable U5 tag.
+
+U5 used deterministic import of an owned creator-microphone recording because
+browser microphone permission is interactive; the visible record/stop/save
+path remains implemented. Two imported takes covered naming, replay, section
+assignment, active selection, and deletion. The retained take then covered
+processing, two versioned processed outputs, local caption generation and
+editing, section replacement, alignment, cancellation, restart recovery,
+gameplay ducking, and a real 20-minute mixed preview.
+
+The U5.3 final gate passed formatting, ESLint, strict TypeScript, 240 tests
+across 56 files, and a warning-free Next.js production build. The additive U5
+migration passed a preserved-U4 migration test, and all 25 real migrations are
+current. SQLite integrity is `ok`, the foreign-key check is empty, narration
+temporary storage is empty, the final preview reaches browser ready state 4,
+and the browser console contains no warnings or errors. All five original video
+projects, three replay packages, four references, the U3 short-form results,
+and the U4 1080p export remain preserved.
 
 ### U6 — Coaching Lab
 

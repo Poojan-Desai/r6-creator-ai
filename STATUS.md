@@ -3,14 +3,13 @@
 - **Current branch:** `codex/phase-3`
 - **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
   and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
-- **Current phase:** U5 — Voiceover Studio
+- **Current phase:** U5 verified; U6 Coaching Lab is next
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
   gate, U1 unified projects, U2 synchronization, U3 short-form Creator Studio,
-  and U4 long-form Creator Studio
-- **Current active task:** Extend the verified local transcription and
-  timeline-audio foundations into a complete local Voiceover Studio while
-  preserving every short- and long-form result
+  U4 long-form Creator Studio, and U5 Voiceover Studio
+- **Current active task:** Preserve the verified U5 checkpoint and prepare the
+  evidence-backed U6 Coaching Lab plan
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
   reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
   plus the reviewed `compat-1` operator-roster patch
@@ -18,7 +17,7 @@
 - **Audit-only provider:** `wnc-replay/replay-tool` commit
   `dd535f6499069c8268841fda76c68a04b19ba104`; it remains unintegrated because
   the repository has no top-level license
-- **Migration version:** `20260801075500_long_form_render_jobs`, applied
+- **Migration version:** `20260801180500_voiceover_processing_outputs`, applied
   additively after private pre-U1 through pre-U3.4 SQLite backups with matching
   legacy row counts, integrity `ok`, and clean foreign keys
 - **Current real-replay compatibility:** One user-approved nine-round
@@ -44,8 +43,8 @@
   preserved the prior valid canonical match. A deliberately interrupted real
   run became a recoverable error after restart, leaked no temporary output, and
   also preserved the prior match.
-- **Automated validation:** Formatting, ESLint, strict TypeScript, 226 tests
-  across 52 files, and the warning-free production build passed on August 1, 2026.
+- **Automated validation:** Formatting, ESLint, strict TypeScript, 240 tests
+  across 56 files, and the warning-free production build passed on August 1, 2026.
 - **Pre-U1 safety:** The Git tree was clean before work. A consistent private
   SQLite backup was created at
   `data/backups/r6-creator.pre-unified-u1-20260731.db`; integrity was `ok` and
@@ -127,6 +126,25 @@
   completed preview/export, locked timeline, planner history, five source
   projects, and all prior references/replays remain. Render temporary storage
   is empty.
+- **U5 implementation:** Voiceover Studio now separates reviewed facts,
+  inferences, and unknowns before local script generation; saves immutable
+  script revisions; records or streams owned narration; manages multiple named
+  section takes; preserves originals; creates versioned processed copies; saves
+  editable local Whisper captions; and places active narration/captions into
+  short- or long-form timelines with explicit gameplay-audio ducking.
+- **U5 real-media proof:** The owned 10.944-second creator-microphone source was
+  trimmed, normalized, conservatively denoised, raised 1 dB, captioned, edited,
+  aligned at 1.5 seconds, and rendered into a 1,200.022-second 640×360 H.264/AAC
+  preview. Version `u5-segmented-ffmpeg-v5` produced a 67,707,935-byte playable
+  file with centered multi-line captions; the untouched source retained
+  SHA-256
+  `bad3d63c2aac34fbfd699c2b442d754900748edc60e5a38980be74c75bfbc610`.
+- **U5 recovery and persistence:** Cancellation removed partial narration
+  files. A deliberately interrupted job became an honest restart error and
+  removed its temporary directory without losing the completed take, processed
+  output, captions, or timeline. A later processed version replaced only its
+  section. Media reached browser ready state 4 after restart, and the console
+  contained no warnings or errors.
 
 ## Latest real replay verification
 

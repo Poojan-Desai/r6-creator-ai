@@ -67,9 +67,21 @@ free `whisper.cpp` program and a local model on this Mac.
 - Segmented 640×360 long-form preview and 1920×1080 H.264/AAC export jobs with
   progress, cancellation, restart recovery, byte-range playback, safe
   download, history, deletion, and temporary cleanup
-- Honest stage boundaries: U1 through U4 are available; expanded Voiceover
-  Studio, Coaching Lab, and later shared workflows remain clearly unavailable
-  until their verified stages instead of displaying fake results
+- An evidence-bounded Voiceover Studio with three hooks, full/alternate/tone
+  variants, section narration, Facts Review, immutable script history, and
+  local-only writing
+- Browser microphone recording or streamed import of owned narration, multiple
+  named section takes, active-take selection, byte-range replay, alignment, and
+  app-owned deletion
+- Non-destructive local trim, loudness normalization, conservative noise
+  reduction, gain, persisted progress, cancellation, restart recovery, and
+  versioned processed outputs that preserve the original take
+- Local Whisper narration captions with editable text, deterministic
+  short-/long-form section placement, readable multi-line rendering, and
+  automatic gameplay-audio ducking only while narration is active
+- Honest stage boundaries: U1 through U5 are available; Coaching Lab and later
+  shared workflows remain clearly unavailable until their verified stages
+  instead of displaying fake results
 - Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection
 - Replay magic-byte, duplicate, archive-traversal, symbolic-link, entry-count,
@@ -388,11 +400,47 @@ stakes.
    a copy wherever you choose. Expand **Export history** to inspect or delete
    prior app-managed exports.
 
-Supported local audio types are WAV, MP3, M4A, AAC, FLAC, and OGG. The app does
-not include music or infer that you have a license. U3.3 produces a responsive
+Supported local audio types are WAV, MP3, M4A, AAC, FLAC, OGG, and browser
+WebM. The app does not include music or infer that you have a license. U3.3
+produces a responsive
 editing proxy; U3.4 renders a separate full-resolution H.264/AAC MP4 only after
 you request it. A vertical export is 1080×1920, horizontal is 1920×1080, square
 is 1080×1080, and 4:5 portrait is 1080×1350.
+
+### Write, record, and place narration
+
+1. Open **Creator Studio**, choose a short- or long-form project, and click
+   **Voiceover**.
+2. Read **Facts Review** first. Confirm or correct a fact only when you know it
+   is true. Unknown map, operator, site, player count, intention, and outcome
+   remain visibly unknown.
+3. Choose the short- or long-form plan, choose a tone, and click **Regenerate
+   script**. Edit any hook or script field, then click **Save script revision**.
+   Older revisions remain available.
+4. Click **Record microphone**, allow microphone access, speak, and click
+   **Stop and save**. If microphone permission is unavailable, click **Import
+   narration**, choose an audio file you recorded or may use, and confirm
+   permission.
+5. Name the take, assign its script section, set its timeline start, then click
+   **Save settings**. Record or import another take whenever you want an
+   alternative. **Select active** chooses the take used for that section.
+6. Set **Trim start**, **Trim end**, optional loudness normalization,
+   conservative noise reduction, and gain. Click **Process take**. This creates
+   a new local copy; it never changes the original recording or original take.
+7. Keep using the page while progress updates. **Cancel job** stops the local
+   process and removes partial temporary files.
+8. Click **Generate captions**. Review the timestamped local Whisper text,
+   correct any mistake, and click that caption's **Save** button.
+9. Click **Add/replace in short form** or **Add/replace in long form**. The app
+   replaces only that script section, aligns the active take, adds its captions,
+   and marks gameplay audio to duck only during narration.
+10. Return to the editor and request a preview. Play the result before export
+    to check narration level, caption timing, and pronunciation.
+
+Recording, processing, and captioning stay on this Mac. The app does not
+identify the speaker, create a voiceprint, or clone a voice. Long recognized
+caption segments are wrapped into centered lines during rendering, but you
+should still shorten captions when that improves readability.
 
 ### Import and inspect a Match Replay
 
@@ -695,13 +743,19 @@ Everything is below:
 ```
 
 - `r6-creator.db` stores project, replay, canonical evidence, clip, audio-track,
-  transcript, job, and writing metadata.
+  transcript, narration take/job/caption, and writing metadata.
 - `replays/` stores app-owned `.rec` round files and an original source ZIP when
   one was imported.
 - `replay-parser-outputs/` stores only privacy-sanitized provider JSON.
 - `tools/replay-parsers/` stores the locally built parser and build manifest.
 - `uploads/` stores the app’s local source recordings.
 - `clips/` stores generated MP4 clips.
+- `studio-media/` stores permission-confirmed narration, processed narration,
+  and other Creator Studio audio.
+- `voiceover-temp/` is temporary narration-processing space and is cleaned
+  after completion, cancellation, failure, or restart recovery.
+- `short-form-proxies/`, `short-form-exports/`, `long-form-previews/`, and
+  `long-form-exports/` store completed user-requested renders.
 - `models/whisper/` stores the free local speech model.
 - `transcription-temp/` is temporary working space and is cleaned after jobs.
 - `references/` stores permitted local reference copies.
