@@ -163,7 +163,7 @@ foreign keys, and browser regressions passed.
 
 ### U3 — Short-form Creator Studio
 
-Status: **active from the verified U2 checkpoint**.
+Status: **verified through deterministic full-resolution export**.
 
 Build evidence-backed candidates, human review, an editable story plan,
 original scripts, voiceover integration, proxy previews, deterministic FFmpeg
@@ -333,6 +333,20 @@ rendering for the exercised edits; they do not predict content performance.
 - Run formatting, ESLint, strict TypeScript, all tests, the production build,
   SQLite integrity and foreign-key checks, real media probes, and documentation
   review. Commit each verified substage and preserve a clean U3 checkpoint.
+
+Verified result: U3 was delivered in focused commits for candidate review,
+story/writing, timeline editing, proxy/audio, and full-resolution export.
+Browser verification exercised a real 20-minute Siege recording from candidate
+correction through immutable writing and edit history, a permission-confirmed
+voiceover, low-resolution proxy, and a playable 1080×1920 H.264/AAC export.
+Generated legal fixtures added a real 1920×1080 export and deterministic plan
+coverage for square and 4:5 output. Proxy and export cancellation, restart
+recovery, byte ranges, download headers, temporary cleanup, deletion, source
+preservation, and browser-console inspection passed. The temporary unified
+wrappers and app-owned rendered files were deleted afterward; five source
+projects, ten analysis jobs, and four references remain. The final U3 gate is
+207 passing tests across 45 files, a clean production build, 20 applied
+migrations, SQLite integrity `ok`, and no foreign-key violations.
 
 ### U4 — 20–30 minute Long-Form Studio
 

@@ -34,7 +34,7 @@ unknowns remain separate.
 | ----- | --------------------------------------------------------------------------------------------------------- | ----------- |
 | U1    | Unified projects, guided input selection, creator/coaching goals, and shared workspace                    | Verified    |
 | U2    | Versioned replay/video synchronization with multiple anchors, drift, manual correction, and confidence    | Verified    |
-| U3    | Short-form candidate review, story/script/voiceover/editing workflow, preview proxy, and playable exports | Active      |
+| U3    | Short-form candidate review, story/script/voiceover/editing workflow, preview proxy, and playable exports | Verified    |
 | U4    | 20–30 minute multi-recording story planner, editor, proxy workflow, and playable 1080p export             | Not started |
 | U5    | Local voiceover recording/import, takes, timeline placement, mix, and transcription                       | Not started |
 | U6    | Evidence-backed Coaching Lab reviews and reports                                                          | Not started |

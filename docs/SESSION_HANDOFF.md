@@ -126,9 +126,15 @@ views, or virality claim follows from replay parsing.
 
 ## Exact next action
 
-Begin U3 short-form Creator Studio from the verified U2 checkpoint. Reuse the
-existing local detector evidence, transcript, manual labels, Creator Style
-Profile, template writing provider, manual clipping service, and verified
-synchronization mapping where applicable. Keep Event Confidence, Content
-Potential Score, and Style Similarity separate; do not claim prediction of
-views, and do not invent replay or visual facts.
+Begin U4 long-form Creator Studio from the verified U3 checkpoint. Reuse the
+immutable short-form story, timeline, local audio, proxy, and export
+infrastructure where the model fits, but keep long-form plans and renders in
+separate versioned records. Support 20-, 25-, 30-minute, and custom targets from
+one or more real recordings. Never fill missing source coverage with invented
+gameplay, replay pixels, or unsupported match facts.
+
+U3 is verified through a real 1080×1920 H.264/AAC browser export from the
+existing 20-minute recording, a generated 1920×1080 export, 207 tests across 45
+files, the production build, cancellation, restart recovery, cleanup, and clean
+browser diagnostics. Commits `2632cec`, `f79eafa`, `688738c`, `945061b`, and
+`7248689` preserve its focused substages.
