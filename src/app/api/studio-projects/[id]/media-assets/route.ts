@@ -8,6 +8,7 @@ import {
 } from "@/lib/data-paths";
 import { db } from "@/lib/db";
 import { apiError, AppError } from "@/lib/errors";
+import { getLongFormTimelineState } from "@/lib/long-form-timeline";
 import { getShortFormTimelineState } from "@/lib/short-form-timeline";
 import {
   probeStudioAudio,
@@ -58,10 +59,11 @@ export async function POST(request: Request, { params }: Context) {
         permissionConfirmed: upload.permissionConfirmed,
       },
     });
-    return Response.json(
-      { timeline: await getShortFormTimelineState(studioProjectId) },
-      { status: 201 },
-    );
+    const [timeline, longFormTimeline] = await Promise.all([
+      getShortFormTimelineState(studioProjectId),
+      getLongFormTimelineState(studioProjectId),
+    ]);
+    return Response.json({ timeline, longFormTimeline }, { status: 201 });
   } catch (error) {
     await Promise.all([
       unlink(temporaryPath).catch(() => undefined),

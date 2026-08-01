@@ -123,6 +123,12 @@ enum LongFormStoryStyle {
   SESSION_RECAP
 }
 
+enum LongFormTimelineStatus {
+  DRAFT
+  READY_FOR_PREVIEW
+  ARCHIVED
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -2474,6 +2480,7 @@ model LongFormProduction {
   createdAt                  DateTime                 @default(now())
   updatedAt                  DateTime                 @updatedAt
   revisions                  LongFormProductionRevision[]
+  timeline                   LongFormTimeline?
 
   @@index([status, updatedAt])
 }
@@ -2493,6 +2500,33 @@ model LongFormProductionRevision {
 
   @@unique([productionId, version])
   @@index([productionId, createdAt])
+}
+
+model LongFormTimeline {
+  id             String                     @id @default(cuid())
+  productionId   String                     @unique
+  production     LongFormProduction         @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  status         LongFormTimelineStatus     @default(DRAFT)
+  currentVersion Int                        @default(0)
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  revisions      LongFormTimelineRevision[]
+
+  @@index([status, updatedAt])
+}
+
+model LongFormTimelineRevision {
+  id             String           @id @default(cuid())
+  timelineId     String
+  timeline       LongFormTimeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  version        Int
+  reason         String
+  documentJson   String
+  renderSpecJson String           @default("{}")
+  createdAt      DateTime         @default(now())
+
+  @@unique([timelineId, version])
+  @@index([timelineId, createdAt])
 }
 
 model ReplayVideoSynchronization {

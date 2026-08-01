@@ -11,6 +11,7 @@ import {
   LoaderCircle,
   Sparkles,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type {
@@ -64,6 +65,7 @@ export function LongFormPlanningWorkspace({
   studioProjectId: string;
   initialState: LongFormProductionState;
 }) {
+  const router = useRouter();
   const [state, setState] = useState(initialState);
   const [settings, setSettings] = useState<LongFormSettings>(
     initialState.production?.settings ?? defaultSettings,
@@ -115,6 +117,7 @@ export function LongFormPlanningWorkspace({
       setMessage(
         `Saved immutable planner version ${body.productionState.production?.currentVersion ?? 0}. Earlier versions remain available.`,
       );
+      router.refresh();
     } catch (reason) {
       setError(errorMessage(reason));
     } finally {

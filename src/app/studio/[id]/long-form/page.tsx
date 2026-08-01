@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AppHeader } from "@/components/app-header";
+import { LongFormEditorWorkspace } from "@/components/long-form-editor-workspace";
 import { LongFormPlanningWorkspace } from "@/components/long-form-planning-workspace";
 import { getLongFormProductionState } from "@/lib/long-form-productions";
+import { getLongFormTimelineState } from "@/lib/long-form-timeline";
 import { findStudioProject } from "@/lib/studio-projects";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +23,13 @@ export default async function LongFormStudioPage({ params }: Props) {
         input.kind === "ADDITIONAL_RECORDING") &&
       input.videoProject,
   );
-  const state =
-    recordings.length > 0 ? await getLongFormProductionState(project.id) : null;
+  const workspace =
+    recordings.length > 0
+      ? await Promise.all([
+          getLongFormProductionState(project.id),
+          getLongFormTimelineState(project.id),
+        ])
+      : null;
 
   return (
     <main className="min-h-screen">
@@ -50,7 +57,7 @@ export default async function LongFormStudioPage({ params }: Props) {
           </p>
         </header>
 
-        {recordings.length === 0 || !state ? (
+        {recordings.length === 0 || !workspace ? (
           <section className="panel mt-8 p-8 text-center">
             <Film className="mx-auto text-slate-700" size={34} />
             <h2 className="mt-4 text-xl font-semibold text-white">
@@ -72,8 +79,14 @@ export default async function LongFormStudioPage({ params }: Props) {
           <div className="mt-8">
             <LongFormPlanningWorkspace
               studioProjectId={project.id}
-              initialState={state}
+              initialState={workspace[0]}
             />
+            <div className="mt-8">
+              <LongFormEditorWorkspace
+                studioProjectId={project.id}
+                initialState={workspace[1]}
+              />
+            </div>
           </div>
         )}
       </div>

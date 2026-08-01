@@ -388,6 +388,8 @@ preserves existing U3 records.
 
 #### U4.2 — Lockable long-form timeline and duration fitting
 
+Status: **implemented and verified on August 1, 2026**.
+
 - Store immutable long-form timeline revisions separate from short-form
   timelines. Support source clips, chapter/recap/score/operator cards,
   transitions, captions, user-supplied voiceover/music, ducking, speed,
@@ -400,6 +402,17 @@ preserves existing U3 records.
 - Treat dead-space, menu, loading-screen, weak-round, loss, replay-fact,
   operator, and score suggestions as evidence-backed recommendations. Unknown
   screen states and outcomes remain unknown.
+
+The browser converted the real 20:00 plan into a separate ten-section
+horizontal timeline, shortened one source range to 19:50, locked the ending,
+and restored the exact 20:00 target by extending only a safe unlocked range.
+The locked ending remained unchanged and the original recording was untouched.
+The editor exposes section/item locks, reorder, duplicate, delete, cards,
+transitions, captions, explanations, framing, speed, freeze, audio mix controls,
+permission-confirmed local voiceover/music, visible metrics, explicit fit
+warnings, undo, and immutable saved history. Deterministic tests cover locked
+fit behavior, unfillable targets, section operations, ownership validation
+inputs, and additive migration from U4.1.
 
 #### U4.3 — Segmented proxy and 1080p export jobs
 
