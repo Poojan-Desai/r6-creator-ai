@@ -6,8 +6,8 @@ Branch `codex/phase-3` preserves the replay R2 foundation at tag
 `replay-r2-foundation-stable` (`0730820`) and the verified real-parser
 correction at tag `real-replay-foundation-stable` (commit `93d1b62`). The
 authoritative active sequence is U1–U8 for one unified Creator Studio and
-Coaching Lab. U1 through U4 are verified. U5 Voiceover Studio is the active
-stage.
+Coaching Lab. U1 through U6 are verified. U7 shared evidence inspection and
+local player-progress tracking is the active stage.
 
 A consistent pre-U1 migration backup exists at
 `data/backups/r6-creator.pre-unified-u1-20260731.db`. It passed SQLite integrity
@@ -154,15 +154,49 @@ views, or virality claim follows from replay parsing.
   production build, 23 migrations, SQLite integrity, and foreign-key checks
   passed.
 
+## Completed in U5
+
+- Added evidence-bounded script and Facts Review revisions, local browser
+  recording/streamed narration import, named section takes, active selection,
+  byte-range playback, and app-owned deletion.
+- Added non-destructive trim, normalization, conservative denoise, gain,
+  versioned processed outputs, editable local captions, section replacement,
+  timeline alignment, and automatic gameplay-audio ducking.
+- A real owned narration source and 20-minute gameplay project produced a
+  persisted captioned mixed preview. Cancellation, interrupted-job recovery,
+  cleanup, playback, and a clean browser console were verified.
+
+## Completed in U6
+
+- Added additive coaching calibration, analysis, finding, evidence, correction,
+  measurement, drill, review-clip, report, and export records.
+- Added recording-only, replay-only, and combined capability disclosures plus
+  conservative local measurement and replay rules. One rule failure is isolated
+  and cannot discard other results.
+- A real combined project produced 26 bounded findings across five completed
+  rules. A cancelled run and a deliberately interrupted run retained zero
+  partial findings.
+- The browser persisted one accepted finding, one rejected semantic false
+  positive, a corrected timestamp, one evidence-first drill, and a playable
+  14-second review clip.
+- One immutable report reopened after a full server restart with checksummed
+  JSON, Markdown, and PDF exports. The report says “AI-assisted replay and POV
+  review,” does not replace a professional coach, and does not invent missing
+  geometry or intent.
+- Formatting, ESLint, strict TypeScript, 259 tests across 61 files, a
+  warning-free production build, current migrations, SQLite integrity, clean
+  foreign keys, and an empty browser console passed.
+
 ## Exact next action
 
-Begin U5 Voiceover Studio from the stable U4 checkpoint. First add additive
-script/facts/take/section records and local APIs, then build browser recording
-and permission-gated import, deterministic processing and alignment, final
-narration transcription/captions, and gameplay-audio ducking. Reuse the
-existing selected-track Whisper, local media assets, timeline audio, job,
-streaming, and FFmpeg infrastructure. Do not clone voices, identify speakers,
-make voiceprints, or invent unknown gameplay facts.
+Implement U7.1 from the stable U6 checkpoint: define one shared typed evidence
+statement for creator and coaching surfaces, add a reusable Evidence Inspector,
+then add immutable player-progress snapshots whose metrics cite supported replay
+facts, explicit coaching decisions, measurements, provider/detector versions,
+filters, and sample sizes. Keep unsupported timing, side, geometry, or player
+identity unavailable. Do not describe a changed metric or correlation as proof
+of improvement.
 
-U4 is preserved by focused commits `a4e7b83`, `4b72960`, and `7ac89c4`, plus
-the final checkpoint commit and stable tag created after this handoff update.
+U6 is preserved by focused commits `4de7acf`, `375b559`, `ce5b051`, and
+`4928a8f`, plus the final documentation checkpoint and stable tag
+`unified-u6-coaching-stable`.

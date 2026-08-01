@@ -616,7 +616,7 @@ and the U4 1080p export remain preserved.
 
 ### U6 — Coaching Lab
 
-Status: **active on August 1, 2026**.
+Status: **verified on August 1, 2026; U7 is now active**.
 
 Produce evidence-backed reviews using visible recording observations and
 supported replay facts. Separate direct observations, replay-confirmed facts,
@@ -722,14 +722,76 @@ those bounded claims, all three input modes behave honestly, and every required
 verification gate passes. A database schema, generic advice page, or
 unsupported tactical label is not completion.
 
+The verified implementation created local recording-signal, transcript,
+replay-fact, and verified-synchronization rules behind an isolated background
+analysis job. A real combined project produced 26 bounded findings while
+keeping direct observations, replay facts, inferences, conflicts, and missing
+context separate. Real cancellation and restart recovery retained no partial
+findings. The browser persisted an accepted finding, a rejected semantic false
+positive, a corrected timestamp, a generated evidence-first drill, a playable
+14-second review clip, and one immutable report with JSON, Markdown, and real
+PDF exports across a complete application restart. The report and browser
+console reopened cleanly. This is evidence for the exercised inputs and rules,
+not proof that the application can diagnose every tactical mistake.
+
 ### U7 — Evidence fusion and progress tracking
 
-Status: not started.
+Status: **active on August 1, 2026**.
 
 Unify evidence provenance, confidence, conflicts, workflow progress, job
 recovery, content/coaching status, and explicit user corrections. Retain the
 verified detector/scoring vocabulary and show unsupported capabilities as
 unsupported rather than silently filling gaps.
+
+#### U7.1 — Shared evidence contract and inspector
+
+- Define one inspectable evidence statement shape for verified replay facts,
+  direct video observations, transcript statements, user-confirmed context,
+  inferences, conflicts, and unknowns.
+- Add a reusable Evidence Inspector that can open from candidate moments,
+  writing/script facts, timeline sections, coaching findings, and report/export
+  summaries without changing the source evidence.
+- Preserve detector/provider/version, confidence, timestamps, source links,
+  corrections, and capability boundaries. Never upgrade an inference to a fact.
+
+#### U7.2 — Local player progress foundation
+
+- Add additive player-profile, progress-snapshot, progress-metric,
+  practice-goal, and user-note records. A snapshot must identify its source
+  projects, selected-player identity, detector/provider versions, filters, and
+  creation reason.
+- Aggregate only supported replay facts and explicit coaching decisions:
+  matches, maps, operators, supported kill feedback, likely death inference,
+  opening events where timing is available, headshots, defuser involvement,
+  accepted/rejected findings, completed drills, goals, and notes.
+- Store recording-derived crosshair/re-peek/early-death trends only when their
+  underlying measurement and version exist. Missing side, timing, geometry, or
+  player identity remains unavailable.
+
+#### U7.3 — Transparent comparisons and workflow status
+
+- Add a beginner-friendly Progress workspace with first-five/latest-five,
+  map/operator, side, recording-only, replay-only, and combined filters.
+- Show raw counts, sample sizes, metric definitions, source versions, and
+  confidence beside every change. Use “changed,” “higher,” or “lower”; never
+  say a correlation proves improvement.
+- Summarize project readiness across input, synchronization, transcript,
+  candidates, story/script, editor, voiceover, coaching, and exports. Link to
+  the actual incomplete step and preserve completed job/recovery history.
+- Allow deliberate snapshot generation, correction notes, deletion, and
+  restart-safe regeneration. Do not silently recompute historical snapshots.
+
+#### U7.4 — Verification and checkpoint
+
+- Test metric provenance, selected-player isolation, filter semantics,
+  insufficient samples, accepted/rejected findings, drill completion, explicit
+  notes, immutable snapshots, deletion, migration, and all legacy regressions.
+- Verify the Evidence Inspector and Progress workspace in the real browser with
+  the existing owned recording and validated replay, then restart the
+  application and confirm snapshots and corrections persist.
+- Run the complete quality gate, SQLite integrity and foreign-key checks,
+  document unsupported comparisons honestly, commit focused changes, and create
+  a stable U7 tag.
 
 ### U8 — End-to-end export, testing, and release
 

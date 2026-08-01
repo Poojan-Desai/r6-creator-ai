@@ -52,6 +52,14 @@ this repository.
   copies, editable local captions, deterministic section replacement,
   gameplay-audio ducking, multi-line captions, cancellation, and restart
   cleanup while U6 adds Coaching Lab.
+- Unified U6 is verified. Preserve typed evidence boundaries, explicit
+  capability disclosures, calibration history, conservative measurements,
+  finding corrections, isolated analysis rules, review clips, practice drills,
+  immutable reports, checksummed exports, cancellation, and restart recovery
+  while U7 adds shared evidence inspection and local progress tracking.
+- Progress metrics must name their source facts/measurements, versions, sample
+  sizes, filters, and uncertainty. Never describe correlation or a changed
+  metric as proof that the player improved.
 - Personal Version 1 is one unified Creator Studio and Coaching Lab. Gameplay
   MP4 is the primary visual source; Match Replay is optional structured
   evidence; a permitted reference is optional structural guidance. Preserve

@@ -79,8 +79,18 @@ free `whisper.cpp` program and a local model on this Mac.
 - Local Whisper narration captions with editable text, deterministic
   short-/long-form section placement, readable multi-line rendering, and
   automatic gameplay-audio ducking only while narration is active
-- Honest stage boundaries: U1 through U5 are available; Coaching Lab and later
-  shared workflows remain clearly unavailable until their verified stages
+- An evidence-backed Coaching Lab for recording-only, replay-only, and combined
+  projects with explicit capability boundaries, direct observations, replay
+  facts, transcript support, inferences, conflicts, unknowns, and editable
+  human review decisions
+- Conservative crosshair/user-marked-target, exposure, repeated-view, local
+  detector, transcript, selected-player replay, and verified-sync review rules;
+  unsupported geometry, intention, exact room, and mechanical causes stay
+  unknown
+- Local practice drills, playable review clips, immutable browser/print
+  coaching reports, and checksummed JSON, Markdown, and PDF exports
+- Honest stage boundaries: U1 through U6 are available; U7 progress tracking
+  and U8 release verification remain clearly marked as active or planned
   instead of displaying fake results
 - Streamed local Match Replay library and secure replay import
 - Individual `.rec`, multiple round-file, folder, and one-ZIP selection
@@ -441,6 +451,37 @@ Recording, processing, and captioning stay on this Mac. The app does not
 identify the speaker, create a voiceprint, or clone a voice. Long recognized
 caption segments are wrapped into centered lines during rendering, but you
 should still shorten captions when that improves readability.
+
+### Review a project in Coaching Lab
+
+1. Open **Creator Studio**, choose a recording-only, replay-only, or combined
+   project, and click **Coaching**.
+2. Read the capability notice first. It explains which observations and replay
+   facts are available and which tactical details remain unknown.
+3. For a recording, save calibration assumptions only when you know them.
+   User-marked targets and exposure ranges are manual evidence, not automatic
+   enemy detection.
+4. Select the local coaching rules you want and click **Run coaching
+   analysis**. The page stays usable while progress updates. You can cancel,
+   retry, inspect isolated rule failures, or reopen completed history.
+5. Open a finding and compare **Direct visible observation**, **Replay fact**,
+   **Inference**, **Conflicting evidence**, and **Missing context**. Do not
+   accept a finding just because its confidence is high.
+6. Choose **Accept**, **Reject**, **Not enough context**, **Wrong category**,
+   **Good observation**, or **Bad explanation**. You can also correct the
+   timestamp/category/severity, add a note, and save it for future practice.
+7. Click **Export review clip** only when the project has a recording. The
+   source is copied into a new bounded MP4 clip; it is never changed.
+8. Click **Generate practice drill** for a reviewed finding. Edit or complete
+   the drill as you practice.
+9. Under **Coaching reports**, explain why you are creating the snapshot and
+   click **Generate report snapshot**. Open the browser report or create JSON,
+   Markdown, and PDF downloads.
+
+Coaching reports use the exact boundary “AI-assisted replay and POV review.”
+They do not replace a professional coach and do not prove the cause of a
+decision when communication, position, line of sight, intent, or other context
+is missing.
 
 ### Import and inspect a Match Replay
 

@@ -3,14 +3,15 @@
 - **Current branch:** `codex/phase-3`
 - **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
   and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
-- **Current phase:** U5 verified; U6 Coaching Lab is active
+- **Current phase:** U6 verified; U7 evidence fusion and progress tracking is
+  active
 - **Completed phases:** Phase 1, Phase 2, Phase 3A, Phase 3B.1, Phase 3B.2,
   Phase 3B.2-M, Phase 3B.2-O, replay Phase 0, and the real-replay R1 execution
   gate, U1 unified projects, U2 synchronization, U3 short-form Creator Studio,
-  U4 long-form Creator Studio, and U5 Voiceover Studio
-- **Current active task:** Implement U6.1 inspectable coaching evidence,
-  findings, feedback, and report foundations without overstating unsupported
-  replay or video capabilities
+  U4 long-form Creator Studio, U5 Voiceover Studio, and U6 Coaching Lab
+- **Current active task:** Implement U7.1 shared evidence inspection and U7.2
+  versioned local player-progress snapshots without turning inference or
+  correlation into fact
 - **Active parser provider:** `redraskal/r6-dissect` (MIT), built locally from
   reviewed source commit `e6c2ca80f7f895e320ca0f8ded0f30136888ffac`
   plus the reviewed `compat-1` operator-roster patch
@@ -18,7 +19,7 @@
 - **Audit-only provider:** `wnc-replay/replay-tool` commit
   `dd535f6499069c8268841fda76c68a04b19ba104`; it remains unintegrated because
   the repository has no top-level license
-- **Migration version:** `20260801180500_voiceover_processing_outputs`, applied
+- **Migration version:** `20260801185541_coaching_measurements`, applied
   additively after private pre-U1 through pre-U3.4 SQLite backups with matching
   legacy row counts, integrity `ok`, and clean foreign keys
 - **Current real-replay compatibility:** One user-approved nine-round
@@ -44,8 +45,8 @@
   preserved the prior valid canonical match. A deliberately interrupted real
   run became a recoverable error after restart, leaked no temporary output, and
   also preserved the prior match.
-- **Automated validation:** Formatting, ESLint, strict TypeScript, 240 tests
-  across 56 files, and the warning-free production build passed on August 1, 2026.
+- **Automated validation:** Formatting, ESLint, strict TypeScript, 259 tests
+  across 61 files, and the warning-free production build passed on August 1, 2026.
 - **Pre-U1 safety:** The Git tree was clean before work. A consistent private
   SQLite backup was created at
   `data/backups/r6-creator.pre-unified-u1-20260731.db`; integrity was `ok` and
@@ -146,6 +147,23 @@
   output, captions, or timeline. A later processed version replaced only its
   section. Media reached browser ready state 4 after restart, and the console
   contained no warnings or errors.
+- **U6 implementation:** Coaching Lab now stores source-capability disclosures,
+  calibration assumptions, conservative POV measurements, typed evidence,
+  explicit human corrections, isolated local analysis rules, cancellable and
+  restart-safe jobs, practice drills, review clips, immutable reports, and
+  JSON/Markdown/PDF exports. Every finding keeps direct observation, replay
+  fact, transcript support, inference, conflict, and missing context separate.
+- **U6 real proof:** The owned 20:38 recording and validated nine-round replay
+  produced 26 combined findings across five completed rule runs. One semantic
+  menu/repeated-view false positive was rejected, one visible observation was
+  accepted and corrected from 60.00 to 60.25 seconds, one drill was generated,
+  and one 60.0–74.0-second H.264/AAC review clip was created and played.
+- **U6 reports and recovery:** One immutable report survived a complete server
+  restart with a browser/print view and checksummed JSON, Markdown, and PDF
+  files. A cancelled analysis stored zero partial findings; an interrupted job
+  recovered as an honest error with zero partial findings. The browser console
+  remained empty after restart. These results support the exercised local
+  evidence paths, not universal tactical-diagnosis accuracy.
 
 ## Latest real replay verification
 
