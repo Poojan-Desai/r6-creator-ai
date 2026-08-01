@@ -19,7 +19,9 @@ import {
 
 import type { StudioCandidateState } from "@/lib/short-form-candidates";
 import type { ShortFormProductionState } from "@/lib/short-form-productions";
+import type { ShortFormTimelineState } from "@/lib/short-form-timeline";
 import { formatDuration } from "@/lib/time";
+import { ShortFormEditorWorkspace } from "@/components/short-form-editor-workspace";
 import { ShortFormPlanningWorkspace } from "@/components/short-form-planning-workspace";
 
 type Candidate = StudioCandidateState["candidates"][number];
@@ -77,10 +79,12 @@ export function ShortFormCandidateWorkspace({
   studioProjectId,
   initialState,
   initialProductionState,
+  initialTimelineState,
 }: {
   studioProjectId: string;
   initialState: StudioCandidateState;
   initialProductionState: ShortFormProductionState;
+  initialTimelineState: ShortFormTimelineState;
 }) {
   const [state, setState] = useState(initialState);
   const [selectedJobId, setSelectedJobId] = useState(
@@ -354,6 +358,10 @@ export function ShortFormCandidateWorkspace({
         studioProjectId={studioProjectId}
         candidates={state.candidates}
         initialState={initialProductionState}
+      />
+      <ShortFormEditorWorkspace
+        studioProjectId={studioProjectId}
+        initialState={initialTimelineState}
       />
     </div>
   );

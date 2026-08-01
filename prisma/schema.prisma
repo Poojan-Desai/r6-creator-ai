@@ -79,6 +79,25 @@ enum ShortFormProductionStatus {
   ARCHIVED
 }
 
+enum ShortFormTimelineStatus {
+  DRAFT
+  READY_FOR_PREVIEW
+  ARCHIVED
+}
+
+enum StudioMediaKind {
+  VOICEOVER
+  MUSIC
+}
+
+enum ShortFormProxyStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  CANCELLED
+  ERROR
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -2231,6 +2250,7 @@ model StudioProject {
   synchronizations       ReplayVideoSynchronization[]
   candidateMoments       CandidateMoment[]
   shortFormProduction    ShortFormProduction?
+  mediaAssets            StudioMediaAsset[]
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2276,6 +2296,7 @@ model ShortFormProduction {
   createdAt             DateTime                      @default(now())
   updatedAt             DateTime                      @updatedAt
   revisions             ShortFormProductionRevision[]
+  timeline              ShortFormTimeline?
 
   @@index([selectedCandidateId])
   @@index([status, updatedAt])
@@ -2297,6 +2318,81 @@ model ShortFormProductionRevision {
 
   @@unique([productionId, version])
   @@index([productionId, createdAt])
+}
+
+model ShortFormTimeline {
+  id             String                      @id @default(cuid())
+  productionId   String                      @unique
+  production     ShortFormProduction         @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  status         ShortFormTimelineStatus     @default(DRAFT)
+  currentVersion Int                         @default(0)
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  revisions      ShortFormTimelineRevision[]
+  proxyJobs      ShortFormProxyJob[]
+
+  @@index([status, updatedAt])
+}
+
+model ShortFormTimelineRevision {
+  id             String              @id @default(cuid())
+  timelineId     String
+  timeline       ShortFormTimeline   @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  version        Int
+  reason         String
+  documentJson   String
+  renderSpecJson String              @default("{}")
+  createdAt      DateTime            @default(now())
+  proxyJobs      ShortFormProxyJob[]
+
+  @@unique([timelineId, version])
+  @@index([timelineId, createdAt])
+}
+
+model StudioMediaAsset {
+  id                  String          @id @default(cuid())
+  studioProjectId     String
+  studioProject       StudioProject   @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  kind                StudioMediaKind
+  name                String
+  originalFilename    String
+  mimeType            String
+  relativePath        String
+  fileSizeBytes       BigInt
+  durationSeconds     Float
+  permissionConfirmed Boolean
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([studioProjectId, kind, createdAt])
+}
+
+model ShortFormProxyJob {
+  id                 String                    @id @default(cuid())
+  timelineId         String
+  timeline           ShortFormTimeline         @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  timelineRevisionId String
+  timelineRevision   ShortFormTimelineRevision @relation(fields: [timelineRevisionId], references: [id], onDelete: Cascade)
+  status             ShortFormProxyStatus      @default(QUEUED)
+  progress           Int                       @default(0)
+  stage              String                    @default("Waiting to render")
+  pipelineVersion    String
+  renderSpecJson     String                    @default("{}")
+  relativePath       String?
+  fileSizeBytes      BigInt?
+  width              Int?
+  height             Int?
+  durationSeconds    Float?
+  errorMessage       String?
+  cancelRequestedAt  DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  @@index([timelineId, createdAt])
+  @@index([status, updatedAt])
+  @@index([timelineRevisionId])
 }
 
 model ReplayVideoSynchronization {

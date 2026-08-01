@@ -7,6 +7,7 @@ import { ShortFormCandidateWorkspace } from "@/components/short-form-candidate-w
 import { SourcePlayer } from "@/components/source-player";
 import { getStudioCandidateState } from "@/lib/short-form-candidates";
 import { getShortFormProductionState } from "@/lib/short-form-productions";
+import { getShortFormTimelineState } from "@/lib/short-form-timeline";
 import { findStudioProject } from "@/lib/studio-projects";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function ShortFormStudioPage({ params }: Props) {
     ? await Promise.all([
         getStudioCandidateState(project.id),
         getShortFormProductionState(project.id),
+        getShortFormTimelineState(project.id),
       ])
     : null;
 
@@ -93,6 +95,7 @@ export default async function ShortFormStudioPage({ params }: Props) {
                 studioProjectId={project.id}
                 initialState={workspaceState![0]}
                 initialProductionState={workspaceState![1]}
+                initialTimelineState={workspaceState![2]}
               />
             </div>
           </>
