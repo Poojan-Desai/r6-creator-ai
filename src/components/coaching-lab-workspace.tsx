@@ -7,7 +7,9 @@ import {
   CircleHelp,
   Crosshair,
   Eye,
+  FileText,
   FileQuestion,
+  Film,
   History,
   LoaderCircle,
   Play,
@@ -16,6 +18,7 @@ import {
   Save,
   ScanSearch,
   ShieldCheck,
+  Target,
   Trash2,
   XCircle,
 } from "lucide-react";
@@ -88,6 +91,9 @@ export function CoachingLabWorkspace({
   );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState(
+    "Evidence-backed review after local recording and replay analysis.",
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
   const [form, setForm] = useState({
     category: "REVIEW_RECOMMENDED",
@@ -469,6 +475,210 @@ export function CoachingLabWorkspace({
       if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
       setState(body.coaching);
       setMessage("Deleted the selected local finding.");
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createFindingDrill(findingId: string) {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/drills`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ findingId }),
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMessage(
+        "Generated a local evidence-first practice drill. Review its measurable goal before using it.",
+      );
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateDrill(drillId: string, values: Record<string, unknown>) {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/drills/${drillId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMessage("Saved the practice-drill update.");
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteDrill(drillId: string) {
+    if (!window.confirm("Delete this local practice drill?")) return;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/drills/${drillId}`,
+        { method: "DELETE" },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMessage("Deleted the selected practice drill.");
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createReviewClip(findingId: string) {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/findings/${findingId}/clip`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contextBeforeSeconds: 6,
+            contextAfterSeconds: 8,
+          }),
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMessage(
+        "Created a playable local review clip with bounded context around the corrected timestamp.",
+      );
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function generateReport() {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/reports`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: reportReason }),
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMessage(
+        "Generated an immutable local report snapshot. Later finding edits will create a new report version instead of rewriting it.",
+      );
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function exportReport(
+    reportId: string,
+    format: "JSON" | "MARKDOWN" | "PDF",
+  ) {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/reports/${reportId}/exports`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ format }),
+        },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        downloadUrl?: string;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching || !body.downloadUrl) {
+        throw new Error(apiMessage(body));
+      }
+      setState(body.coaching);
+      setMessage(`Created the local ${format} report export.`);
+      window.location.assign(body.downloadUrl);
+    } catch (reason) {
+      setError(failureMessage(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteReport(reportId: string) {
+    if (
+      !window.confirm(
+        "Delete this report snapshot and every local export created from it?",
+      )
+    )
+      return;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/studio-projects/${studioProjectId}/coaching/reports/${reportId}`,
+        { method: "DELETE" },
+      );
+      const body = (await response.json()) as {
+        coaching?: CoachingState;
+        error?: { message?: string };
+      };
+      if (!response.ok || !body.coaching) throw new Error(apiMessage(body));
+      setState(body.coaching);
+      setMessage("Deleted the report snapshot and its local export files.");
     } catch (reason) {
       setError(failureMessage(reason));
     } finally {
@@ -1581,8 +1791,185 @@ export function CoachingLabWorkspace({
                 onSeek={seek}
                 onUpdate={updateFinding}
                 onDelete={deleteFinding}
+                onCreateDrill={createFindingDrill}
+                onCreateClip={createReviewClip}
               />
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="panel overflow-hidden">
+        <div className="border-b border-white/8 p-5 sm:p-6">
+          <p className="section-kicker">U6.4 · Deliberate practice</p>
+          <h2 className="font-display mt-1 text-3xl font-bold text-white uppercase">
+            Practice drills
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500">
+            Generate a drill from one reviewed finding, then use its measurable
+            goal deliberately. Drills do not prove the original explanation was
+            correct.
+          </p>
+        </div>
+        {state.drills.length === 0 ? (
+          <p className="p-5 text-sm text-slate-500 sm:p-6">
+            No practice drill yet. Choose “Generate practice drill” on a
+            finding.
+          </p>
+        ) : (
+          <div className="grid gap-4 p-5 sm:p-6 lg:grid-cols-2">
+            {state.drills.map((drill) => (
+              <article
+                key={drill.id}
+                className="rounded-2xl border border-white/8 bg-black/15 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-white">
+                    {drill.name}
+                  </h3>
+                  <span className="text-[10px] font-bold tracking-wide text-slate-500 uppercase">
+                    {drill.completed ? "Completed" : "Planned"}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-slate-400">
+                  {drill.instructions}
+                </p>
+                <p className="mt-3 rounded-lg border border-[#b8ff2c]/15 bg-[#b8ff2c]/5 p-3 text-xs leading-5 text-[#d8ff8a]">
+                  Measurable goal: {drill.measurableGoal}
+                </p>
+                {drill.nextFiveMatchGoal && (
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Next five matches: {drill.nextFiveMatchGoal}
+                  </p>
+                )}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() =>
+                      void updateDrill(drill.id, {
+                        completed: !drill.completed,
+                      })
+                    }
+                  >
+                    <Target size={14} />{" "}
+                    {drill.completed ? "Mark planned" : "Mark completed"}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button text-red-200"
+                    disabled={busy}
+                    onClick={() => void deleteDrill(drill.id)}
+                  >
+                    <Trash2 size={14} /> Delete drill
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="panel overflow-hidden">
+        <div className="border-b border-white/8 p-5 sm:p-6">
+          <p className="section-kicker">U6.4 · Immutable local report</p>
+          <h2 className="font-display mt-1 text-3xl font-bold text-white uppercase">
+            Coaching reports
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500">
+            Each report snapshots the current findings, decisions, drills, and
+            source versions. It is an AI-assisted replay and POV review, not a
+            replacement for a professional coach.
+          </p>
+        </div>
+        <div className="p-5 sm:p-6">
+          <label>
+            <span className="form-label">Reason for this report version</span>
+            <textarea
+              className="field mt-2 min-h-20"
+              value={reportReason}
+              disabled={busy}
+              onChange={(event) => setReportReason(event.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="primary-button mt-4"
+            disabled={busy || !reportReason.trim()}
+            onClick={() => void generateReport()}
+          >
+            {busy ? (
+              <LoaderCircle className="animate-spin" size={16} />
+            ) : (
+              <FileText size={16} />
+            )}
+            Generate report snapshot
+          </button>
+        </div>
+        {state.reports.length > 0 && (
+          <div className="border-t border-white/8 p-5 sm:p-6">
+            <div className="space-y-3">
+              {state.reports.map((report) => (
+                <article
+                  key={report.id}
+                  className="rounded-2xl border border-white/8 bg-black/15 p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">
+                        Report version {report.version}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {report.reportVersion} · {report.reason}
+                      </p>
+                    </div>
+                    <a
+                      className="secondary-button no-underline"
+                      href={`/studio/${studioProjectId}/coaching/reports/${report.id}`}
+                    >
+                      <FileText size={14} /> Open browser report
+                    </a>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {(["JSON", "MARKDOWN", "PDF"] as const).map((format) => (
+                      <button
+                        key={format}
+                        type="button"
+                        className="secondary-button"
+                        disabled={busy}
+                        onClick={() => void exportReport(report.id, format)}
+                      >
+                        <FileText size={14} /> Create {format}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="secondary-button text-red-200"
+                      disabled={busy}
+                      onClick={() => void deleteReport(report.id)}
+                    >
+                      <Trash2 size={14} /> Delete report
+                    </button>
+                  </div>
+                  {report.exports.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {report.exports.map((item) => (
+                        <a
+                          key={item.id}
+                          className="text-xs font-semibold text-[#d8ff8a] underline decoration-white/20 underline-offset-4"
+                          href={`/api/studio-projects/${studioProjectId}/coaching/reports/${report.id}/exports/${item.id}`}
+                        >
+                          Download {item.format} (
+                          {Math.max(1, Math.round(item.fileSizeBytes / 1024))}{" "}
+                          KB)
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -1701,6 +2088,8 @@ function FindingCard({
   onSeek,
   onUpdate,
   onDelete,
+  onCreateDrill,
+  onCreateClip,
 }: {
   finding: Finding;
   categories: ReadonlyArray<CategoryOption>;
@@ -1714,6 +2103,8 @@ function FindingCard({
     values: Record<string, unknown>,
   ) => Promise<void>;
   onDelete: (findingId: string) => Promise<void>;
+  onCreateDrill: (findingId: string) => Promise<void>;
+  onCreateClip: (findingId: string) => Promise<void>;
 }) {
   const [decision, setDecision] = useState<string>(finding.decision);
   const [category, setCategory] = useState<string>(finding.category);
@@ -1794,14 +2185,41 @@ function FindingCard({
           )}
 
           {finding.videoTimestampSeconds != null && hasVideo && (
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => onSeek(finding.videoTimestampSeconds ?? 0)}
-            >
-              <Play size={15} /> Play source at{" "}
-              {formatDuration(finding.videoTimestampSeconds)}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => onSeek(finding.videoTimestampSeconds ?? 0)}
+              >
+                <Play size={15} /> Play source at{" "}
+                {formatDuration(finding.videoTimestampSeconds)}
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy}
+                onClick={() => void onCreateClip(finding.id)}
+              >
+                <Film size={15} /> Export review clip
+              </button>
+            </div>
+          )}
+          {finding.reviewClip && (
+            <div className="rounded-xl border border-[#b8ff2c]/15 bg-[#b8ff2c]/5 p-4">
+              <p className="text-xs font-semibold text-[#d8ff8a]">
+                {finding.reviewClip.name} ·{" "}
+                {formatDuration(finding.reviewClip.startSeconds)}–
+                {formatDuration(finding.reviewClip.endSeconds)}
+              </p>
+              <a
+                className="secondary-button mt-3 no-underline"
+                href={`/api/media/clips/${finding.reviewClip.id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Play size={14} /> Preview playable clip
+              </a>
+            </div>
           )}
         </div>
 
@@ -1908,6 +2326,14 @@ function FindingCard({
                 <Save size={15} />
               )}
               Save review
+            </button>
+            <button
+              type="button"
+              className="secondary-button mt-3 w-full justify-center"
+              disabled={busy}
+              onClick={() => void onCreateDrill(finding.id)}
+            >
+              <Target size={15} /> Generate practice drill
             </button>
           </div>
 

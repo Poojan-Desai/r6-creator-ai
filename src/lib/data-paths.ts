@@ -29,6 +29,7 @@ export const dataPaths = {
   longFormPreviews: path.join(appConfig.dataRoot, "long-form-previews"),
   longFormExports: path.join(appConfig.dataRoot, "long-form-exports"),
   longFormRenderTemp: path.join(appConfig.dataRoot, "long-form-render-temp"),
+  coachingReports: path.join(appConfig.dataRoot, "coaching-reports"),
   replayTools: path.join(appConfig.dataRoot, "tools", "replay-parsers"),
   models: path.join(appConfig.dataRoot, "models"),
   transcriptionTemp: path.join(appConfig.dataRoot, "transcription-temp"),
@@ -57,6 +58,7 @@ export async function ensureDataDirectories() {
     mkdir(dataPaths.longFormPreviews, { recursive: true }),
     mkdir(dataPaths.longFormExports, { recursive: true }),
     mkdir(dataPaths.longFormRenderTemp, { recursive: true }),
+    mkdir(dataPaths.coachingReports, { recursive: true }),
     mkdir(dataPaths.replayTools, { recursive: true }),
     mkdir(dataPaths.models, { recursive: true }),
     mkdir(dataPaths.transcriptionTemp, { recursive: true }),
@@ -167,4 +169,16 @@ export function longFormRenderDirectory(
 
 export function longFormRenderTemporaryDirectory(jobId: string) {
   return path.join(dataPaths.longFormRenderTemp, jobId);
+}
+
+export function coachingReportDirectory(
+  studioProjectId: string,
+  reportId: string,
+) {
+  return path.join(
+    /* turbopackIgnore: true */
+    dataPaths.coachingReports,
+    studioProjectId,
+    reportId,
+  );
 }

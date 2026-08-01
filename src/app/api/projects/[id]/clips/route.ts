@@ -1,132 +1,19 @@
-import { stat } from "node:fs/promises";
-import { mkdir, rename, unlink } from "node:fs/promises";
-import path from "node:path";
-
-import { z } from "zod";
-
-import { db } from "@/lib/db";
-import {
-  projectClipDirectory,
-  resolveDataPath,
-  toDataRelativePath,
-} from "@/lib/data-paths";
-import { apiError, AppError } from "@/lib/errors";
-import { serializeClip } from "@/lib/projects";
-import { validateClipRange } from "@/lib/time";
-import { createVideoClip } from "@/lib/video";
+import { createProjectClip } from "@/lib/clips";
+import { apiError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ id: string }> };
 
-const clipRequestSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .max(100, "Keep the clip name under 100 characters.")
-    .optional(),
-  startTime: z.union([z.string(), z.number()]),
-  endTime: z.union([z.string(), z.number()]),
-});
-
 export async function POST(request: Request, context: Context) {
-  const { id: projectId } = await context.params;
-  const clipId = crypto.randomUUID();
-  const clipDirectory = projectClipDirectory(projectId);
-  const temporaryPath = path.join(clipDirectory, `${clipId}.processing.mp4`);
-  const finalPath = path.join(clipDirectory, `${clipId}.mp4`);
-  let clipCreated = false;
-
   try {
-    const payload = clipRequestSchema.parse(await request.json());
-    const project = await db.project.findUnique({
-      where: { id: projectId },
-      select: {
-        id: true,
-        durationSeconds: true,
-        sourceRelativePath: true,
-        _count: { select: { clips: true } },
-      },
-    });
-    if (!project)
-      throw new AppError(
-        "That project does not exist.",
-        404,
-        "PROJECT_NOT_FOUND",
-      );
-
-    const range = validateClipRange(
-      payload.startTime,
-      payload.endTime,
-      project.durationSeconds,
+    const { id } = await context.params;
+    return Response.json(
+      { clip: await createProjectClip(id, await request.json()) },
+      { status: 201 },
     );
-    const name =
-      payload.name?.trim() ||
-      `Clip ${String(project._count.clips + 1).padStart(2, "0")}`;
-
-    await db.clip.create({
-      data: {
-        id: clipId,
-        projectId,
-        name,
-        status: "PROCESSING",
-        startSeconds: range.startSeconds,
-        endSeconds: range.endSeconds,
-        durationSeconds: range.durationSeconds,
-      },
-    });
-    clipCreated = true;
-
-    await mkdir(clipDirectory, { recursive: true });
-    await createVideoClip(
-      resolveDataPath(project.sourceRelativePath),
-      temporaryPath,
-      range.startSeconds,
-      range.durationSeconds,
-    );
-    const output = await stat(temporaryPath);
-    if (!output.isFile() || output.size === 0) {
-      throw new AppError(
-        "FFmpeg created an empty clip. Please try a different range.",
-        422,
-        "EMPTY_CLIP",
-      );
-    }
-    await rename(temporaryPath, finalPath);
-
-    const clip = await db.clip.update({
-      where: { id: clipId },
-      data: {
-        status: "READY",
-        relativePath: toDataRelativePath(finalPath),
-        fileSizeBytes: BigInt(output.size),
-        errorMessage: null,
-      },
-    });
-    return Response.json({ clip: serializeClip(clip) }, { status: 201 });
   } catch (error) {
-    await Promise.all([
-      unlink(temporaryPath).catch(() => undefined),
-      unlink(finalPath).catch(() => undefined),
-    ]);
-    if (clipCreated) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "The clip could not be created.";
-      await db.clip
-        .update({
-          where: { id: clipId },
-          data: {
-            status: "ERROR",
-            errorMessage: message,
-            relativePath: null,
-            fileSizeBytes: null,
-          },
-        })
-        .catch(() => undefined);
-    }
     return apiError(error);
   }
 }
