@@ -350,13 +350,69 @@ migrations, SQLite integrity `ok`, and no foreign-key violations.
 
 ### U4 — 20–30 minute Long-Form Studio
 
-Status: not started.
+Status: **active from stable tag `unified-u3-short-form-stable`**.
 
 Plan and render approximately 20-, 25-, 30-minute, or custom videos from one or
 more recordings. Store premise, teaser, chapters, selected matches/rounds,
 transitions, retention beat, climax, ending, title/thumbnail concepts,
 description, and chapter timestamps with reasons. Use preview proxies and
 explicit full-resolution export; never invent missing angles or replay pixels.
+
+#### U4.1 — Versioned settings and evidence-bounded planner
+
+- Add one additive long-form production per unified project without changing
+  U3 records. Save target duration, storytelling style, energy, humor,
+  educational/live-gameplay/voiceover amounts, match/round limit, weak-round
+  exclusion, loss inclusion, and chronological-order preference.
+- Generate immutable original plan revisions containing premise, opening
+  teaser, intro, chapters, transitions, mid-video retention beat, climax,
+  ending, call to action, title options, thumbnail concepts, description, and
+  chapter timestamps.
+- Select only source ranges that exist in linked recordings. Use reviewed local
+  candidates and verified synchronized replay facts when available, with
+  provenance and missing-evidence warnings. Do not invent a match, round,
+  outcome, alternate camera angle, or gameplay segment.
+- Show requested duration, available source coverage, proposed duration,
+  shortfall/overflow, and an explanation for every section.
+
+#### U4.2 — Lockable long-form timeline and duration fitting
+
+- Store immutable long-form timeline revisions separate from short-form
+  timelines. Support source clips, chapter/recap/score/operator cards,
+  transitions, captions, user-supplied voiceover/music, ducking, speed,
+  slow-motion, freeze frames, zooms, and on-screen explanations.
+- Allow section editing, source-boundary correction, reorder, lock/unlock,
+  delete, and duplicate. Automatic rebalancing may change only unlocked
+  sections and must fit by selection/pacing rather than random stretching.
+- Display current/target duration, required cuts, per-section duration,
+  gameplay/voiceover/silence amounts, and removed source duration.
+- Treat dead-space, menu, loading-screen, weak-round, loss, replay-fact,
+  operator, and score suggestions as evidence-backed recommendations. Unknown
+  screen states and outcomes remain unknown.
+
+#### U4.3 — Segmented proxy and 1080p export jobs
+
+- Render explicit low-resolution proxies and 1920×1080 H.264/AAC exports from
+  immutable long-form timeline revisions. Process bounded segments so long
+  recordings do not require full files in memory.
+- Persist stage/progress/result/error, render specification, codec, dimensions,
+  duration, size, and relative path. Support cancellation, bounded child-process
+  termination, retry, restart reconciliation, byte-range playback, safe
+  download, history, deletion, and temporary cleanup.
+- Reuse permission-confirmed local audio and keep proxy/export storage separate.
+  Never download music or reference media.
+
+#### U4.4 — Long-form verification and checkpoint
+
+- Use legally usable sufficient source media to create, preview, and export one
+  real approximately 20-minute 1080p MP4. Probe codecs, resolution, duration,
+  disk use, byte ranges, and browser playback.
+- Verify one multi-recording plan, one chronological and one reordered plan,
+  locked-section preservation, target fitting, cancellation, restart recovery,
+  history/deletion, and source preservation.
+- Run formatting, ESLint, strict TypeScript, all tests, production build,
+  migration-from-U3, SQLite integrity/foreign keys, browser-console inspection,
+  documentation, focused commits, and a stable U4 tag.
 
 ### U5 — Voiceover Studio
 
