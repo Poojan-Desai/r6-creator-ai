@@ -3,14 +3,19 @@ import Link from "next/link";
 import { BarChart3, Clock3 } from "lucide-react";
 
 import { AppHeader } from "@/components/app-header";
+import { UnifiedBenchmarkReview } from "@/components/unified-benchmark-review";
 import { listBenchmarkDashboard } from "@/lib/phase3b2-benchmark";
 import { formatDuration } from "@/lib/time";
+import { getUnifiedBenchmarkState } from "@/lib/unified-benchmark";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Benchmarks" };
 
 export default async function BenchmarksPage() {
-  const datasets = await listBenchmarkDashboard();
+  const [datasets, unifiedReview] = await Promise.all([
+    listBenchmarkDashboard(),
+    getUnifiedBenchmarkState(),
+  ]);
   return (
     <main className="min-h-screen">
       <AppHeader />
@@ -23,6 +28,18 @@ export default async function BenchmarksPage() {
           Development estimates from legally usable local footage and approved
           human labels. Unsupported R6 event categories are not scored here.
         </p>
+        <UnifiedBenchmarkReview initialState={unifiedReview} />
+        <div className="mt-10 border-t border-white/8 pt-8">
+          <p className="section-kicker">Phase 3B.2 · detector ground truth</p>
+          <h2 className="font-display mt-1 text-3xl font-bold text-white uppercase">
+            Broad-signal datasets
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
+            These older datasets compare only eligible broad detector signals
+            with approved timestamp labels. They are not mixed with content or
+            coaching judgments.
+          </p>
+        </div>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           {datasets.length === 0 ? (
             <div className="panel p-6 text-sm text-slate-500">

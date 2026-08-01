@@ -487,6 +487,46 @@ enum CandidateReviewDecision {
   WRONG_EVENT
 }
 
+enum UnifiedReviewArea {
+  CONTENT
+  COACHING
+}
+
+enum UnifiedReviewCategory {
+  USEFUL_CLIP
+  UNINTERESTING_CLIP
+  GOOD_HOOK
+  BAD_HOOK
+  CORRECT_BOUNDARY
+  INCORRECT_BOUNDARY
+  GOOD_SCRIPT
+  INCORRECT_FACT
+  GOOD_PACING
+  BAD_PACING
+  CORRECT_REPEEK_FINDING
+  INCORRECT_REPEEK_FINDING
+  CORRECT_CROSSHAIR_FINDING
+  INCORRECT_CROSSHAIR_FINDING
+  CORRECT_POSITIONING_FINDING
+  INCORRECT_POSITIONING_FINDING
+  CORRECT_TRADE_FINDING
+  INCORRECT_TRADE_FINDING
+  CORRECT_TIMING
+  INCORRECT_TIMING
+  USEFUL_RECOMMENDATION
+  UNHELPFUL_RECOMMENDATION
+}
+
+enum UnifiedReviewTargetKind {
+  PROJECT
+  CANDIDATE
+  SCRIPT
+  TIMELINE
+  COACHING_FINDING
+  COACHING_REPORT
+  EXPORT
+}
+
 enum OcrRunStatus {
   QUEUED
   RUNNING
@@ -1592,6 +1632,28 @@ model CandidateReviewLabel {
   @@index([candidateId, createdAt])
 }
 
+model UnifiedReviewLabel {
+  id                  String                  @id @default(cuid())
+  studioProjectId     String
+  studioProject       StudioProject           @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  area                UnifiedReviewArea
+  category            UnifiedReviewCategory
+  targetKind          UnifiedReviewTargetKind @default(PROJECT)
+  targetId            String?
+  startSeconds        Float?
+  endSeconds          Float?
+  reviewerConfidence  Float                   @default(1)
+  approvedAsBenchmark Boolean                 @default(false)
+  note                String?
+  labelVersion        String                  @default("unified-review-labels/v1")
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@index([studioProjectId, area, category])
+  @@index([approvedAsBenchmark, createdAt])
+  @@index([targetKind, targetId])
+}
+
 model TelemetryImport {
   id                    String                @id @default(cuid())
   projectId             String
@@ -2430,6 +2492,7 @@ model StudioProject {
   coachingMeasurements   CoachingMeasurement[]
   progressSnapshotLinks  ProgressSnapshotProject[]
   playerProgressNotes    PlayerProgressNote[]
+  unifiedReviewLabels    UnifiedReviewLabel[]
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2866,19 +2929,19 @@ model CoachingFindingFeedback {
 }
 
 model CoachingPracticeDrill {
-  id                String           @id @default(cuid())
+  id                String               @id @default(cuid())
   studioProjectId   String
-  studioProject     StudioProject    @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  studioProject     StudioProject        @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
   findingId         String?
-  finding           CoachingFinding? @relation(fields: [findingId], references: [id], onDelete: SetNull)
+  finding           CoachingFinding?     @relation(fields: [findingId], references: [id], onDelete: SetNull)
   name              String
   observation       String
   instructions      String
   measurableGoal    String
   nextFiveMatchGoal String?
-  completed         Boolean          @default(false)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  completed         Boolean              @default(false)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
   progressGoals     PlayerPracticeGoal[]
 
   @@index([studioProjectId, createdAt])
@@ -2886,13 +2949,13 @@ model CoachingPracticeDrill {
 }
 
 model PlayerProfile {
-  id                      String               @id @default(cuid())
+  id                      String                   @id @default(cuid())
   name                    String
   preferredAlias          String?
-  selectedPlayerStableIds String               @default("[]")
+  selectedPlayerStableIds String                   @default("[]")
   notes                   String?
-  createdAt               DateTime             @default(now())
-  updatedAt               DateTime             @updatedAt
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   snapshots               PlayerProgressSnapshot[]
   progressNotes           PlayerProgressNote[]
   practiceGoals           PlayerPracticeGoal[]
@@ -2923,12 +2986,12 @@ model ProgressSnapshotProject {
   snapshotId             String
   snapshot               PlayerProgressSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
   studioProjectId        String
-  studioProject          StudioProject           @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
-  sortOrder              Int                     @default(0)
+  studioProject          StudioProject          @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  sortOrder              Int                    @default(0)
   selectedPlayerStableId String?
   selectedPlayerAlias    String?
-  sourceSummaryJson      String                  @default("{}")
-  createdAt              DateTime                @default(now())
+  sourceSummaryJson      String                 @default("{}")
+  createdAt              DateTime               @default(now())
 
   @@id([snapshotId, studioProjectId])
   @@index([studioProjectId, createdAt])
@@ -2981,7 +3044,7 @@ model PlayerPracticeGoal {
   snapshotId      String?
   snapshot        PlayerProgressSnapshot?  @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
   sourceDrillId   String?
-  sourceDrill     CoachingPracticeDrill?    @relation(fields: [sourceDrillId], references: [id], onDelete: SetNull)
+  sourceDrill     CoachingPracticeDrill?   @relation(fields: [sourceDrillId], references: [id], onDelete: SetNull)
   name            String
   measurableGoal  String
   status          PlayerPracticeGoalStatus @default(ACTIVE)
