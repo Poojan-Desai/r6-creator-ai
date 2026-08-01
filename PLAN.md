@@ -515,6 +515,8 @@ a fact.
 
 #### U5.2 — Local recording, import, and take management
 
+Status: **implemented and verified on August 1, 2026**.
+
 - Record narration in the browser with a visible start/stop flow and upload the
   resulting local blob through the same streamed, permission-gated storage
   boundary as imported audio.
@@ -525,6 +527,18 @@ a fact.
   when a take is deleted.
 - Keep all audio local. Do not identify a speaker, create a voiceprint, or clone
   any voice.
+
+The verified browser flow imported two copies of an owned creator-microphone
+speech track through the streamed permission boundary, assigned both to the
+opening section, replayed the saved byte-range audio, selected the second take,
+saved a 1.5-second timeline alignment, and deleted the first take and its
+app-owned file. After a complete application restart, the selected take,
+section, alignment, audio file, and editable settings remained available. The
+retained M4A reported 10.944 seconds, reached browser media ready state 4
+without a media error before restart, and the restarted page had no console
+warnings or errors. Microphone recording is implemented with a visible
+start/stop flow; deterministic verification used import so browser permission
+was not required.
 
 #### U5.3 — Processing, captions, and timeline integration
 

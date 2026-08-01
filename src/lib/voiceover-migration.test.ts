@@ -86,14 +86,59 @@ describe("U5 Voiceover Studio additive migration", () => {
       },
       include: { facts: true, scriptRevisions: true },
     });
+    await client.studioMediaAsset.create({
+      data: {
+        id: "voiceover-source",
+        studioProjectId: "studio",
+        kind: "VOICEOVER",
+        name: "Opening take",
+        originalFilename: "opening.webm",
+        mimeType: "audio/webm",
+        relativePath: "studio-media/studio/opening.webm",
+        fileSizeBytes: 1_024,
+        durationSeconds: 12.5,
+        permissionConfirmed: true,
+      },
+    });
+    await client.voiceoverTake.create({
+      data: {
+        id: "take-one",
+        productionId: production.id,
+        sourceAssetId: "voiceover-source",
+        name: "Opening take",
+        scriptSectionKey: "opening-teaser",
+        trimEndSeconds: 12.5,
+        alignmentStartSeconds: 1.25,
+        isActive: true,
+      },
+    });
     const preserved = await client.longFormProduction.findUnique({
       where: { id: "long-production" },
       include: { revisions: true },
     });
     await client.$disconnect();
 
+    const reopened = new PrismaClient({
+      datasourceUrl: `file:${databasePath}`,
+    });
+    const persistedTake = await reopened.voiceoverTake.findUnique({
+      where: { id: "take-one" },
+      include: { sourceAsset: true },
+    });
+    await reopened.$disconnect();
+
     expect(production.facts[0]?.summary).toBe("Outcome unknown");
     expect(production.scriptRevisions).toHaveLength(1);
+    expect(persistedTake).toMatchObject({
+      name: "Opening take",
+      scriptSectionKey: "opening-teaser",
+      isActive: true,
+      alignmentStartSeconds: 1.25,
+      sourceAsset: {
+        mimeType: "audio/webm",
+        permissionConfirmed: true,
+      },
+    });
     expect(preserved?.revisions[0]?.plannerVersion).toBe(
       "u4-long-form-planner-v1",
     );

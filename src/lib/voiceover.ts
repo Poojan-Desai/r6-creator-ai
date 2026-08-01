@@ -1,12 +1,17 @@
 import type {
+  StudioMediaAsset,
   VoiceoverFact,
+  VoiceoverJob,
   VoiceoverScriptRevision,
+  VoiceoverTake,
+  VoiceoverCaptionSegment,
   VoiceoverTargetType,
   VoiceoverTone,
 } from "@prisma/client";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { resolveDataPath } from "@/lib/data-paths";
 import { AppError } from "@/lib/errors";
 import { type CandidateEvidenceItem } from "@/lib/short-form-candidates";
 import { getVoiceoverScriptProvider } from "@/lib/voiceover/index";
@@ -19,6 +24,9 @@ import {
   voiceoverPackageSchema,
   voiceoverRevisionSchema,
 } from "@/lib/voiceover/types";
+import { longFormTimelineDocumentSchema } from "@/lib/long-form-timeline-document";
+import { timelineDocumentSchema } from "@/lib/timeline-document";
+import { unlink } from "node:fs/promises";
 
 const factUpdateSchema = z
   .object({
@@ -60,6 +68,55 @@ type VoiceoverScriptRevisionDto = {
   createdAt: string;
 };
 
+export type VoiceoverTakeDto = {
+  id: string;
+  name: string;
+  scriptSectionKey: string | null;
+  status: VoiceoverTake["status"];
+  isActive: boolean;
+  trimStartSeconds: number;
+  trimEndSeconds: number | null;
+  normalize: boolean;
+  noiseReduction: boolean;
+  gainDb: number;
+  alignmentStartSeconds: number;
+  errorMessage: string | null;
+  sourceAsset: VoiceoverAssetDto;
+  processedAsset: VoiceoverAssetDto | null;
+  jobs: VoiceoverJobDto[];
+  captions: VoiceoverCaptionDto[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+type VoiceoverAssetDto = {
+  id: string;
+  name: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  durationSeconds: number;
+};
+
+type VoiceoverJobDto = {
+  id: string;
+  kind: VoiceoverJob["kind"];
+  status: VoiceoverJob["status"];
+  progress: number;
+  stage: string;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type VoiceoverCaptionDto = {
+  id: string;
+  segmentOrder: number;
+  startSeconds: number;
+  endSeconds: number;
+  text: string;
+  originalText: string;
+};
+
 export type VoiceoverState = {
   available: boolean;
   message: string;
@@ -72,8 +129,17 @@ export type VoiceoverState = {
   facts: VoiceoverFactDto[];
   currentRevision: VoiceoverScriptRevisionDto | null;
   revisions: VoiceoverScriptRevisionDto[];
-  takes: [];
+  takes: VoiceoverTakeDto[];
 };
+
+const takeUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    scriptSectionKey: z.string().trim().max(120).nullable().optional(),
+    isActive: z.boolean().optional(),
+    alignmentStartSeconds: z.number().finite().min(0).max(14_400).optional(),
+  })
+  .strict();
 
 function parseEvidence(value: string): CandidateEvidenceItem[] {
   try {
@@ -144,6 +210,74 @@ function serializeRevision(
       JSON.parse(revision.packageJson) as unknown,
     ),
     createdAt: revision.createdAt.toISOString(),
+  };
+}
+
+function serializeAsset(asset: StudioMediaAsset): VoiceoverAssetDto {
+  return {
+    id: asset.id,
+    name: asset.name,
+    mimeType: asset.mimeType,
+    fileSizeBytes: Number(asset.fileSizeBytes),
+    durationSeconds: asset.durationSeconds,
+  };
+}
+
+function serializeJob(job: VoiceoverJob): VoiceoverJobDto {
+  return {
+    id: job.id,
+    kind: job.kind,
+    status: job.status,
+    progress: job.progress,
+    stage: job.stage,
+    errorMessage: job.errorMessage,
+    createdAt: job.createdAt.toISOString(),
+    updatedAt: job.updatedAt.toISOString(),
+  };
+}
+
+function serializeCaption(
+  caption: VoiceoverCaptionSegment,
+): VoiceoverCaptionDto {
+  return {
+    id: caption.id,
+    segmentOrder: caption.segmentOrder,
+    startSeconds: caption.startSeconds,
+    endSeconds: caption.endSeconds,
+    text: caption.text,
+    originalText: caption.originalText,
+  };
+}
+
+function serializeTake(
+  take: VoiceoverTake & {
+    sourceAsset: StudioMediaAsset;
+    processedAsset: StudioMediaAsset | null;
+    jobs: VoiceoverJob[];
+    captions: VoiceoverCaptionSegment[];
+  },
+): VoiceoverTakeDto {
+  return {
+    id: take.id,
+    name: take.name,
+    scriptSectionKey: take.scriptSectionKey,
+    status: take.status,
+    isActive: take.isActive,
+    trimStartSeconds: take.trimStartSeconds,
+    trimEndSeconds: take.trimEndSeconds,
+    normalize: take.normalize,
+    noiseReduction: take.noiseReduction,
+    gainDb: take.gainDb,
+    alignmentStartSeconds: take.alignmentStartSeconds,
+    errorMessage: take.errorMessage,
+    sourceAsset: serializeAsset(take.sourceAsset),
+    processedAsset: take.processedAsset
+      ? serializeAsset(take.processedAsset)
+      : null,
+    jobs: take.jobs.map(serializeJob),
+    captions: take.captions.map(serializeCaption),
+    createdAt: take.createdAt.toISOString(),
+    updatedAt: take.updatedAt.toISOString(),
   };
 }
 
@@ -447,6 +581,15 @@ export async function getVoiceoverState(
     include: {
       facts: { orderBy: [{ category: "asc" }, { createdAt: "asc" }] },
       scriptRevisions: { orderBy: { version: "desc" }, take: 50 },
+      takes: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          sourceAsset: true,
+          processedAsset: true,
+          jobs: { orderBy: { createdAt: "desc" }, take: 20 },
+          captions: { orderBy: { segmentOrder: "asc" } },
+        },
+      },
     },
   });
   if (!production)
@@ -470,7 +613,7 @@ export async function getVoiceoverState(
     facts: production.facts.map(serializeFact),
     currentRevision: revisions[0] ?? null,
     revisions,
-    takes: [],
+    takes: production.takes.map(serializeTake),
   };
 }
 
@@ -594,6 +737,192 @@ export async function updateVoiceoverFact(
       sourceId: parsed.userConfirmed ? "USER_CORRECTION" : fact.sourceId,
     },
   });
+  return getVoiceoverState(studioProjectId);
+}
+
+export async function getOrCreateVoiceoverProduction(studioProjectId: string) {
+  await findStudioContext(studioProjectId);
+  return ensureProduction(studioProjectId);
+}
+
+export async function createVoiceoverTake(input: {
+  studioProjectId: string;
+  sourceAssetId: string;
+  name: string;
+  scriptSectionKey: string | null;
+}) {
+  const production = await getOrCreateVoiceoverProduction(
+    input.studioProjectId,
+  );
+  const asset = await db.studioMediaAsset.findFirst({
+    where: {
+      id: input.sourceAssetId,
+      studioProjectId: input.studioProjectId,
+      kind: "VOICEOVER",
+      permissionConfirmed: true,
+    },
+  });
+  if (!asset) {
+    throw new AppError(
+      "That narration audio is not available to this project.",
+      404,
+      "VOICEOVER_ASSET_NOT_FOUND",
+    );
+  }
+  await db.voiceoverTake.create({
+    data: {
+      productionId: production.id,
+      sourceAssetId: asset.id,
+      name: input.name,
+      scriptSectionKey: input.scriptSectionKey,
+      trimEndSeconds: asset.durationSeconds,
+    },
+  });
+  return getVoiceoverState(input.studioProjectId);
+}
+
+export async function updateVoiceoverTake(
+  studioProjectId: string,
+  takeId: string,
+  input: unknown,
+) {
+  const parsed = takeUpdateSchema.parse(input);
+  const take = await db.voiceoverTake.findFirst({
+    where: { id: takeId, production: { studioProjectId } },
+  });
+  if (!take) {
+    throw new AppError(
+      "That narration take does not exist.",
+      404,
+      "VOICEOVER_TAKE_NOT_FOUND",
+    );
+  }
+  await db.$transaction(async (transaction) => {
+    if (
+      parsed.isActive ||
+      (take.isActive &&
+        parsed.scriptSectionKey !== undefined &&
+        parsed.scriptSectionKey !== take.scriptSectionKey)
+    ) {
+      await transaction.voiceoverTake.updateMany({
+        where: {
+          productionId: take.productionId,
+          scriptSectionKey:
+            parsed.scriptSectionKey === undefined
+              ? take.scriptSectionKey
+              : parsed.scriptSectionKey,
+          isActive: true,
+        },
+        data: { isActive: false },
+      });
+    }
+    await transaction.voiceoverTake.update({
+      where: { id: take.id },
+      data: parsed,
+    });
+  });
+  return getVoiceoverState(studioProjectId);
+}
+
+function currentTimelineUsesAsset(
+  documentJson: string | undefined,
+  assetIds: Set<string>,
+  kind: "short" | "long",
+) {
+  if (!documentJson) return false;
+  const document =
+    kind === "short"
+      ? timelineDocumentSchema.parse(JSON.parse(documentJson) as unknown)
+      : longFormTimelineDocumentSchema.parse(
+          JSON.parse(documentJson) as unknown,
+        );
+  return document.items.some(
+    (item) => item.mediaAssetId && assetIds.has(item.mediaAssetId),
+  );
+}
+
+export async function deleteVoiceoverTake(
+  studioProjectId: string,
+  takeId: string,
+) {
+  const take = await db.voiceoverTake.findFirst({
+    where: { id: takeId, production: { studioProjectId } },
+    include: {
+      sourceAsset: true,
+      processedAsset: true,
+      production: {
+        include: {
+          studioProject: {
+            include: {
+              shortFormProduction: {
+                include: {
+                  timeline: {
+                    include: {
+                      revisions: { orderBy: { version: "desc" }, take: 1 },
+                    },
+                  },
+                },
+              },
+              longFormProduction: {
+                include: {
+                  timeline: {
+                    include: {
+                      revisions: { orderBy: { version: "desc" }, take: 1 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!take) {
+    throw new AppError(
+      "That narration take does not exist.",
+      404,
+      "VOICEOVER_TAKE_NOT_FOUND",
+    );
+  }
+  const assetIds = new Set(
+    [take.sourceAssetId, take.processedAssetId].filter(
+      (value): value is string => Boolean(value),
+    ),
+  );
+  const studio = take.production.studioProject;
+  if (
+    currentTimelineUsesAsset(
+      studio.shortFormProduction?.timeline?.revisions[0]?.documentJson,
+      assetIds,
+      "short",
+    ) ||
+    currentTimelineUsesAsset(
+      studio.longFormProduction?.timeline?.revisions[0]?.documentJson,
+      assetIds,
+      "long",
+    )
+  ) {
+    throw new AppError(
+      "Remove this narration take from the current timeline before deleting it.",
+      409,
+      "VOICEOVER_TAKE_IN_USE",
+    );
+  }
+  const assets = [take.sourceAsset, take.processedAsset].filter(
+    (asset): asset is StudioMediaAsset => Boolean(asset),
+  );
+  await db.$transaction(async (transaction) => {
+    await transaction.voiceoverTake.delete({ where: { id: take.id } });
+    await transaction.studioMediaAsset.deleteMany({
+      where: { id: { in: assets.map((asset) => asset.id) } },
+    });
+  });
+  await Promise.all(
+    assets.map((asset) =>
+      unlink(resolveDataPath(asset.relativePath)).catch(() => undefined),
+    ),
+  );
   return getVoiceoverState(studioProjectId);
 }
 

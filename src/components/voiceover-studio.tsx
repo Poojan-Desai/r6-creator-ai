@@ -7,12 +7,12 @@ import {
   FileText,
   History,
   LoaderCircle,
-  Mic2,
   Save,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
 
+import { VoiceoverTakeLibrary } from "@/components/voiceover-take-library";
 import type {
   VoiceoverPackage,
   VoiceoverState,
@@ -466,18 +466,20 @@ export function VoiceoverStudio({
         )}
       </section>
 
-      <section className="panel p-6">
-        <p className="section-kicker">U5.2 · Narration takes</p>
-        <h2 className="font-display mt-1 text-2xl font-bold text-white uppercase">
-          Recording and take library
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Browser recording, streamed import, multiple takes, local processing,
-          alignment, and captions are the next verified U5 checkpoint. No voice
-          cloning or voiceprints will be added.
-        </p>
-        <Mic2 className="mt-4 text-slate-700" size={26} />
-      </section>
+      <VoiceoverTakeLibrary
+        studioProjectId={studioProjectId}
+        state={state}
+        sections={
+          draft?.sections.map((section) => ({
+            key: section.key,
+            title: section.title,
+          })) ?? []
+        }
+        onState={(next) => {
+          setState(next);
+          setDraft(next.currentRevision?.package ?? draft);
+        }}
+      />
     </div>
   );
 }

@@ -18,6 +18,7 @@ const acceptedExtensions = new Set([
   ".mp3",
   ".ogg",
   ".wav",
+  ".webm",
 ]);
 const acceptedMimeTypes = new Set([
   "audio/aac",
@@ -29,6 +30,7 @@ const acceptedMimeTypes = new Set([
   "audio/wav",
   "audio/x-m4a",
   "audio/x-wav",
+  "audio/webm",
   "application/ogg",
 ]);
 
@@ -39,6 +41,7 @@ const fieldsSchema = z
     permissionConfirmed: z.literal("true", {
       error: "Confirm that you recorded, own, or may use this audio.",
     }),
+    scriptSectionKey: z.string().trim().max(120).optional(),
   })
   .passthrough();
 
@@ -49,6 +52,7 @@ export type StudioAudioUpload = {
   kind: "VOICEOVER" | "MUSIC";
   name: string;
   permissionConfirmed: true;
+  scriptSectionKey: string | null;
 };
 
 export function validateStudioAudioIdentity(
@@ -58,7 +62,7 @@ export function validateStudioAudioIdentity(
   const extension = path.extname(filename).toLowerCase();
   if (!acceptedExtensions.has(extension)) {
     throw new AppError(
-      "Choose a WAV, MP3, M4A, AAC, FLAC, or OGG audio file.",
+      "Choose a WAV, MP3, M4A, AAC, FLAC, OGG, or WebM audio file.",
       415,
       "INVALID_AUDIO_EXTENSION",
     );
@@ -186,6 +190,7 @@ export async function streamMultipartStudioAudio(
             kind: parsed.kind,
             name: parsed.name,
             permissionConfirmed: true,
+            scriptSectionKey: parsed.scriptSectionKey || null,
           });
         } catch (error) {
           reject(error);

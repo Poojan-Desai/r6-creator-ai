@@ -9,6 +9,7 @@ describe("Creator Studio audio upload validation", () => {
     ["voice.mp3", "audio/mpeg"],
     ["music.m4a", "audio/mp4"],
     ["music.flac", "audio/flac"],
+    ["browser-take.webm", "audio/webm"],
   ])("accepts supported local audio %s", (filename, mimeType) => {
     expect(() => validateStudioAudioIdentity(filename, mimeType)).not.toThrow();
   });
