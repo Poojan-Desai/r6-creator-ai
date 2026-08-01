@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/app-header";
 import { ShortFormCandidateWorkspace } from "@/components/short-form-candidate-workspace";
 import { SourcePlayer } from "@/components/source-player";
 import { getStudioCandidateState } from "@/lib/short-form-candidates";
+import { getShortFormProductionState } from "@/lib/short-form-productions";
 import { findStudioProject } from "@/lib/studio-projects";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,12 @@ export default async function ShortFormStudioPage({ params }: Props) {
   const recording = project.inputs.find(
     (input) => input.kind === "PRIMARY_RECORDING",
   )?.videoProject;
+  const workspaceState = recording
+    ? await Promise.all([
+        getStudioCandidateState(project.id),
+        getShortFormProductionState(project.id),
+      ])
+    : null;
 
   return (
     <main className="min-h-screen">
@@ -84,7 +91,8 @@ export default async function ShortFormStudioPage({ params }: Props) {
             <div className="mt-8">
               <ShortFormCandidateWorkspace
                 studioProjectId={project.id}
-                initialState={await getStudioCandidateState(project.id)}
+                initialState={workspaceState![0]}
+                initialProductionState={workspaceState![1]}
               />
             </div>
           </>

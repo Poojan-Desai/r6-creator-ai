@@ -17,6 +17,9 @@ export type {
   ContentSuggestionContext,
   ContentSuggestionProvider,
   ContentTone,
+  ShortFormContentContext,
+  ShortFormEvidenceItem,
+  ShortFormWritingPackage,
 } from "@/lib/content-writing/types";
 export {
   CONTENT_SUGGESTION_EVENT,

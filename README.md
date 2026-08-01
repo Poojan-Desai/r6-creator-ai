@@ -312,6 +312,34 @@ entered anchors fit one timeline mathematically; it does not prove that a
 user-entered replay time or event identity is correct. Review the saved missing
 evidence before using replay facts in later writing or coaching.
 
+### Review candidates and create a short-form story
+
+1. Open **Creator Studio**, choose a unified project with a screen recording,
+   then click **Candidate moments**.
+2. Choose a completed local signal analysis and click **Generate candidates**.
+   If the recording has no supported signal evidence, the app explains that
+   instead of inventing a highlight.
+3. Select a candidate and inspect its video/audio, transcript, and synchronized
+   replay evidence. **Event Confidence**, **Content Potential**, and optional
+   **Style Similarity** are separate. Content Potential only helps order your
+   review; it does not predict views.
+4. Use **Play range**, correct the start/end if needed, choose **Useful**, **Not
+   useful**, or **Wrong event**, add a note, and click **Save review**.
+5. Under **Turn evidence into a plan**, select a useful candidate, platform,
+   aspect ratio, tone, and target duration. Click **Generate local plan**.
+6. Read **Facts Review** before editing. It separates video observations,
+   transcript statements, verified replay facts, your confirmed context, and
+   details that remain unknown.
+7. Edit the story sections, hooks, scripts, titles, captions, thumbnail text,
+   or editing plan directly in the page. Click **Save new revision**. Earlier
+   versions stay in **Immutable history** so edits do not silently replace
+   them.
+
+Writing is local and template-based in this stage. It deliberately writes
+around unknown outcomes, map/operator details, player count, intent, and match
+stakes. U3.2 saves a story and writing plan; it does not yet render an edited
+preview or final short. Those are the next U3 stages.
+
 ### Import and inspect a Match Replay
 
 1. Open **Match Replays** in the top navigation.

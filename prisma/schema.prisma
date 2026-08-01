@@ -49,6 +49,36 @@ enum StudioInputKind {
   YOUTUBE_REFERENCE
 }
 
+enum ShortFormPlatform {
+  YOUTUBE_SHORTS
+  TIKTOK
+  INSTAGRAM_REELS
+  HORIZONTAL_CLIP
+}
+
+enum ShortFormAspectRatio {
+  VERTICAL_9_16
+  HORIZONTAL_16_9
+  SQUARE_1_1
+  PORTRAIT_4_5
+}
+
+enum ShortFormTone {
+  FUNNY
+  HIGH_ENERGY
+  STORYTELLING
+  EDUCATIONAL
+  SERIOUS
+  NATURAL
+}
+
+enum ShortFormProductionStatus {
+  DRAFT
+  PLANNED
+  READY_TO_RENDER
+  ARCHIVED
+}
+
 enum SynchronizationStatus {
   DRAFT
   VERIFIED
@@ -1339,6 +1369,7 @@ model CandidateMoment {
   updatedAt                 DateTime                 @updatedAt
   detectorLinks             CandidateDetectorEvent[]
   reviews                   CandidateReviewLabel[]
+  shortFormProductions      ShortFormProduction[]
 
   @@index([projectId, startSeconds])
   @@index([studioProjectId, contentPotentialScore])
@@ -2199,6 +2230,7 @@ model StudioProject {
   inputs                 StudioProjectInput[]
   synchronizations       ReplayVideoSynchronization[]
   candidateMoments       CandidateMoment[]
+  shortFormProduction    ShortFormProduction?
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2227,6 +2259,44 @@ model StudioProjectInput {
   @@index([videoProjectId])
   @@index([replayPackageId])
   @@index([referenceVideoId])
+}
+
+model ShortFormProduction {
+  id                    String                        @id @default(cuid())
+  studioProjectId       String                        @unique
+  studioProject         StudioProject                 @relation(fields: [studioProjectId], references: [id], onDelete: Cascade)
+  selectedCandidateId   String?
+  selectedCandidate     CandidateMoment?              @relation(fields: [selectedCandidateId], references: [id], onDelete: SetNull)
+  status                ShortFormProductionStatus     @default(DRAFT)
+  platform              ShortFormPlatform             @default(YOUTUBE_SHORTS)
+  targetDurationSeconds Float                         @default(30)
+  aspectRatio           ShortFormAspectRatio          @default(VERTICAL_9_16)
+  tone                  ShortFormTone                 @default(NATURAL)
+  currentVersion        Int                           @default(0)
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  revisions             ShortFormProductionRevision[]
+
+  @@index([selectedCandidateId])
+  @@index([status, updatedAt])
+}
+
+model ShortFormProductionRevision {
+  id                   String              @id @default(cuid())
+  productionId         String
+  production           ShortFormProduction @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  version              Int
+  reason               String
+  providerId           String
+  configurationJson    String              @default("{}")
+  storyPlanJson        String              @default("{}")
+  writingPackageJson   String              @default("{}")
+  factsSnapshotJson    String              @default("{}")
+  evidenceSnapshotJson String              @default("{}")
+  createdAt            DateTime            @default(now())
+
+  @@unique([productionId, version])
+  @@index([productionId, createdAt])
 }
 
 model ReplayVideoSynchronization {

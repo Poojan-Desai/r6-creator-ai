@@ -18,7 +18,9 @@ import {
 } from "lucide-react";
 
 import type { StudioCandidateState } from "@/lib/short-form-candidates";
+import type { ShortFormProductionState } from "@/lib/short-form-productions";
 import { formatDuration } from "@/lib/time";
+import { ShortFormPlanningWorkspace } from "@/components/short-form-planning-workspace";
 
 type Candidate = StudioCandidateState["candidates"][number];
 type ReviewDecision = "USEFUL" | "NOT_USEFUL" | "WRONG_EVENT";
@@ -74,9 +76,11 @@ function seek(candidate: Candidate, play: boolean) {
 export function ShortFormCandidateWorkspace({
   studioProjectId,
   initialState,
+  initialProductionState,
 }: {
   studioProjectId: string;
   initialState: StudioCandidateState;
+  initialProductionState: ShortFormProductionState;
 }) {
   const [state, setState] = useState(initialState);
   const [selectedJobId, setSelectedJobId] = useState(
@@ -346,6 +350,11 @@ export function ShortFormCandidateWorkspace({
           )}
         </div>
       )}
+      <ShortFormPlanningWorkspace
+        studioProjectId={studioProjectId}
+        candidates={state.candidates}
+        initialState={initialProductionState}
+      />
     </div>
   );
 }

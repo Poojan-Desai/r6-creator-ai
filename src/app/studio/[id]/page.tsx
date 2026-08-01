@@ -366,8 +366,13 @@ export default async function StudioProjectPage({ params }: Props) {
             <WorkflowCard
               icon={FileText}
               title="Story plan and script"
-              status="U3/U4 · Planned"
-              description="No story or script has been generated from this unified brief."
+              status={hasRecording ? "U3.2 · Ready" : "Recording required"}
+              description={
+                hasRecording
+                  ? "Create an editable evidence-bounded story, three original hooks, voiceover options, captions, titles, and editing guidance."
+                  : "Short-form writing requires a reviewed range from a screen recording."
+              }
+              href={hasRecording ? `/studio/${project.id}/shorts` : undefined}
             />
             <WorkflowCard
               icon={Clapperboard}

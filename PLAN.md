@@ -190,6 +190,17 @@ predictions of views.
   boundaries, category, and notes. U3 may store these labels but must not learn
   weights from them.
 
+Verified result: an existing completed local detector run containing 896
+events produced 11 bounded candidates from the real 20-minute recording.
+Browser review kept Event Confidence, Content Potential Score, and optional
+Style Similarity separate, played the original range through HTTP byte-range
+streaming, saved a useful decision and corrected timestamps without rewriting
+the original recommendation, and recovered all data after an application
+restart. Transcript and replay evidence remained explicitly unavailable where
+the source data did not support them. Formatting, ESLint, strict TypeScript,
+181 tests across 37 files, the production build, SQLite integrity, foreign
+keys, and browser inspection passed.
+
 #### U3.2 — Saved story plan and original writing
 
 - Add one versioned short-form production per unified project with target
@@ -206,6 +217,20 @@ predictions of views.
   titles/captions/thumbnail text, caption guidance, and an evidence-based
   editing plan. Keep the existing project content draft and manual clip writer
   working.
+
+Verified result: the browser required a useful human review before generation,
+then created a 30-second YouTube Shorts plan from the real reviewed candidate.
+The Facts Review kept local video observations, transcript statements, verified
+replay facts, user-confirmed context, and unknowns in separate sections. The
+local provider generated three hooks, full/short/live-audio options, platform
+copy, caption guidance, and editing directions without inventing an event
+outcome. A manual edit became immutable version 2; regeneration became version
+3 while versions 1 and 2 remained unchanged. All three versions and the review
+decision survived a complete server restart. The temporary unified wrapper was
+deleted afterward while all five source projects and ten historical analysis
+jobs remained. Formatting, ESLint, strict TypeScript, 185 tests across 39
+files, the production build, migration status, SQLite integrity, foreign keys,
+and browser inspection passed.
 
 #### U3.3 — Non-destructive timeline and preview proxy
 

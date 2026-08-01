@@ -3,6 +3,8 @@ import type {
   ContentSuggestionContext,
   ContentSuggestionProvider,
   ContentTone,
+  ShortFormContentContext,
+  ShortFormWritingPackage,
 } from "@/lib/content-writing/types";
 
 type ToneProfile = {
@@ -93,6 +95,95 @@ export class TemplateContentSuggestionProvider implements ContentSuggestionProvi
       shortFormCaption: `${spokenMoment}\n\nA ${tone.toLowerCase()} look at ${clipName}. #RainbowSixSiege #R6Siege #Gaming`,
       thumbnailText: profile.thumbnail,
       editingInstructions: `${profile.direction} Start at ${context.startSeconds.toFixed(1)}s and end at ${context.endSeconds.toFixed(1)}s. Keep subtitles inside the vertical safe area, highlight the spoken keywords, and confirm every crop keeps the HUD action visible.`,
+    };
+  }
+
+  async generateShortFormPackage(
+    context: ShortFormContentContext,
+    tone: ContentTone,
+  ): Promise<ShortFormWritingPackage> {
+    const profile = profiles[tone];
+    const firstObservation =
+      context.evidence.find((item) => item.source === "VIDEO")?.summary ??
+      "Several local signals rise near the selected evidence peak.";
+    const firstTranscript =
+      context.transcriptExcerpt.trim().slice(0, 260) ||
+      "No usable creator transcript is available for this range.";
+    const confirmedContext = context.userConfirmedContext
+      .map((item) => `${item.label}: ${item.value}`)
+      .join("; ");
+    const candidateLength = Math.max(
+      1,
+      Math.round(context.candidate.endSeconds - context.candidate.startSeconds),
+    );
+    const contextSentence = confirmedContext
+      ? `The creator confirmed this context: ${confirmedContext}.`
+      : "Map, operator, player count, intent, stakes, and exact outcome remain unconfirmed.";
+    const evidenceSentence =
+      `The visible/local evidence says: ${firstObservation}`.replace(
+        /[.!?]+\s*$/,
+        "",
+      );
+    const safeEvent = clean(context.candidate.mainEvent).replace(
+      /\bcandidate\b/gi,
+      "moment",
+    );
+    const hooks: [string, string, string] = [
+      profile.hook,
+      `Watch the next ${Math.min(8, Math.max(3, Math.round(candidateLength / 3)))} seconds—this ${safeEvent.toLowerCase()} changes fast.`,
+      tone === "Educational"
+        ? "Pause on the evidence peak—this is the decision worth reviewing."
+        : "The setup is quiet, then every local signal jumps at once.",
+    ];
+    const fullVoiceover = [
+      hooks[0],
+      "",
+      `${evidenceSentence}.`,
+      context.transcriptExcerpt
+        ? `The creator audio in this range includes: “${firstTranscript}”`
+        : "Let the original game audio carry the middle because no creator transcript is available.",
+      contextSentence,
+      "",
+      "End on the visible payoff, then invite the viewer to rewatch the moment without adding facts the footage does not establish.",
+    ].join("\n");
+    const shortVoiceover = [
+      hooks[1],
+      `${evidenceSentence}.`,
+      "Watch the visible payoff and decide what you would have done.",
+    ].join("\n");
+    const profileExplanation = context.styleProfile
+      ? `The structure uses ${context.styleProfile.name}'s saved high-level pacing, energy, and title preferences. It does not copy reference wording, jokes, captions, or branding.`
+      : "No Creator Style Profile is selected, so the package uses the chosen tone and the project's own evidence only.";
+    const focus = context.focusAreas[0] ?? "the selected moment";
+    const title = `${context.projectName}: ${safeEvent}`.slice(0, 100);
+    const factsUsed = [
+      firstObservation,
+      ...context.userConfirmedContext.map(
+        (item) => `${item.label}: ${item.value}`,
+      ),
+    ];
+    return {
+      hooks,
+      fullVoiceover,
+      shortVoiceover,
+      liveAudioOnly: `Use only the original audio from ${context.candidate.startSeconds.toFixed(2)}s to ${context.candidate.endSeconds.toFixed(2)}s. Remove dead air conservatively, keep the evidence peak at ${context.candidate.peakSeconds.toFixed(2)}s audible, and do not subtitle speech that was not transcribed.`,
+      youtubeShortsTitle: title,
+      tiktokCaption:
+        `${safeEvent} — a ${tone.toLowerCase()} cut focused on ${focus}. ` +
+        "#RainbowSixSiege #R6Siege #Gaming",
+      instagramCaption: `${safeEvent}. Built from locally reviewed evidence, with unknown details left unclaimed. #R6Siege #Gaming`,
+      horizontalTitle: `${title} | Rainbow Six Siege`.slice(0, 100),
+      thumbnailText: profile.thumbnail,
+      captionGuidance:
+        "Caption only words present in the saved transcript or confirmed by the creator. Keep two short lines inside the selected aspect ratio's safe area.",
+      editingPlan: `${profile.direction} Use the reviewed ${candidateLength}-second source range, place the evidence peak at roughly ${Math.round(
+        ((context.candidate.peakSeconds - context.candidate.startSeconds) /
+          Math.max(1, candidateLength)) *
+          100,
+      )}% of the sequence, and keep HUD information visible when reframing. Target ${context.targetDurationSeconds} seconds for ${context.platform.toLowerCase().replaceAll("_", " ")}.`,
+      structureMatchExplanation: profileExplanation,
+      factsUsed,
+      factsNeedingConfirmation: context.unknowns,
     };
   }
 }
