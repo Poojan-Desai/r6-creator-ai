@@ -172,6 +172,92 @@ editing, and real MP4 exports for 9:16, 16:9, 1:1, and 4:5 outputs. Support
 Potential Score, and Style Similarity separate, inspectable, and explicitly not
 predictions of views.
 
+#### U3.1 — Evidence fusion and candidate review
+
+- Create candidates only for a unified project that has a real primary screen
+  recording. Replay-only projects may expose structured facts, but cannot
+  preview or export short-form video.
+- Deterministically fuse completed local detector events into bounded,
+  near-duplicate-free candidate ranges. Add verified synchronized replay facts
+  when replay-relative timing exists; otherwise preserve replay timing as
+  missing evidence.
+- Store video, replay, and transcript evidence separately. Store detector and
+  synchronization versions so a recommendation remains reproducible.
+- Calculate Event Confidence, Content Potential Score, and optional Style
+  Similarity with three visible formulas and breakdowns. Content Potential is a
+  review aid, not a view or virality prediction.
+- Add human review controls for useful, not useful, wrong event, corrected
+  boundaries, category, and notes. U3 may store these labels but must not learn
+  weights from them.
+
+#### U3.2 — Saved story plan and original writing
+
+- Add one versioned short-form production per unified project with target
+  platform, 15/30/45/60/90-second or custom duration, aspect ratio, selected
+  candidate, tone, and style-profile snapshot.
+- Store editable hook, setup, action, reaction, payoff, ending, and
+  call-to-action sections with reasons and evidence links.
+- Extend the local `ContentSuggestionProvider` contract so a provider receives
+  bounded candidate evidence, transcript excerpts, the user-confirmed project
+  context, and high-level style preferences. Generate original writing only;
+  unknown map, operator, player count, intent, stakes, and outcome remain
+  unknown.
+- Save three hooks, full and short voiceover scripts, live-audio-only guidance,
+  titles/captions/thumbnail text, caption guidance, and an evidence-based
+  editing plan. Keep the existing project content draft and manual clip writer
+  working.
+
+#### U3.3 — Non-destructive timeline and preview proxy
+
+- Store a versioned timeline made of source-video, title/card, text-overlay,
+  caption, voiceover, and user-supplied music items. Timeline changes never
+  alter source recordings.
+- Support trim, split, delete, reorder, duplicate, freeze frame, speed,
+  slow-motion, zoom, pan, crop/reframe, editable reframe keyframes, overlays,
+  captions, intro/ending cards, basic transitions, source audio, voiceover,
+  user-supplied music, ducking, and fades through validated timeline
+  properties.
+- Add keyboard-accessible editor actions plus undo and redo. Autosave complete
+  timeline revisions transactionally.
+- Render a low-resolution, fast-start MP4 proxy only when requested and reuse it
+  until the timeline changes. Do not render after every edit.
+- Accept voiceover and music only through streamed local uploads with explicit
+  ownership/licensing confirmation. Do not infer a license or use bundled
+  copyrighted music.
+
+#### U3.4 — Deterministic export jobs
+
+- Render 9:16, 16:9, 1:1, and 4:5 MP4s with FFmpeg from the saved timeline.
+  Manual crop/reframe settings remain editable; any automatic reframe is an
+  explicit suggested starting point, not an uninspectable tracking claim.
+- Persist queued, running, completed, cancelled, and error states. Start routes
+  return promptly, cancellation terminates child processes, restart
+  reconciliation never leaves an active-looking stale job, and temporary
+  outputs are cleaned.
+- Store the render specification, FFmpeg pipeline version, output resolution,
+  duration, file size, and relative path. Stream playable previews/downloads
+  with byte-range support.
+- Prevent output beyond source duration, missing source references, empty
+  timelines, unsafe media paths, and unconfirmed music uploads.
+
+#### U3.5 — Verification and release
+
+- Add deterministic unit/service/migration tests for fusion, scoring,
+  boundaries, story-plan validation, provider facts, every timeline operation,
+  crop calculations, FFmpeg arguments, job cancellation/recovery, media
+  cleanup, and all Phase 1–U2 regressions.
+- Migrate a copy of the verified U2 SQLite database and confirm every source,
+  replay, reference, transcript, map/operator, and synchronization record
+  remains.
+- In the browser, use legally usable real footage to review and correct a
+  candidate, save a story plan, generate/edit original writing, create and
+  reopen a proxy, render one vertical and one horizontal playable MP4, cancel a
+  render, inspect the browser console, restart the application, and confirm all
+  saved work survives.
+- Run formatting, ESLint, strict TypeScript, all tests, the production build,
+  SQLite integrity and foreign-key checks, real media probes, and documentation
+  review. Commit each verified substage and preserve a clean U3 checkpoint.
+
 ### U4 — 20–30 minute Long-Form Studio
 
 Status: not started.
