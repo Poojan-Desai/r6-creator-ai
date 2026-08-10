@@ -13,8 +13,8 @@ jobs:
       FFPROBE_PATH: /usr/bin/ffprobe
       R6_FONT_PATH: /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
