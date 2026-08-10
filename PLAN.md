@@ -894,7 +894,7 @@ recommendations. The product must never promise virality or guaranteed views.
 
 ## Confirmed local environment
 
-- Workspace: `/Users/poojandesai/Documents/Codex/2026-07-21/i`
+- Workspace: repository root
 - Starting state: empty, except for the reserved `work/` and `outputs/` folders
 - Node.js: installed (`v22.18.0`)
 - npm: installed (`10.9.3`)
