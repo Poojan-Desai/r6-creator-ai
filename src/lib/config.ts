@@ -39,6 +39,11 @@ export const appConfig = {
   ),
   ffmpegPath: optionalExecutable(process.env.FFMPEG_PATH, ffmpegStatic),
   ffprobePath: optionalExecutable(process.env.FFPROBE_PATH, ffprobeStatic.path),
+  fontPath:
+    process.env.R6_FONT_PATH?.trim() ||
+    (process.platform === "darwin"
+      ? "/System/Library/Fonts/SFNS.ttf"
+      : "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
   whisperCliPath:
     process.env.WHISPER_CLI_PATH?.trim() ||
     (process.arch === "arm64"

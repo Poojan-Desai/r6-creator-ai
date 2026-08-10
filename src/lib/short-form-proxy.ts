@@ -254,7 +254,7 @@ function drawTextFilter(
           ? `(h-text_h)*${ffmpegNumber(item.positionY)}`
           : `(h-${totalHeight})*${ffmpegNumber(item.positionY)}+${index * lineHeight}`;
       return (
-        `drawtext=fontfile=/System/Library/Fonts/SFNS.ttf:` +
+        `drawtext=fontfile=${escapeDrawText(appConfig.fontPath)}:` +
         `text='${escapeDrawText(line)}':fontcolor=white:` +
         `fontsize=${fontSize}:borderw=${Math.max(1, Math.round(fontSize / 14))}:` +
         `bordercolor=black@0.85:x='(w-text_w)*${ffmpegNumber(item.positionX)}':` +
