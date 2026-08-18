@@ -23,8 +23,10 @@ user-confirmed context. None of these features claims to understand a kill,
 round outcome, room, or operator from general footage signals.
 
 You do not need to know how to code to use it. There is no login, subscription,
-cloud upload, paid AI key, or separate FFmpeg setup. Speech recognition uses the
-free `whisper.cpp` program and a local model on this Mac.
+cloud media upload, required paid AI key, or separate FFmpeg setup. Speech
+recognition uses the free `whisper.cpp` program and a local model on this Mac.
+An optional, off-by-default cloud writer can be configured separately; local
+writing remains complete without it.
 
 ## What works now
 
@@ -54,7 +56,8 @@ free `whisper.cpp` program and a local model on this Mac.
   replay contain genuine compatible timestamps; suggestions are never accepted
   automatically
 - Evidence-backed short-form candidate review, locally generated original
-  writing, and a non-destructive editor with immutable timeline revisions
+  writing, optional consented and budget-limited cloud writing, and a
+  non-destructive editor with immutable timeline revisions
 - Trim, split, reorder, duplicate, speed, freeze, crop/reframe, editable
   keyframes, overlays, captions, cards, transitions, volume, ducking, and fades
 - Permission-gated local voiceover and user-supplied music uploads with streamed
@@ -241,11 +244,14 @@ common Mac permissions problem.
 Copy and run:
 
 ```bash
+test -f .env || cp .env.example .env
 npm run db:setup
 ```
 
-This safely applies checked-in database migrations. It does not delete Phase 1
-projects or clips.
+The first command creates the local settings file only when it is missing;
+Prisma reads `DATABASE_URL` from this `.env` file. The second safely applies
+checked-in database migrations. Neither command deletes Phase 1 projects or
+clips.
 
 ### 5. Prepare free local transcription
 
@@ -587,9 +593,33 @@ The end must be later than the start and inside the recording.
 5. Click **Use in content package** to copy them into the writing fields below.
 6. Edit anything you want, then click **Save package**.
 
-The first provider is a deterministic local template system. Its code uses a
-provider interface so a future OpenAI provider can be added without replacing
-the clip UI or content package. No paid API is connected now.
+Clip-level suggestions use the deterministic local template provider. In the
+short-form Story and Writing workspace, local generation is also the default;
+an optional OpenAI provider is available only when configured as described
+below.
+
+### Optional cloud AI writing
+
+1. Keep local generation if you do not want any evidence sent to a cloud API.
+2. Copy `.env.example` to the Git-ignored `.env.local`. Add
+   `OPENAI_API_KEY` and a positive `OPENAI_MONTHLY_BUDGET_CENTS`. The example
+   file documents model, timeout, retry, output, per-project, and pricing
+   controls. Keep the pricing values aligned with the selected model.
+3. Run `npm run ai:smoke`. This is a minimal structured-output check that does
+   not send project data and does not print the key.
+4. In a short-form project, choose **OpenAI cloud writer**.
+5. Read the exact disclosure and check the consent box for that request.
+6. Generate, review the visibly labeled provider/revision, and edit before use.
+
+The cloud request contains only bounded detector/replay evidence summaries, up
+to 1,500 transcript characters, user-confirmed context, and high-level creator
+preferences. It does not contain source or reference media, filenames, local
+paths, or the API key. A fingerprint, consent time, estimates, model, status,
+and token/cost usage are saved; the prompt itself is not. Project and monthly
+limits are enforced before the provider call. Timeout/provider failures use the
+local writer and label the saved revision as a fallback; cancellation saves no
+writing revision. Automated tests use a mocked provider, so they do not prove a
+live paid call or the quality of any particular model response.
 
 ## Use the Reference Library
 
@@ -983,7 +1013,9 @@ The detailed implementation and verification record is in
 - No voice cloning, teammate identification, or speaker voiceprints
 - No authentication, cloud storage, payments, social publishing, or team
   approvals
-- No paid AI provider; content writing is template-based and must be reviewed
+- Optional paid AI covers bounded short-form writing only; no live paid call or
+  model-quality claim is included in release verification, and every result
+  must be reviewed
 - No visual map, floor, room, operator, bomb-site, or route recognition
 - No claim that all listed maps have complete blueprints, room geometry, bomb
   sites, graph connectivity, or verified tactics

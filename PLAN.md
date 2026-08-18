@@ -1636,6 +1636,19 @@ the versioned rule-based behavior.
 
 ## Phase 3D — Optional OpenAI analysis provider
 
+**Implementation update — August 18, 2026:** The short-form writing slice is
+implemented behind `ContentSuggestionProvider` using the official server SDK,
+Responses API, and strict Zod Structured Outputs. Local mode remains the
+default. Cloud mode requires a visible selection and per-request consent;
+sends bounded text evidence only; enforces configurable global monthly and
+per-project limits; saves consent, fingerprint, estimate, model, status, and
+usage without saving the prompt; supports timeout/request cancellation and
+restart reconciliation; redacts local identifiers; and labels local fallback.
+Focused disabled/consent, malformed-output, limit, persistence/restart, and
+schema tests are included in the 279-test suite. No live paid call was executed
+during this implementation because no configured key/budget was present, so
+provider quality remains unverified and must not be claimed.
+
 1. Re-check current official OpenAI API documentation immediately before this
    stage, use the official server SDK, validate structured JSON with a schema,
    and keep configurable model names in server-only environment variables.

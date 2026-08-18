@@ -1,5 +1,18 @@
 # Session Handoff
 
+## August 18, 2026 — optional cloud writing
+
+The short-form Story and Writing workspace now has a real, optional OpenAI
+Responses API provider behind the existing provider interface. It is off by
+default and requires a server key, positive monthly budget, visible provider
+selection, and per-request consent. The request is bounded to text evidence and
+preferences; media, filenames, paths, and secrets stay local. Structured output
+is Zod-validated, request metadata/usage is persisted, budgets and project
+limits are checked before the call, cancellation and stale-request restart
+reconciliation are implemented, and provider failures save a visibly labeled
+local fallback. The full validation gate passes with 279 tests across 69 files.
+No live paid provider call was made in this workspace.
+
 ## Resume point
 
 Branch `codex/phase-3` preserves the replay R2 foundation at tag

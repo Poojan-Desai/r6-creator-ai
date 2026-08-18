@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { TemplateContentSuggestionProvider } from "@/lib/content-writing/template-provider";
 import {
   createDefaultStoryPlan,
+  shortFormConfigurationSchema,
   storyPlanSchema,
   writingPackageSchema,
 } from "@/lib/short-form-productions";
@@ -94,5 +95,22 @@ describe("U3 short-form planning and local writing", () => {
     });
     plan.sections[1]!.startSeconds = plan.sections[0]!.endSeconds - 1;
     expect(() => storyPlanSchema.parse(plan)).toThrow(/timeline order/i);
+  });
+
+  it("requires explicit consent for the cloud provider", () => {
+    expect(() =>
+      shortFormConfigurationSchema.parse({
+        candidateId: "candidate",
+        provider: "OPENAI",
+        cloudConsent: false,
+      }),
+    ).toThrow(/bounded cloud data disclosure/i);
+    expect(
+      shortFormConfigurationSchema.parse({
+        candidateId: "candidate",
+        provider: "OPENAI",
+        cloudConsent: true,
+      }).provider,
+    ).toBe("OPENAI");
   });
 });

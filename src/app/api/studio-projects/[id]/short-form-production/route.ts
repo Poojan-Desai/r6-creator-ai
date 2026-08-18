@@ -29,6 +29,7 @@ export async function POST(request: Request, { params }: Context) {
         productionState: await generateShortFormProduction(
           id,
           await request.json(),
+          request.signal,
         ),
       },
       { status: 201 },

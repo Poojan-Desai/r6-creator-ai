@@ -1,6 +1,14 @@
 # R6 Creator AI — Current Status
 
-- **Current branch:** `codex/phase-3`
+- **August 18, 2026 AI writing addition:** Phase 3D's optional short-form cloud
+  writing slice is implemented with explicit consent, bounded text-only input,
+  strict structured output, cost preflight, global/project limits, persisted
+  usage metadata, cancellation, restart reconciliation, sanitized failures,
+  and labeled local fallback. Formatting, lint, strict TypeScript, 279 tests
+  across 69 files, migration integrity, and the production build pass. No live
+  paid provider call was made, so model-response quality is not claimed.
+
+- **Current branch:** `codex/portfolio-upgrade`
 - **Preserved replay checkpoints:** `replay-r2-foundation-stable` at `0730820`
   and `real-replay-foundation-stable` at parser-correction commit `93d1b62`
 - **Current phase:** U7 verified; U8 end-to-end release verification is active

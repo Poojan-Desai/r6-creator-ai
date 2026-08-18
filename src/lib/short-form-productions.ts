@@ -7,10 +7,23 @@ import { z } from "zod";
 
 import {
   getContentSuggestionProvider,
+  OpenAIContentSuggestionProvider,
   type ContentTone,
   type ShortFormContentContext,
   type ShortFormEvidenceItem,
 } from "@/lib/content-writing";
+import {
+  buildCloudWritingPrompt,
+  CloudAiProviderError,
+} from "@/lib/content-writing/openai-provider";
+import { writingPackageSchema } from "@/lib/content-writing/schema";
+import {
+  completeCloudAiRequest,
+  getCloudAiStatus,
+  markCloudAiCancelled,
+  markCloudAiFallback,
+  reserveCloudAiRequest,
+} from "@/lib/cloud-ai-usage";
 import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import type { CandidateEvidenceItem } from "@/lib/short-form-candidates";
@@ -50,8 +63,20 @@ export const shortFormConfigurationSchema = z
       .min(5, "Choose at least five seconds.")
       .max(180, "Short-form targets must be three minutes or less.")
       .default(30),
+    provider: z.enum(["LOCAL", "OPENAI"]).default("LOCAL"),
+    cloudConsent: z.boolean().default(false),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    if (value.provider === "OPENAI" && !value.cloudConsent) {
+      context.addIssue({
+        code: "custom",
+        path: ["cloudConsent"],
+        message:
+          "Confirm the bounded cloud data disclosure before requesting cloud AI.",
+      });
+    }
+  });
 
 const storySectionSchema = z
   .object({
@@ -112,30 +137,7 @@ export const storyPlanSchema = z
     });
   });
 
-export const writingPackageSchema = z
-  .object({
-    hooks: z.tuple([
-      z.string().trim().min(1).max(500),
-      z.string().trim().min(1).max(500),
-      z.string().trim().min(1).max(500),
-    ]),
-    fullVoiceover: z.string().trim().min(1).max(10_000),
-    shortVoiceover: z.string().trim().min(1).max(5_000),
-    liveAudioOnly: z.string().trim().min(1).max(5_000),
-    youtubeShortsTitle: z.string().trim().min(1).max(120),
-    tiktokCaption: z.string().trim().min(1).max(2_500),
-    instagramCaption: z.string().trim().min(1).max(2_500),
-    horizontalTitle: z.string().trim().min(1).max(120),
-    thumbnailText: z.string().trim().min(1).max(120),
-    captionGuidance: z.string().trim().min(1).max(5_000),
-    editingPlan: z.string().trim().min(1).max(10_000),
-    structureMatchExplanation: z.string().trim().min(1).max(5_000),
-    factsUsed: z.array(z.string().trim().min(1).max(1_000)).max(100),
-    factsNeedingConfirmation: z
-      .array(z.string().trim().min(1).max(1_000))
-      .max(100),
-  })
-  .strict();
+export { writingPackageSchema };
 
 export const shortFormRevisionSchema = z
   .object({
@@ -173,6 +175,9 @@ function configurationSnapshot(input: {
   tone: ShortFormTone;
   targetDurationSeconds: number;
   candidateId: string;
+  provider: "LOCAL" | "OPENAI";
+  cloudRequestId?: string | null;
+  cloudFallbackCode?: string | null;
 }) {
   return {
     planVersion: SHORT_FORM_PLAN_VERSION,
@@ -181,6 +186,9 @@ function configurationSnapshot(input: {
     aspectRatio: input.aspectRatio,
     tone: input.tone,
     targetDurationSeconds: input.targetDurationSeconds,
+    requestedProvider: input.provider,
+    cloudRequestId: input.cloudRequestId ?? null,
+    cloudFallbackCode: input.cloudFallbackCode ?? null,
   };
 }
 
@@ -419,13 +427,13 @@ async function loadPlanningContext(
 export async function generateShortFormProduction(
   studioProjectId: string,
   input: unknown,
+  signal?: AbortSignal,
 ) {
   const payload = shortFormConfigurationSchema.parse(input);
   const planning = await loadPlanningContext(
     studioProjectId,
     payload.candidateId,
   );
-  const provider = getContentSuggestionProvider();
   const context: ShortFormContentContext = {
     projectName: planning.project.name,
     candidate: planning.factsSnapshot.candidate,
@@ -456,19 +464,72 @@ export async function generateShortFormProduction(
       : null,
     unknowns: planning.factsSnapshot.unknowns,
   };
-  const [storyPlan, writingPackage] = await Promise.all([
-    Promise.resolve(
-      createDefaultStoryPlan({
-        targetDurationSeconds: payload.targetDurationSeconds,
-        candidateStartSeconds: planning.startSeconds,
-        candidatePeakSeconds: planning.candidate.peakSeconds,
-        candidateEndSeconds: planning.endSeconds,
-        mainEvent: planning.candidate.mainEvent,
-        evidence: planning.evidence.map((item) => item.summary),
-      }),
-    ),
-    provider.generateShortFormPackage(context, toneForProvider(payload.tone)),
-  ]);
+  const storyPlan = createDefaultStoryPlan({
+    targetDurationSeconds: payload.targetDurationSeconds,
+    candidateStartSeconds: planning.startSeconds,
+    candidatePeakSeconds: planning.candidate.peakSeconds,
+    candidateEndSeconds: planning.endSeconds,
+    mainEvent: planning.candidate.mainEvent,
+    evidence: planning.evidence.map((item) => item.summary),
+  });
+  let providerId = "local-template-v1";
+  let cloudRequestId: string | null = null;
+  let cloudFallbackCode: string | null = null;
+  let writingPackage;
+  if (payload.provider === "OPENAI") {
+    const cloudProvider = new OpenAIContentSuggestionProvider();
+    const prompt = buildCloudWritingPrompt(
+      context,
+      toneForProvider(payload.tone),
+    );
+    try {
+      const request = await reserveCloudAiRequest(
+        studioProjectId,
+        `${prompt.system}\n${prompt.user}`,
+      );
+      cloudRequestId = request.id;
+      const result = await cloudProvider.generateShortFormPackageWithUsage(
+        context,
+        toneForProvider(payload.tone),
+        signal,
+      );
+      await completeCloudAiRequest(request.id, result.usage);
+      writingPackage = result.writingPackage;
+      providerId = cloudProvider.id;
+    } catch (error) {
+      const errorCode =
+        error instanceof CloudAiProviderError
+          ? error.code
+          : error instanceof AppError
+            ? error.code
+            : "CLOUD_AI_FAILED";
+      if (errorCode === "CANCELLED" || signal?.aborted) {
+        if (cloudRequestId) await markCloudAiCancelled(cloudRequestId);
+        throw new AppError(
+          "Cloud AI generation was cancelled. No writing revision was saved.",
+          408,
+          "CLOUD_AI_CANCELLED",
+        );
+      }
+      const fallback = getContentSuggestionProvider();
+      writingPackage = await fallback.generateShortFormPackage(
+        context,
+        toneForProvider(payload.tone),
+      );
+      providerId = `${fallback.id}-cloud-fallback`;
+      cloudFallbackCode = errorCode;
+      if (cloudRequestId) {
+        await markCloudAiFallback(cloudRequestId, errorCode, fallback.id);
+      }
+    }
+  } else {
+    const provider = getContentSuggestionProvider();
+    writingPackage = await provider.generateShortFormPackage(
+      context,
+      toneForProvider(payload.tone),
+    );
+    providerId = provider.id;
+  }
   const validatedWriting = writingPackageSchema.parse(writingPackage);
   const production = await db.$transaction(async (transaction) => {
     const current = await transaction.shortFormProduction.upsert({
@@ -495,9 +556,24 @@ export async function generateShortFormProduction(
       data: {
         productionId: current.id,
         version,
-        reason: version === 1 ? "Initial local generation" : "Regenerated",
-        providerId: provider.id,
-        configurationJson: JSON.stringify(configurationSnapshot(payload)),
+        reason:
+          payload.provider === "OPENAI" && !cloudFallbackCode
+            ? version === 1
+              ? "Initial opt-in cloud AI generation"
+              : "Regenerated with opt-in cloud AI"
+            : cloudFallbackCode
+              ? "Cloud AI unavailable; generated with local fallback"
+              : version === 1
+                ? "Initial local generation"
+                : "Regenerated locally",
+        providerId,
+        configurationJson: JSON.stringify(
+          configurationSnapshot({
+            ...payload,
+            cloudRequestId,
+            cloudFallbackCode,
+          }),
+        ),
         storyPlanJson: JSON.stringify(storyPlan),
         writingPackageJson: JSON.stringify(validatedWriting),
         factsSnapshotJson: JSON.stringify(planning.factsSnapshot),
@@ -591,6 +667,7 @@ export async function getShortFormProductionState(studioProjectId: string) {
   const production = project.shortFormProduction;
   return {
     studioProjectId,
+    cloudAi: await getCloudAiStatus(studioProjectId),
     production: production
       ? {
           id: production.id,

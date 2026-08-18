@@ -17,6 +17,7 @@
     "db:migrate": "prisma migrate dev",
     "db:setup": "node scripts/prepare-data.mjs && prisma generate && prisma migrate deploy",
     "db:studio": "prisma studio",
+    "ai:smoke": "node scripts/verify-openai.mjs",
     "transcription:setup": "node scripts/setup-transcription.mjs",
     "replay:setup": "node scripts/setup-replay-parser.mjs"
   },
@@ -27,6 +28,7 @@
     "ffprobe-static": "3.1.0",
     "lucide-react": "1.25.0",
     "next": "16.3.0",
+    "openai": "^7.5.0",
     "pdf-lib": "^1.17.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
