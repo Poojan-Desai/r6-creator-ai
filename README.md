@@ -58,7 +58,9 @@ experiments. These modules are intentionally conservative:
 
 See [BENCHMARK.md](BENCHMARK.md) for the measurement contract and
 [docs/DETAILED_GUIDE.md](docs/DETAILED_GUIDE.md) for the complete local guide
-and implementation history.
+and implementation history. The final U8 audit is tracked in the
+[release-readiness ledger](docs/U8_RELEASE_READINESS.md), which separates
+public clean-clone checks from private retained-media verification.
 
 ## Architecture
 
