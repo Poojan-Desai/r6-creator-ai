@@ -1,5 +1,40 @@
 # R6 Creator AI
 
+## Try the free Browser Studio
+
+[Open R6 Browser Studio](https://r6-creator-studio-poojan.netlify.app) · [Release verification](docs/RELEASE-2026-09.md)
+
+The public website runs a real, pinned MiniLM semantic-search model on your device.
+Paste timestamped gameplay notes, search by meaning, inspect the exact source and
+complete context, optionally play a local recording, and download an editing brief.
+The brief outline is rule-based. This small model does not recognize gameplay or
+write invented match summaries. Initial model/runtime downloads need internet;
+notes, queries, and video are not sent to the hosted backend. English works best.
+
+The full video editor, replay parser, transcription, and MP4 export remain a
+private Mac app. The website is a lightweight companion, not the full local editor.
+Netlify serves static files and read-only public sample/health endpoints on the
+existing free plan; no database, cloud inference, API key, or paid add-on is needed.
+Free plan quotas still apply.
+
+```sh
+npm ci
+npm run browser:build
+npm run browser:dev
+# Open http://127.0.0.1:4176. Ctrl+C stops the preview.
+```
+
+For local full-studio setup, continue below. Its navigation includes **Free AI search**
+after `npm run browser:build`. Start/dev bind to `127.0.0.1`; foreign Host/Origin
+requests are rejected. This app is not designed to be exposed as a public server.
+
+Optional OpenAI writing remains disabled without your own server key and a positive
+budget. No live paid OpenAI call was made for this release. Budget estimates now
+include schema/Unicode overhead, SQLite serializes reservations, missing usage keeps
+its reservation, and deleting a project preserves its charge ledger. Automatic paid
+request retries are disabled. This application budget is not an account-wide billing
+cap; verify provider prices and limits before enabling paid writing.
+
 **Local AI-assisted gameplay media analysis platform — active development.**
 
 R6 Creator AI is a local-first Next.js application for organizing owned

@@ -11,7 +11,8 @@ describe("cloud AI preflight and budget limits", () => {
     const first = createCloudPreflight("bounded evidence");
     const second = createCloudPreflight("bounded evidence");
 
-    expect(estimateTokens("12345678")).toBe(2);
+    expect(estimateTokens("12345678")).toBe(8);
+    expect(estimateTokens("🎮")).toBe(4);
     expect(first.promptFingerprint).toHaveLength(64);
     expect(first.promptFingerprint).toBe(second.promptFingerprint);
     expect(first.estimatedCostMicros).toBeGreaterThan(0);

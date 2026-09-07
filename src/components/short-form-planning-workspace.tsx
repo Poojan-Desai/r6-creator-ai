@@ -128,7 +128,7 @@ export function ShortFormPlanningWorkspace({
     } catch (reason) {
       setError(
         reason instanceof DOMException && reason.name === "AbortError"
-          ? "Generation cancelled. No new revision was saved."
+          ? "Cancellation requested. Reload this workspace to check whether a revision finished saving."
           : errorMessage(reason),
       );
     } finally {
@@ -300,7 +300,7 @@ export function ShortFormPlanningWorkspace({
                 setCloudConsent(false);
               }}
             >
-              <option value="LOCAL">Local evidence writer</option>
+              <option value="LOCAL">Local template writer</option>
               <option value="OPENAI" disabled={!state.cloudAi.enabled}>
                 OpenAI cloud writer
               </option>

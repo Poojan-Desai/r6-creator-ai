@@ -20,8 +20,8 @@ export const cloudWritingPackageSchema = writingPackageSchema.extend({
 
 export type CloudWritingUsage = {
   responseId: string;
-  inputTokens: number;
-  outputTokens: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
 };
 
 export type CloudWritingResult = {
@@ -130,7 +130,8 @@ export class OpenAIContentSuggestionProvider implements ContentSuggestionProvide
   constructor(
     private readonly client: OpenAI = new OpenAI({
       apiKey: appConfig.openaiApiKey ?? "missing-key",
-      maxRetries: appConfig.openaiMaxRetries,
+      // Retrying a timed-out paid request can spend twice for one reservation.
+      maxRetries: 0,
       timeout: appConfig.openaiTimeoutMs,
     }),
   ) {}
@@ -185,8 +186,8 @@ export class OpenAIContentSuggestionProvider implements ContentSuggestionProvide
         writingPackage: writingPackageSchema.parse(response.output_parsed),
         usage: {
           responseId: response.id,
-          inputTokens: response.usage?.input_tokens ?? 0,
-          outputTokens: response.usage?.output_tokens ?? 0,
+          inputTokens: response.usage?.input_tokens ?? null,
+          outputTokens: response.usage?.output_tokens ?? null,
         },
       };
     } catch (error) {

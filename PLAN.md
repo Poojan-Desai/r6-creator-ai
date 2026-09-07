@@ -1,3 +1,16 @@
+# September 2026 authorized release extension
+
+The user's September 6 request explicitly authorizes AI integration, GitHub publishing,
+a free Netlify companion, and completion/testing. Preserve the local U1–U8 application;
+add the browser-only MiniLM evidence search rather than moving SQLite/native media jobs
+into serverless functions. Free browser AI and existing optional paid writing are separate.
+
+Release scope: source-exact semantic search and full source context; manual local video
+review; rule-based brief export; public sample/health backend; loopback request protection;
+retained cloud accounting; browser and real-MP4 export verification. See
+`docs/RELEASE-2026-09.md` for actual results and limitations. Earlier benchmark claims
+remain scoped to their recorded inputs. No whole-game recognition claim is added.
+
 # R6 Creator AI — Implementation Plan
 
 ## Authoritative Personal Version 1 direction

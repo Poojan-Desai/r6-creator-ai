@@ -531,7 +531,16 @@ export async function generateShortFormProduction(
     providerId = provider.id;
   }
   const validatedWriting = writingPackageSchema.parse(writingPackage);
+  if (signal?.aborted) {
+    if (cloudRequestId) await markCloudAiCancelled(cloudRequestId);
+    throw new AppError(
+      "Generation was cancelled before saving. No writing revision was saved.",
+      408,
+      "CLOUD_AI_CANCELLED",
+    );
+  }
   const production = await db.$transaction(async (transaction) => {
+    signal?.throwIfAborted();
     const current = await transaction.shortFormProduction.upsert({
       where: { studioProjectId },
       create: {
@@ -580,13 +589,16 @@ export async function generateShortFormProduction(
         evidenceSnapshotJson: JSON.stringify(planning.evidence),
       },
     });
-    return transaction.shortFormProduction.update({
+    signal?.throwIfAborted();
+    const saved = await transaction.shortFormProduction.update({
       where: { id: current.id },
       data: {
         status: "PLANNED",
         currentVersion: version,
       },
     });
+    signal?.throwIfAborted();
+    return saved;
   });
   return getShortFormProductionState(production.studioProjectId);
 }

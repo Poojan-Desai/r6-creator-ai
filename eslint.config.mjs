@@ -5,5 +5,12 @@ import nextTypeScript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypeScript,
-  globalIgnores([".next/**", "coverage/**", "data/**", "work/**"]),
+  globalIgnores([
+    ".next/**",
+    "coverage/**",
+    "data/**",
+    "work/**",
+    "public/ai-lab/**",
+    ".netlify/**",
+  ]),
 ]);

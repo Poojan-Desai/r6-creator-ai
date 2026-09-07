@@ -5,3 +5,6 @@ node_modules
 work
 package-lock.json
 
+
+public/ai-lab
+.netlify

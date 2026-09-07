@@ -71,11 +71,17 @@ describe("cloud AI usage migration", () => {
       where: { id: "request" },
       include: { studioProject: true },
     });
-    expect(saved?.studioProject.name).toBe("Private studio");
+    expect(saved?.studioProject?.name).toBe("Private studio");
     expect(saved?.status).toBe("COMPLETED");
     expect(saved?.promptFingerprint).toBe("a".repeat(64));
     expect(saved?.actualCostMicros).toBe(450);
     expect(saved).not.toHaveProperty("prompt");
+    await reopened.studioProject.delete({ where: { id: "studio" } });
+    const retained = await reopened.cloudAiRequest.findUnique({
+      where: { id: "request" },
+    });
+    expect(retained?.actualCostMicros).toBe(450);
+    expect(retained?.studioProjectId).toBeNull();
     await reopened.$disconnect();
   });
 });
