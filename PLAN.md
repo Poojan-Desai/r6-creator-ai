@@ -1,3 +1,15 @@
+# September 7, 2026 browser Creator Studio extension
+
+The user authorizes a production web workflow and GitHub publishing while preserving
+the existing review companion and local U1–U8 app. Add `/studio/` to the static build:
+File/Blob range reads, browser metadata, playback, validated timestamp clips, explicit
+audio-track selection, WebCodecs preview/export, IndexedDB projects, optional streamed
+OPFS source copies, JSON backups/relinking, and the existing on-device note search.
+No private media is uploaded and no paid cloud AI is enabled. Native FFmpeg, Whisper,
+replay parsing and advanced local timelines remain available through the local app.
+Netlify Functions cannot host the existing SQLite/native long-job architecture safely
+within their payload/runtime constraints. See `docs/WEB-STUDIO.md` for limits and tests.
+
 # September 2026 authorized release extension
 
 The user's September 6 request explicitly authorizes AI integration, GitHub publishing,

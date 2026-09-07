@@ -14,9 +14,13 @@ const types = {
 createServer(async (request, response) => {
   try {
     const pathname = new URL(request.url, "http://127.0.0.1").pathname;
+    if (pathname === "/studio") {
+      response.writeHead(302, { Location: "/studio/" }).end();
+      return;
+    }
     const file = path.resolve(
       root,
-      `.${decodeURIComponent(pathname === "/" ? "/index.html" : pathname)}`,
+      `.${decodeURIComponent(pathname.endsWith("/") ? `${pathname}index.html` : pathname)}`,
     );
     if (!file.startsWith(`${root}/`)) {
       response.writeHead(403).end();

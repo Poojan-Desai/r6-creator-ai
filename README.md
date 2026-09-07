@@ -1,6 +1,19 @@
 # R6 Creator AI
 
-## Try the free Browser Studio
+## Try Creator Studio in your browser
+
+[Open Creator Studio](https://r6-creator-studio-poojan.netlify.app/studio/) · [Lightweight review companion](https://r6-creator-studio-poojan.netlify.app) · [Web setup and limits](docs/WEB-STUDIO.md)
+
+Open an owned MP4, MOV or WebM recording, inspect its metadata, play it, save
+timestamped clips, choose an audio track, render a preview, and download MP4 or
+WebM video. Video processing stays on your device. Project notes and clip ranges
+save in this browser; optional browser storage keeps recordings up to 1 GB.
+Download a JSON project backup and keep your original recording for portability.
+The browser path accepts sources up to 4 GB / 6 hours and exports one clip at a
+time up to 5 minutes / 256 MB, at up to 1920 pixels on the longest side and 30 fps.
+Encoding requires supported WebCodecs; failed codecs show an actionable message.
+
+## Free on-device search and review
 
 [Open R6 Browser Studio](https://r6-creator-studio-poojan.netlify.app) · [Release verification](docs/RELEASE-2026-09.md)
 
@@ -11,8 +24,9 @@ The brief outline is rule-based. This small model does not recognize gameplay or
 write invented match summaries. Initial model/runtime downloads need internet;
 notes, queries, and video are not sent to the hosted backend. English works best.
 
-The full video editor, replay parser, transcription, and MP4 export remain a
-private Mac app. The website is a lightweight companion, not the full local editor.
+Advanced timelines, replay parsing, transcription, narration, captions and Coaching
+Lab remain in the private local app. Browser Studio adds single-clip MP4/WebM
+export without replacing these local tools or changing the original review page.
 Netlify serves static files and read-only public sample/health endpoints on the
 existing free plan; no database, cloud inference, API key, or paid add-on is needed.
 Free plan quotas still apply.
