@@ -206,5 +206,11 @@ is client-side and is not rewritten by a static deploy.
   invalid ranges, search, actual downloaded video, backups, reload, OPFS source
   reopen, cancellation, WebM preview, wrong-source rejection/relink, 390 px layout,
   no private uploads/runtime exceptions, and preserved companion navigation.
+- The same 14 checks passed on the Netlify draft and the published production
+  site. Both downloaded formats also passed a complete native FFmpeg decode check.
+  The existing MiniLM worker was exercised in the new editor and returned exact
+  source notes without browser console warnings or errors.
+- Production was published on September 7, 2026. No deployment credentials were
+  missing, and no plan upgrade or paid API activation was needed.
 - These sample results do not establish large-file throughput, gameplay recognition
   accuracy, or complete feature parity with the local editor.
