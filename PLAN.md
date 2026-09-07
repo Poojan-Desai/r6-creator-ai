@@ -1,3 +1,16 @@
+# September 2026 authorized release extension
+
+The user's September 6 request explicitly authorizes AI integration, GitHub publishing,
+a free Netlify companion, and completion/testing. Preserve the local U1–U8 application;
+add the browser-only MiniLM evidence search rather than moving SQLite/native media jobs
+into serverless functions. Free browser AI and existing optional paid writing are separate.
+
+Release scope: source-exact semantic search and full source context; manual local video
+review; rule-based brief export; public sample/health backend; loopback request protection;
+retained cloud accounting; browser and real-MP4 export verification. See
+`docs/RELEASE-2026-09.md` for actual results and limitations. Earlier benchmark claims
+remain scoped to their recorded inputs. No whole-game recognition claim is added.
+
 # R6 Creator AI — Implementation Plan
 
 ## Authoritative Personal Version 1 direction
@@ -1635,6 +1648,19 @@ rankings, the explanation changes accordingly, and a user can always return to
 the versioned rule-based behavior.
 
 ## Phase 3D — Optional OpenAI analysis provider
+
+**Implementation update — August 18, 2026:** The short-form writing slice is
+implemented behind `ContentSuggestionProvider` using the official server SDK,
+Responses API, and strict Zod Structured Outputs. Local mode remains the
+default. Cloud mode requires a visible selection and per-request consent;
+sends bounded text evidence only; enforces configurable global monthly and
+per-project limits; saves consent, fingerprint, estimate, model, status, and
+usage without saving the prompt; supports timeout/request cancellation and
+restart reconciliation; redacts local identifiers; and labels local fallback.
+Focused disabled/consent, malformed-output, limit, persistence/restart, and
+schema tests are included in the 279-test suite. No live paid call was executed
+during this implementation because no configured key/budget was present, so
+provider quality remains unverified and must not be claimed.
 
 1. Re-check current official OpenAI API documentation immediately before this
    stage, use the official server SDK, validate structured JSON with a schema,

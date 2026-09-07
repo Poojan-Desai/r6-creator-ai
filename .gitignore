@@ -31,3 +31,6 @@ work/
 .idea/
 .vscode/
 
+
+public/ai-lab/
+.netlify/

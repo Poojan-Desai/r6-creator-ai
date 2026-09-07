@@ -4,9 +4,9 @@
   "private": true,
   "description": "A local-first Rainbow Six Siege video clipping and content workspace.",
   "scripts": {
-    "dev": "WATCHPACK_POLLING=true next dev",
+    "dev": "WATCHPACK_POLLING=true next dev --hostname 127.0.0.1",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --hostname 127.0.0.1",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -17,16 +17,21 @@
     "db:migrate": "prisma migrate dev",
     "db:setup": "node scripts/prepare-data.mjs && prisma generate && prisma migrate deploy",
     "db:studio": "prisma studio",
+    "ai:smoke": "node scripts/verify-openai.mjs",
     "transcription:setup": "node scripts/setup-transcription.mjs",
-    "replay:setup": "node scripts/setup-replay-parser.mjs"
+    "replay:setup": "node scripts/setup-replay-parser.mjs",
+    "browser:build": "node scripts/build-browser-lab.mjs",
+    "browser:dev": "node scripts/serve-browser-lab.mjs"
   },
   "dependencies": {
+    "@huggingface/transformers": "4.2.0",
     "@prisma/client": "6.19.3",
     "busboy": "1.6.0",
     "ffmpeg-static": "5.3.0",
     "ffprobe-static": "3.1.0",
     "lucide-react": "1.25.0",
     "next": "16.3.0",
+    "openai": "^7.5.0",
     "pdf-lib": "^1.17.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -40,8 +45,10 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/yauzl": "2.10.3",
+    "esbuild": "0.28.2",
     "eslint": "9.39.2",
     "eslint-config-next": "16.2.11",
+    "playwright-core": "1.63.0",
     "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "0.8.1",
     "prisma": "6.19.3",
@@ -50,7 +57,9 @@
     "vitest": "4.1.10"
   },
   "overrides": {
-    "deepmerge-ts": "8.0.1"
+    "deepmerge-ts": "8.0.1",
+    "sharp": "0.35.0",
+    "adm-zip": "0.6.0"
   },
   "engines": {
     "node": ">=20.9.0"

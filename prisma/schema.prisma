@@ -79,6 +79,14 @@ enum ShortFormProductionStatus {
   ARCHIVED
 }
 
+enum CloudAiRequestStatus {
+  RUNNING
+  COMPLETED
+  CANCELLED
+  FAILED
+  FALLBACK
+}
+
 enum ShortFormTimelineStatus {
   DRAFT
   READY_FOR_PREVIEW
@@ -2493,6 +2501,7 @@ model StudioProject {
   progressSnapshotLinks  ProgressSnapshotProject[]
   playerProgressNotes    PlayerProgressNote[]
   unifiedReviewLabels    UnifiedReviewLabel[]
+  cloudAiRequests        CloudAiRequest[]
 
   @@index([createdAt])
   @@index([status, updatedAt])
@@ -2500,6 +2509,40 @@ model StudioProject {
   @@index([styleProfileId])
   @@index([mapId, mapVersionId])
   @@index([operatorId, operatorVersionId])
+}
+
+model CloudAiBudgetLock {
+  id         String @id
+  generation Int    @default(0)
+}
+
+model CloudAiRequest {
+  id                   String               @id @default(cuid())
+  studioProjectId      String?
+  studioProject        StudioProject?       @relation(fields: [studioProjectId], references: [id], onDelete: SetNull)
+  feature              String               @default("SHORT_FORM_WRITING")
+  providerId           String               @default("openai")
+  model                String
+  status               CloudAiRequestStatus @default(RUNNING)
+  consentedAt          DateTime
+  promptFingerprint    String
+  estimatedInputTokens Int
+  maxOutputTokens      Int
+  estimatedCostMicros  Int
+  pricingJson          String               @default("{}")
+  inputTokens          Int?
+  outputTokens         Int?
+  actualCostMicros     Int?
+  responseId           String?
+  fallbackProviderId   String?
+  errorCode            String?
+  completedAt          DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([studioProjectId, createdAt])
+  @@index([status, createdAt])
+  @@index([createdAt, actualCostMicros])
 }
 
 model StudioProjectInput {

@@ -26,6 +26,11 @@ export function AppHeader() {
           <BrandMark />
         </Link>
         <nav className="flex flex-wrap items-center gap-2" aria-label="Main">
+          <NavItem
+            href="/ai-lab/index.html"
+            icon={Sparkles}
+            label="Free AI search"
+          />
           <NavItem href="/studio" icon={Sparkles} label="Creator Studio" />
           <NavItem href="/" icon={FolderOpen} label="Sources" />
           <NavItem href="/replays" icon={Archive} label="Match Replays" />

@@ -1,5 +1,40 @@
 # R6 Creator AI
 
+## Try the free Browser Studio
+
+[Open R6 Browser Studio](https://r6-creator-studio-poojan.netlify.app) · [Release verification](docs/RELEASE-2026-09.md)
+
+The public website runs a real, pinned MiniLM semantic-search model on your device.
+Paste timestamped gameplay notes, search by meaning, inspect the exact source and
+complete context, optionally play a local recording, and download an editing brief.
+The brief outline is rule-based. This small model does not recognize gameplay or
+write invented match summaries. Initial model/runtime downloads need internet;
+notes, queries, and video are not sent to the hosted backend. English works best.
+
+The full video editor, replay parser, transcription, and MP4 export remain a
+private Mac app. The website is a lightweight companion, not the full local editor.
+Netlify serves static files and read-only public sample/health endpoints on the
+existing free plan; no database, cloud inference, API key, or paid add-on is needed.
+Free plan quotas still apply.
+
+```sh
+npm ci
+npm run browser:build
+npm run browser:dev
+# Open http://127.0.0.1:4176. Ctrl+C stops the preview.
+```
+
+For local full-studio setup, continue below. Its navigation includes **Free AI search**
+after `npm run browser:build`. Start/dev bind to `127.0.0.1`; foreign Host/Origin
+requests are rejected. This app is not designed to be exposed as a public server.
+
+Optional OpenAI writing remains disabled without your own server key and a positive
+budget. No live paid OpenAI call was made for this release. Budget estimates now
+include schema/Unicode overhead, SQLite serializes reservations, missing usage keeps
+its reservation, and deleting a project preserves its charge ledger. Automatic paid
+request retries are disabled. This application budget is not an account-wide billing
+cap; verify provider prices and limits before enabling paid writing.
+
 **Local AI-assisted gameplay media analysis platform — active development.**
 
 R6 Creator AI is a local-first Next.js application for organizing owned
@@ -7,6 +42,12 @@ Rainbow Six Siege recordings, inspecting video metadata, creating timestamped
 clips, and developing content packages without uploading gameplay to a cloud
 service. It combines a TypeScript interface, SQLite persistence, streamed media,
 and FFmpeg/FFprobe processing in one desktop-friendly web workspace.
+
+Short-form writing also has an optional OpenAI Responses API provider. It is
+off by default, requires a server key, a positive configured budget, and
+per-request user consent, and sends bounded text evidence only—never source
+video/audio, reference media, filenames, or local paths. The deterministic
+local writer remains available with no key and is the transparent fallback.
 
 > The dependable portfolio scope is the local media workflow: upload, metadata
 > extraction, byte-range playback, manual timestamp clipping, clip preview and
@@ -86,6 +127,7 @@ shell, and uploaded filenames are never used as trusted filesystem paths.
 - FFmpeg and FFprobe
 - Vitest, ESLint, Prettier, and strict TypeScript
 - Optional local `whisper.cpp` speech-to-text
+- Optional OpenAI Responses API with strict Zod Structured Outputs
 
 ## Run locally
 
@@ -95,14 +137,16 @@ Requirements: Node.js 20.9 or newer and macOS for the documented local workflow.
 git clone https://github.com/Poojan-Desai/r6-creator-ai.git
 cd r6-creator-ai
 npm ci
+test -f .env || cp .env.example .env
 npm run db:setup
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Runtime recordings,
 generated clips, and SQLite files are stored in `./data` by default and are
-excluded from Git. Copy `.env.example` to `.env` only when you need to change a
-documented local setting.
+excluded from Git. The setup command creates `.env` from the safe example when
+needed so Prisma can read `DATABASE_URL`. Both `.env` and `.env.local` are
+ignored by Git.
 
 Optional local transcription and replay experiments have separate setup steps:
 
@@ -112,6 +156,24 @@ npm run replay:setup
 ```
 
 Neither is required for upload, metadata, playback, or manual clipping.
+
+Optional cloud writing is configured separately. Copy `.env.example` to
+`.env.local`, set an API key and a deliberately small monthly budget, then
+select **OpenAI cloud writer** and confirm the disclosure for an individual
+generation. Keep the two pricing variables aligned with the selected model's
+official current pricing; the defaults match `gpt-5.6-luna` as checked on
+August 18, 2026. No live paid provider call is part of automated verification.
+
+After adding the key locally, run the minimal low-output provider check before
+using private project text:
+
+```bash
+npm run ai:smoke
+```
+
+Success prints the model, token counts, and `store=false`; it never prints the
+key. Then test one short-form generation in the UI to exercise consent, budget
+reservation, usage persistence, and the saved revision end to end.
 
 ## Validate
 
@@ -127,12 +189,15 @@ CI runs the same static checks, test suite, and production build. Media-specific
 changes should additionally be tested end to end with a real MP4 before being
 described as working.
 
-Current verification: formatting, ESLint, strict TypeScript, all 270 tests
-across 66 test files, and the Next.js production build pass.
+Current verification: formatting, ESLint, strict TypeScript, all 279 tests
+across 69 test files, and the Next.js production build pass.
 
 ## Privacy and product boundaries
 
 - Local media is excluded from version control and is not used for training.
+- Cloud writing is an explicit text-only action with preflight cost estimates,
+  global and per-project limits, persisted usage metadata, cancellation,
+  sanitized errors, and local fallback.
 - No authentication, hosted multi-user service, billing, or social publishing
   is included.
 - YouTube references use the official embed/metadata paths; the app does not

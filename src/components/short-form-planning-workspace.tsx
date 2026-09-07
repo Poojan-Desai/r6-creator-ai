@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -9,6 +9,7 @@ import {
   LoaderCircle,
   Save,
   Sparkles,
+  X,
 } from "lucide-react";
 
 import type { StudioCandidateState } from "@/lib/short-form-candidates";
@@ -31,6 +32,7 @@ type Tone =
   | "EDUCATIONAL"
   | "SERIOUS"
   | "NATURAL";
+type WritingProvider = "LOCAL" | "OPENAI";
 
 function errorMessage(reason: unknown) {
   return reason instanceof Error
@@ -71,9 +73,12 @@ export function ShortFormPlanningWorkspace({
   const [targetDurationSeconds, setTargetDurationSeconds] = useState(
     initialState.production?.targetDurationSeconds ?? 30,
   );
+  const [provider, setProvider] = useState<WritingProvider>("LOCAL");
+  const [cloudConsent, setCloudConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
 
   async function generate() {
     if (!candidateId) {
@@ -83,6 +88,8 @@ export function ShortFormPlanningWorkspace({
     setBusy(true);
     setMessage(null);
     setError(null);
+    const controller = new AbortController();
+    activeRequest.current = controller;
     try {
       const response = await fetch(
         `/api/studio-projects/${studioProjectId}/short-form-production`,
@@ -95,7 +102,10 @@ export function ShortFormPlanningWorkspace({
             aspectRatio,
             tone,
             targetDurationSeconds,
+            provider,
+            cloudConsent: provider === "OPENAI" && cloudConsent,
           }),
+          signal: controller.signal,
         },
       );
       const body = (await response.json()) as {
@@ -109,12 +119,20 @@ export function ShortFormPlanningWorkspace({
         );
       }
       setState(body.productionState);
+      const savedProvider =
+        body.productionState.production?.currentRevision?.providerId ??
+        "unknown provider";
       setMessage(
-        `Saved version ${body.productionState.production?.currentVersion ?? 0} from bounded local evidence.`,
+        `Saved version ${body.productionState.production?.currentVersion ?? 0} with ${savedProvider}.`,
       );
     } catch (reason) {
-      setError(errorMessage(reason));
+      setError(
+        reason instanceof DOMException && reason.name === "AbortError"
+          ? "Cancellation requested. Reload this workspace to check whether a revision finished saving."
+          : errorMessage(reason),
+      );
     } finally {
+      activeRequest.current = null;
       setBusy(false);
     }
   }
@@ -169,9 +187,9 @@ export function ShortFormPlanningWorkspace({
           Turn evidence into a plan
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-          Choose the output, target length, and tone. The local provider uses
-          the reviewed candidate, saved transcript, verified replay facts, and
-          user-confirmed context only.
+          Choose the output, target length, tone, and writer. Local generation
+          remains private and free. Cloud AI is optional, explicitly consented,
+          budget-limited, and sends only the bounded evidence shown below.
         </p>
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <label className="xl:col-span-2">
@@ -272,10 +290,28 @@ export function ShortFormPlanningWorkspace({
               }
             />
           </label>
+          <label className="w-52">
+            <span className="form-label">Writing provider</span>
+            <select
+              className="field mt-2"
+              value={provider}
+              onChange={(event) => {
+                setProvider(event.target.value as WritingProvider);
+                setCloudConsent(false);
+              }}
+            >
+              <option value="LOCAL">Local template writer</option>
+              <option value="OPENAI" disabled={!state.cloudAi.enabled}>
+                OpenAI cloud writer
+              </option>
+            </select>
+          </label>
           <button
             type="button"
             className="primary-button"
-            disabled={!candidateId || busy}
+            disabled={
+              !candidateId || busy || (provider === "OPENAI" && !cloudConsent)
+            }
             onClick={() => void generate()}
           >
             {busy ? (
@@ -283,8 +319,53 @@ export function ShortFormPlanningWorkspace({
             ) : (
               <Sparkles size={16} />
             )}
-            Generate local plan
+            {provider === "OPENAI"
+              ? "Generate with cloud AI"
+              : "Generate locally"}
           </button>
+          {busy && provider === "OPENAI" && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => activeRequest.current?.abort()}
+            >
+              <X size={16} />
+              Cancel
+            </button>
+          )}
+        </div>
+        <div className="mt-4 rounded-xl border border-white/8 bg-black/15 p-4 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-semibold text-white">
+              Optional cloud AI · {state.cloudAi.model}
+            </p>
+            <span className="text-xs text-slate-500">
+              {state.cloudAi.enabled
+                ? `${state.cloudAi.projectRequestsThisMonth}/${state.cloudAi.projectMonthlyRequestLimit} project requests this month · ${state.cloudAi.monthlyReservedOrSpentCents}¢/${state.cloudAi.monthlyBudgetCents}¢ reserved or spent`
+                : "Disabled until a server key and positive monthly budget are configured"}
+            </span>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Sends: {state.cloudAi.sends.join(", ")}. Never sends:{" "}
+            {state.cloudAi.neverSends.join(", ")}. The conservative preflight
+            maximum is about {state.cloudAi.estimatedMaximumRequestCents}¢ per
+            request.
+          </p>
+          {provider === "OPENAI" && (
+            <label className="mt-3 flex items-start gap-3 rounded-lg border border-amber-300/15 bg-amber-300/5 p-3 text-xs leading-5 text-amber-100">
+              <input
+                className="mt-1"
+                type="checkbox"
+                checked={cloudConsent}
+                onChange={(event) => setCloudConsent(event.target.checked)}
+              />
+              <span>
+                I choose to send the listed bounded text evidence to OpenAI for
+                this generation. I understand the full recording, audio,
+                filenames, paths, and API key stay local.
+              </span>
+            </label>
+          )}
         </div>
         {(message || error) && (
           <div
