@@ -11,8 +11,14 @@ import {
 const output = "public/ai-lab";
 await rm(output, { recursive: true, force: true });
 await mkdir(`${output}/runtime`, { recursive: true });
+await mkdir(`${output}/studio`, { recursive: true });
 await build({
-  entryPoints: { app: "browser-lab/app.tsx", worker: "browser-lab/worker.ts" },
+  entryPoints: {
+    app: "browser-lab/app.tsx",
+    worker: "browser-lab/worker.ts",
+    studio: "browser-lab/studio/app.tsx",
+    "export-worker": "browser-lab/studio/export-worker.ts",
+  },
   bundle: true,
   outdir: output,
   format: "esm",
@@ -26,6 +32,7 @@ await build({
 });
 for (const name of ["index.html", "favicon.svg"])
   await copyFile(`browser-lab/${name}`, `${output}/${name}`);
+await copyFile("browser-lab/studio/index.html", `${output}/studio/index.html`);
 for (const name of await readdir("node_modules/onnxruntime-web/dist")) {
   if (
     name === "ort-wasm-simd-threaded.asyncify.mjs" ||
@@ -42,6 +49,7 @@ await writeFile(
     "Browser inference dependencies (model weights downloaded separately):",
     await readFile("node_modules/@huggingface/transformers/LICENSE", "utf8"),
     await readFile("browser-lab/onnxruntime-LICENSE.txt", "utf8"),
+    await readFile("node_modules/mediabunny/LICENSE", "utf8"),
   ].join("\n\n"),
 );
 console.log(

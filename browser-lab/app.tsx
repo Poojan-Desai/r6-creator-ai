@@ -227,6 +227,9 @@ function App() {
           <span className="edition">BROWSER STUDIO</span>
         </a>
         <div className="header-links">
+          <a href="./studio/">
+            Open Creator Studio <ArrowUpRight size={15} />
+          </a>
           <a href="#how-it-works">How it works</a>
           <a
             className="repo-link"
@@ -566,12 +569,12 @@ function App() {
             <article>
               <span>03</span>
               <div>
-                <h3>The full studio runs on your Mac.</h3>
+                <h3>Take your next cut into Studio.</h3>
                 <p>
-                  Install the GitHub app for FFmpeg clips and exports, local
-                  transcription, Match Replay evidence, and optional budgeted
-                  cloud writing. This browser studio supports text search and
-                  review; it does not render clips or recognize gameplay.
+                  Open Creator Studio to save projects and export clips in your
+                  browser. Install the local app for advanced FFmpeg timelines,
+                  transcription and Match Replay evidence. Search uses your
+                  notes; it does not recognize gameplay.
                 </p>
               </div>
             </article>
