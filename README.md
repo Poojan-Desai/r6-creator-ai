@@ -1,5 +1,30 @@
 # R6 Creator AI
 
+**Gameplay video editing and on-device semantic search.** A browser Creator Studio
+and a full local Next.js application keep recordings on your device while making
+clips, saved projects, media jobs, and AI-assisted review inspectable.
+
+## Engineering highlights
+
+- **Browser media pipeline:** WebCodecs and Mediabunny render MP4/WebM clips in a
+  worker; IndexedDB persists projects and clip ranges, with optional OPFS storage
+  for recordings. [Browser architecture and limits](docs/WEB-STUDIO.md)
+- **Local backend and media jobs:** Next.js route handlers, SQLite/Prisma, streamed
+  uploads and byte-range playback, FFmpeg/FFprobe processing, and persisted jobs
+  with cancellation, cleanup, and restart reconciliation.
+- **Local AI and review:** whisper.cpp transcription and pinned MiniLM semantic
+  search, with exact source notes and context. Search retrieves supplied text;
+  it does not recognize gameplay events or invent match summaries.
+- **Creator workflow:** six reviewable writing outputs, 29 structured style
+  characteristics with evidence and manual corrections, multi-reference style
+  profiles, and a source-cited catalog of 28 maps including District.
+  [Full local workflow](docs/DETAILED_GUIDE.md)
+- **Release evidence:** 329 tests across 75 files and
+  [GitHub CI](https://github.com/Poojan-Desai/r6-creator-ai/actions/runs/34240922555)
+  passed on the September 8, 2026 merged release. The browser release also records
+  14 checks on production and real 1080 × 1920 H.264/AAC gameplay export.
+  [Verification details](docs/WEB-STUDIO.md#september-7-2026-verification)
+
 ## Try Creator Studio in your browser
 
 [Open Creator Studio](https://r6-creator-studio-poojan.netlify.app/studio/) · [Lightweight review companion](https://r6-creator-studio-poojan.netlify.app) · [Web setup and limits](docs/WEB-STUDIO.md)
@@ -25,7 +50,8 @@ write invented match summaries. Initial model/runtime downloads need internet;
 notes, queries, and video are not sent to the hosted backend. English works best.
 
 Advanced timelines, replay parsing, transcription, narration, captions and Coaching
-Lab remain in the private local app. Browser Studio adds single-clip MP4/WebM
+Lab run in the local application, whose source is included in this repository.
+Browser Studio adds single-clip MP4/WebM
 export without replacing these local tools or changing the original review page.
 Netlify serves static files and read-only public sample/health endpoints on the
 existing free plan; no database, cloud inference, API key, or paid add-on is needed.
@@ -139,6 +165,8 @@ shell, and uploaded filenames are never used as trusted filesystem paths.
 - Next.js, React, TypeScript, and Tailwind CSS
 - SQLite and Prisma
 - FFmpeg and FFprobe
+- Browser WebCodecs and Mediabunny; IndexedDB and optional OPFS storage
+- On-device MiniLM semantic search via Transformers.js and ONNX Runtime Web
 - Vitest, ESLint, Prettier, and strict TypeScript
 - Optional local `whisper.cpp` speech-to-text
 - Optional OpenAI Responses API with strict Zod Structured Outputs
@@ -203,8 +231,13 @@ CI runs the same static checks, test suite, and production build. Media-specific
 changes should additionally be tested end to end with a real MP4 before being
 described as working.
 
-Current verification: formatting, ESLint, strict TypeScript, all 279 tests
-across 69 test files, and the Next.js production build pass.
+The September 8, 2026 merged release passed formatting, ESLint, strict TypeScript,
+**329 tests across 75 files**, both the Next.js and browser production builds,
+and the dependency audit in
+[GitHub CI](https://github.com/Poojan-Desai/r6-creator-ai/actions/runs/34240922555).
+The [browser verification report](docs/WEB-STUDIO.md#september-7-2026-verification)
+records 14 checks on the local, preview, and production sites, including real
+MP4/WebM exports. These are release checks, not gameplay-recognition benchmarks.
 
 ## Privacy and product boundaries
 
