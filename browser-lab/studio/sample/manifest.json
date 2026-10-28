@@ -1,0 +1,19 @@
+{
+  "schema": "r6-browser-sample/v1",
+  "name": "synthetic-motion-sample.mp4",
+  "path": "sample/clip.mp4",
+  "title": "Synthetic motion study",
+  "description": "Original geometric animation and a quiet synthesized 220 Hz tone. No gameplay, voice, footage or external assets.",
+  "license": "CC0-1.0",
+  "duration": 12,
+  "width": 640,
+  "height": 360,
+  "fps": 24,
+  "videoCodec": "h264",
+  "audioCodec": "aac",
+  "size": 207452,
+  "fingerprint": "1abb3452f8cfef18eecdd7582b668730480b7b0a176303711abddae6343c9c4e",
+  "sha256": "78bd85c75d9d6cbdd30a434b0ec287b2af8221f8194dd2173a429f7ede75696b",
+  "generator": "scripts/generate-browser-sample.mjs",
+  "encoderPackage": "ffmpeg-static@5.3.0"
+}

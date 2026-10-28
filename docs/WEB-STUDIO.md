@@ -214,3 +214,75 @@ is client-side and is not rewritten by a static deploy.
   missing, and no plan upgrade or paid API activation was needed.
 - These sample results do not establish large-file throughput, gameplay recognition
   accuracy, or complete feature parity with the local editor.
+
+## October 19, 2026 — source timeline and packaged sample
+
+This checkout adds a timeline below the source preview while retaining the clip
+inspector, saved library, notes/search and worker export. The changes are local
+and have not been published to the linked deployment.
+
+- **Load sample project** opens a 207 KB, 12-second original geometric animation
+  and synthesized tone through the same actual media parser as user recordings.
+  Its license/provenance and checksums ship beside the sample. It is not gameplay.
+- Two silent saved ranges provide an immediate editing starting point. The tone
+  is available only through explicit audio-track selection, as with any recording.
+- A draggable playhead seeks the original media. Trim handles and labeled native
+  sliders work by pointer or keyboard; source bounds, 0.1-second minimum and
+  five-minute maximum remain enforced. Optional snapping uses tenths of a second.
+- Zoom, fit-selection and earlier/later windows reveal precise ranges in long
+  sources. Saved clip buttons load the existing exact timestamp/audio properties.
+- **Save clip** persists the range using the unchanged v1 project schema. Reload
+  preserves saved clips; temporary zoom and unsaved changes do not persist.
+  Existing user sources still require OPFS retention or deliberate relinking.
+- Packaged sample media can be reopened only when filename, byte count and edge
+  fingerprint match the manifest. Download reads are bounded, the full sample
+  checksum is verified, and a failed fetch does not overwrite an open project.
+
+This increment does not add thumbnails, multitrack composition, undo/redo, or
+native/local feature parity. It does not change video recognition capabilities.
+
+```sh
+npm ci
+npm run db:generate
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run browser:build
+npm run browser:dev
+# In a second terminal, against the running preview:
+npm run browser:verify-timeline
+npm run browser:verify -- browser-lab/studio/sample/clip.mp4
+# Optional alternate port when the default is busy:
+# R6_BROWSER_PORT=4177 npm run browser:dev
+# R6_BROWSER_TEST_URL=http://127.0.0.1:4177 npm run browser:verify-timeline
+```
+
+`npm run browser:sample` repeats the sample generation using bundled FFmpeg.
+A checksum manifest records its exact output; see the sample provenance README.
+Tests use real encoded MP4/WebM files containing synthetic shapes/tone. They test
+media mechanics and recovery, not actual gameplay semantics or large-file speed.
+
+Dependency patches retain Next.js 16.3, sharp 0.35, adm-zip 0.6 and Vitest 4.1;
+compatible source-map-js, js-yaml and brace-expansion patches are locked. The
+Transformers/ONNX runtime remains pinned. Current remaining findings are described
+in the implementation verification report; a passing functional suite is not a
+clean dependency audit.
+
+October 19 verification: all 347 Vitest tests in 77 files passed, along with
+formatting, lint, strict TypeScript and both builds. Twelve timeline/sample
+browser checks and the fourteen existing media-regression checks passed on
+local Chrome with the packaged synthetic MP4; exports were inspected with
+FFprobe. Layout checks covered 1440, 768, 390 and 320 pixels. This is local
+verification, not a production deployment or a physical-device benchmark.
+
+The dependency audit decreased from 18 to **10 affected packages: 0 critical,
+5 high, 5 moderate**. The five high entries cascade from unpatched development
+`braces` through the Next ESLint plugin. The five moderate entries cascade from
+`sprintf-js` through the retained Node inference download/proxy dependencies.
+These packages are absent from the static browser worker entry point; this does
+not prove that every installation/build context is harmless. The configured CI
+`npm audit --audit-level=high` step still fails; no finding is suppressed.
+See the [braces advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
+[sprintf-js advisory](https://github.com/advisories/GHSA-hp3w-g68c-fv3c).

@@ -43,6 +43,9 @@ import {
   loadSource,
   saveProject,
 } from "./storage";
+import { Timeline } from "./timeline";
+import { checkedRange, clampTime } from "./timeline-model";
+import { createSampleProject, isSampleMedia, loadSample } from "./sample";
 import "./style.css";
 
 function download(blob: Blob, name: string) {
@@ -94,6 +97,7 @@ function Studio() {
   const source = useRef<File | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const previewEnd = useRef<number | null>(null);
+  const pendingSeek = useRef(0);
   const exportWorker = useRef<Worker | null>(null);
   const exportId = useRef<string | null>(null);
   const aiWorker = useRef<Worker | null>(null);
@@ -187,6 +191,7 @@ function Studio() {
   }
   function resetEditor() {
     previewEnd.current = null;
+    pendingSeek.current = 0;
     setClipId(null);
     setClipName("Highlight 1");
     setStart("00:00:00.000");
@@ -208,11 +213,17 @@ function Studio() {
     setVideoUrl("");
     setEnd(formatTime(Math.min(30, next.media.duration)));
     try {
-      const file = await loadSource(next);
+      const file =
+        (await loadSource(next)) ??
+        (isSampleMedia(next.media) ? await loadSample() : null);
       if (file && (await fingerprint(file)) === next.media.fingerprint) {
         source.current = file;
         setVideoUrl(URL.createObjectURL(file));
-        setNotice("Recording reopened from this device.");
+        setNotice(
+          isSampleMedia(next.media)
+            ? "Synthetic sample reopened. Your saved clip ranges are preserved."
+            : "Recording reopened from this device.",
+        );
       } else
         setNotice(
           "Your edits are saved. Reselect the original recording to continue.",
@@ -223,9 +234,13 @@ function Studio() {
       setLoading(false);
     }
   }
-  async function ingest(file?: File, relink = false) {
-    if (!file || busy) return;
-    if (!relink && !owned) {
+  async function ingest(
+    input?: File | (() => Promise<File>),
+    relink = false,
+    sample = false,
+  ) {
+    if (!input || busy) return;
+    if (!relink && !sample && !owned) {
       setError(
         "Confirm that you own this recording or have permission to use it.",
       );
@@ -235,6 +250,7 @@ function Studio() {
     setError("");
     setNotice("Reading the recording on your device…");
     try {
+      const file = typeof input === "function" ? await input() : input;
       const media = await inspectMedia(file);
       if (relink && project) {
         if (
@@ -246,29 +262,41 @@ function Studio() {
             "This is a different recording. Select the original file so your saved clip ranges still match.",
           );
         source.current = file;
+        previewEnd.current = null;
+        pendingSeek.current = 0;
+        setPlayhead(0);
         setVideoUrl(URL.createObjectURL(file));
         setNotice("Original recording reconnected.");
       } else {
         resetEditor();
-        const next: Project = {
-          schema: "r6-browser-project/v1",
-          id: crypto.randomUUID(),
-          title:
-            file.name.replace(/\.[^.]+$/, "").slice(0, 100) ||
-            "Untitled project",
-          updatedAt: new Date().toISOString(),
-          ownershipConfirmed: true,
-          media,
-          notes: "",
-          clips: [],
-          sourceSaved: false,
-        };
+        const next: Project = sample
+          ? createSampleProject(media)
+          : {
+              schema: "r6-browser-project/v1",
+              id: crypto.randomUUID(),
+              title:
+                file.name.replace(/\.[^.]+$/, "").slice(0, 100) ||
+                "Untitled project",
+              updatedAt: new Date().toISOString(),
+              ownershipConfirmed: true,
+              media,
+              notes: "",
+              clips: [],
+              sourceSaved: false,
+            };
         source.current = file;
         setVideoUrl(URL.createObjectURL(file));
         setEnd(formatTime(Math.min(30, media.duration)));
         setNewProject(false);
         commit(next);
-        if (remember) {
+        if (sample && next.clips[0]) {
+          const clip = next.clips[0];
+          setClipId(clip.id);
+          setClipName(clip.name);
+          setStart(formatTime(clip.start));
+          setEnd(formatTime(clip.end));
+        }
+        if (remember && !sample) {
           try {
             await keepSource(next.id, file);
             next.sourceSaved = true;
@@ -286,7 +314,9 @@ function Studio() {
           }
         } else
           setNotice(
-            "Recording opened privately. Reselect it after reopening; edits save automatically.",
+            sample
+              ? "Synthetic editing sample · original shapes and generated tone, CC0. This is not gameplay. Play, trim, save and export; no upload is needed."
+              : "Recording opened privately. Reselect it after reopening; edits save automatically.",
           );
       }
     } catch (e) {
@@ -327,13 +357,21 @@ function Studio() {
       setError(errorText(e));
     }
   }
+  function seekTo(seconds: number) {
+    if (!project) return;
+    previewEnd.current = null;
+    const time = clampTime(seconds, project.media.duration);
+    pendingSeek.current = time;
+    if (video.current) video.current.currentTime = time;
+    setPlayhead(time);
+  }
   function selectClip(clip: Clip) {
     setClipId(clip.id);
     setClipName(clip.name);
     setStart(formatTime(clip.start));
     setEnd(formatTime(clip.end));
     setAudioTrack(clip.audioTrack);
-    if (video.current) video.current.currentTime = clip.start;
+    seekTo(clip.start);
   }
   async function previewRange() {
     try {
@@ -683,6 +721,23 @@ function Studio() {
                   </button>
                 )}
               </div>
+              <div className="sample-entry">
+                <h3>Try a sample first</h3>
+                <p>
+                  A 12-second original animation with a generated tone.
+                  Synthetic media, not R6 gameplay. No recording, account or API
+                  key required.
+                </p>
+                <button
+                  disabled={busy}
+                  onClick={() => void ingest(() => loadSample(), false, true)}
+                >
+                  Load sample project
+                </button>
+                <p>
+                  <a href="sample/LICENSE.txt">Sample license (CC0)</a>
+                </p>
+              </div>
             </section>
           )}
           {project && !newProject && (
@@ -717,74 +772,112 @@ function Studio() {
                   <Download size={16} /> Project backup
                 </button>
               </div>
+              {isSampleMedia(project.media) && (
+                <p className="sample-badge">
+                  Synthetic editing sample · original geometric animation, not
+                  gameplay. CC0 licensed.
+                </p>
+              )}
               <div className="editor-grid">
-                <section className="player-panel panel">
-                  <div className="player">
-                    {videoUrl ? (
-                      <video
-                        ref={video}
-                        src={videoUrl}
-                        controls
-                        playsInline
-                        muted
-                        preload="metadata"
-                        aria-label="Source recording"
-                        onTimeUpdate={(e) => {
-                          const v = e.currentTarget;
-                          setPlayhead(v.currentTime);
-                          if (
-                            previewEnd.current !== null &&
-                            v.currentTime >= previewEnd.current
-                          ) {
-                            v.pause();
-                            previewEnd.current = null;
+                <div className="preview-workspace">
+                  <section className="player-panel panel">
+                    <div className="player">
+                      {videoUrl ? (
+                        <video
+                          ref={video}
+                          src={videoUrl}
+                          controls
+                          playsInline
+                          muted
+                          preload="metadata"
+                          aria-label="Source recording"
+                          onLoadedMetadata={(e) => {
+                            const time = clampTime(
+                              pendingSeek.current,
+                              project.media.duration,
+                            );
+                            e.currentTarget.currentTime = time;
+                            setPlayhead(time);
+                          }}
+                          onTimeUpdate={(e) => {
+                            const v = e.currentTarget;
+                            setPlayhead(v.currentTime);
+                            pendingSeek.current = v.currentTime;
+                            if (
+                              previewEnd.current !== null &&
+                              v.currentTime >= previewEnd.current
+                            ) {
+                              v.pause();
+                              previewEnd.current = null;
+                            }
+                          }}
+                          onError={() =>
+                            setError(
+                              "This browser cannot play the recording’s codec. Try an H.264 MP4 or the local Studio.",
+                            )
                           }
-                        }}
-                        onError={() =>
-                          setError(
-                            "This browser cannot play the recording’s codec. Try an H.264 MP4 or the local Studio.",
-                          )
-                        }
-                      />
-                    ) : (
-                      <div className="relink">
-                        <Film size={36} />
-                        <h3>Reconnect your recording</h3>
-                        <p>
-                          Your notes and clips are here. Select the original
-                          file to play or export.
-                        </p>
-                        <label className="file-button primary">
-                          Reselect recording
-                          <input
-                            aria-label="Reselect recording"
-                            type="file"
-                            accept=".mp4,.mov,.webm"
-                            disabled={busy}
-                            onChange={(e) => {
-                              void ingest(e.target.files?.[0], true);
-                              e.target.value = "";
-                            }}
-                          />
-                        </label>
-                      </div>
+                        />
+                      ) : (
+                        <div className="relink">
+                          <Film size={36} />
+                          <h3>Reconnect your recording</h3>
+                          <p>
+                            Your notes and clips are here. Select the original
+                            file to play or export.
+                          </p>
+                          <label className="file-button primary">
+                            Reselect recording
+                            <input
+                              aria-label="Reselect recording"
+                              type="file"
+                              accept=".mp4,.mov,.webm"
+                              disabled={busy}
+                              onChange={(e) => {
+                                void ingest(e.target.files?.[0], true);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                    <div className="media-meta">
+                      <strong>{formatTime(playhead)}</strong>
+                      <span>
+                        {project.media.width} × {project.media.height} ·{" "}
+                        {project.media.codec.toUpperCase()} ·{" "}
+                        {(project.media.size / 1024 ** 2).toFixed(1)} MB
+                      </span>
+                      <span>Duration {formatTime(project.media.duration)}</span>
+                    </div>
+                    <p className="player-help">
+                      Source playback starts muted and uses your browser’s
+                      default audio track. Render a preview to hear the export’s
+                      selected track.
+                    </p>
+                  </section>
+                  <Timeline
+                    key={project.id}
+                    duration={project.media.duration}
+                    playhead={playhead}
+                    range={checkedRange(
+                      parseTime(start),
+                      parseTime(end),
+                      project.media.duration,
                     )}
-                  </div>
-                  <div className="media-meta">
-                    <strong>{formatTime(playhead)}</strong>
-                    <span>
-                      {project.media.width} × {project.media.height} ·{" "}
-                      {project.media.codec.toUpperCase()} ·{" "}
-                      {(project.media.size / 1024 ** 2).toFixed(1)} MB
-                    </span>
-                    <span>Duration {formatTime(project.media.duration)}</span>
-                  </div>
-                  <p className="player-help">
-                    Source playback starts muted and uses your browser’s default
-                    audio track. Render a preview to hear the export’s selected
-                    track.
-                  </p>
-                </section>
+                    clips={project.clips}
+                    selectedId={clipId}
+                    disabled={busy}
+                    canPlay={Boolean(videoUrl)}
+                    onSeek={seekTo}
+                    onRange={(range) => {
+                      previewEnd.current = null;
+                      setStart(formatTime(range.start));
+                      setEnd(formatTime(range.end));
+                    }}
+                    onClip={selectClip}
+                  />
+                </div>
                 <section className="clip-panel panel">
                   <div className="section-title">
                     <Scissors size={19} />

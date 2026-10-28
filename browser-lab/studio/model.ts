@@ -97,9 +97,10 @@ export function validateRange(start: number, end: number, duration: number) {
     throw new Error(
       "Set a start before the end, within the recording’s duration.",
     );
-  if (end - start > MAX_CLIP_SECONDS)
+  if (end - start > MAX_CLIP_SECONDS + 1e-9)
     throw new Error("Keep each browser clip at 5 minutes or less.");
-  if (end - start < 0.1)
+  // Decimal millisecond boundaries can differ by a floating-point rounding error.
+  if (end - start < 0.1 - 1e-9)
     throw new Error("Choose at least 0.1 seconds of video.");
 }
 export function parseTime(value: string) {

@@ -33,6 +33,12 @@ await build({
 for (const name of ["index.html", "favicon.svg"])
   await copyFile(`browser-lab/${name}`, `${output}/${name}`);
 await copyFile("browser-lab/studio/index.html", `${output}/studio/index.html`);
+await mkdir(`${output}/studio/sample`, { recursive: true });
+for (const name of ["clip.mp4", "manifest.json", "LICENSE.txt", "README.md"])
+  await copyFile(
+    `browser-lab/studio/sample/${name}`,
+    `${output}/studio/sample/${name}`,
+  );
 for (const name of await readdir("node_modules/onnxruntime-web/dist")) {
   if (
     name === "ort-wasm-simd-threaded.asyncify.mjs" ||

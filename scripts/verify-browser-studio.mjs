@@ -213,6 +213,7 @@ try {
       /doorway/,
     );
     await page
+      .locator(".clip-list")
       .getByRole("button", { name: /^Verified browser clip 00:/ })
       .click();
     assert.equal(

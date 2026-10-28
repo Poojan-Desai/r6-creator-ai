@@ -1,0 +1,15 @@
+CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+
+The contributors to this sample dedicate the original geometric animation and
+synthesized tone in clip.mp4 to the public domain under CC0 1.0 Universal.
+To the extent possible under law, they waive all copyright and related or
+neighboring rights to that content worldwide, without conditions.
+
+You may copy, modify and distribute the sample, including for commercial
+purposes, without asking permission. The sample is offered without warranty.
+
+The complete CC0 1.0 legal instrument is incorporated by reference:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+This dedication covers the original sample content. It does not change the
+licenses of the application, FFmpeg, encoders or any other dependency.

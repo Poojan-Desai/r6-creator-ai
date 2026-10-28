@@ -10,6 +10,8 @@ const types = {
   ".svg": "image/svg+xml",
   ".wasm": "application/wasm",
   ".txt": "text/plain",
+  ".json": "application/json",
+  ".mp4": "video/mp4",
 };
 createServer(async (request, response) => {
   try {
@@ -34,6 +36,8 @@ createServer(async (request, response) => {
   } catch {
     response.writeHead(404).end("Not found");
   }
-}).listen(4176, "127.0.0.1", () =>
-  console.log("Browser Studio: http://127.0.0.1:4176"),
+}).listen(Number(process.env.R6_BROWSER_PORT || 4176), "127.0.0.1", () =>
+  console.log(
+    `Browser Studio: http://127.0.0.1:${process.env.R6_BROWSER_PORT || 4176}`,
+  ),
 );

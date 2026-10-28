@@ -1,254 +1,116 @@
 # R6 Creator AI
 
-**Gameplay video editing and on-device semantic search.** A browser Creator Studio
-and a full local Next.js application keep recordings on your device while making
-clips, saved projects, media jobs, and AI-assisted review inspectable.
+A local-first video editing and evidence-review workspace built with TypeScript,
+Next.js, SQLite/Prisma and FFmpeg. A separate browser studio uses WebCodecs and
+IndexedDB to trim and export video without uploading recordings.
+
+[Browser demo](https://r6-creator-studio-poojan.netlify.app/studio/) ·
+[Architecture and browser limits](docs/WEB-STUDIO.md) ·
+[Full local guide](docs/DETAILED_GUIDE.md)
+
+The hosted demo may lag this repository. Run the current source locally to use
+the October timeline and packaged synthetic sample.
 
 ## Engineering highlights
 
-- **Browser media pipeline:** WebCodecs and Mediabunny render MP4/WebM clips in a
-  worker; IndexedDB persists projects and clip ranges, with optional OPFS storage
-  for recordings. [Browser architecture and limits](docs/WEB-STUDIO.md)
-- **Local backend and media jobs:** Next.js route handlers, SQLite/Prisma, streamed
-  uploads and byte-range playback, FFmpeg/FFprobe processing, and persisted jobs
-  with cancellation, cleanup, and restart reconciliation.
-- **Local AI and review:** whisper.cpp transcription and pinned MiniLM semantic
-  search, with exact source notes and context. Search retrieves supplied text;
-  it does not recognize gameplay events or invent match summaries.
-- **Creator workflow:** six reviewable writing outputs, 29 structured style
-  characteristics with evidence and manual corrections, multi-reference style
-  profiles, and a source-cited catalog of 28 maps including District.
-  [Full local workflow](docs/DETAILED_GUIDE.md)
-- **Release evidence:** 329 tests across 75 files and
-  [GitHub CI](https://github.com/Poojan-Desai/r6-creator-ai/actions/runs/34240922555)
-  passed on the September 8, 2026 merged release. The browser release also records
-  14 checks on production and real 1080 × 1920 H.264/AAC gameplay export.
-  [Verification details](docs/WEB-STUDIO.md#september-7-2026-verification)
+- Streamed, validated MP4 ingestion with bounded multipart fields, request-abort
+  handling, exclusive private temporary files and ownership-safe failure cleanup.
+- SQLite metadata and persisted media jobs with cancellation, restart recovery
+  and guarded terminal transitions that prevent a late cancellation or probe
+  result from overwriting completed or cancelled export state.
+- Browser playback, keyboard/drag timeline trimming, zoom, saved clip ranges,
+  portable JSON backups, optional local recording storage and MP4/WebM export.
+- A checksummed original CC0 sample makes the editing workflow reproducible
+  without private gameplay. Its animation is explicitly separate from R6 evidence.
+- On-device MiniLM search retrieves exact supplied notes; the local application
+  also provides transcription, reviewable writing and evidence-linked editing tools.
 
-## Try Creator Studio in your browser
+See [ingestion and export hardening](docs/HARDENING-2026-10.md) for failure cases,
+regression coverage and remaining concurrency limits.
 
-[Open Creator Studio](https://r6-creator-studio-poojan.netlify.app/studio/) · [Lightweight review companion](https://r6-creator-studio-poojan.netlify.app) · [Web setup and limits](docs/WEB-STUDIO.md)
+## Run the browser studio
 
-Open an owned MP4, MOV or WebM recording, inspect its metadata, play it, save
-timestamped clips, choose an audio track, render a preview, and download MP4 or
-WebM video. Video processing stays on your device. Project notes and clip ranges
-save in this browser; optional browser storage keeps recordings up to 1 GB.
-Download a JSON project backup and keep your original recording for portability.
-The browser path accepts sources up to 4 GB / 6 hours and exports one clip at a
-time up to 5 minutes / 256 MB, at up to 1920 pixels on the longest side and 30 fps.
-Encoding requires supported WebCodecs; failed codecs show an actionable message.
-
-## Free on-device search and review
-
-[Open R6 Browser Studio](https://r6-creator-studio-poojan.netlify.app) · [Release verification](docs/RELEASE-2026-09.md)
-
-The public website runs a real, pinned MiniLM semantic-search model on your device.
-Paste timestamped gameplay notes, search by meaning, inspect the exact source and
-complete context, optionally play a local recording, and download an editing brief.
-The brief outline is rule-based. This small model does not recognize gameplay or
-write invented match summaries. Initial model/runtime downloads need internet;
-notes, queries, and video are not sent to the hosted backend. English works best.
-
-Advanced timelines, replay parsing, transcription, narration, captions and Coaching
-Lab run in the local application, whose source is included in this repository.
-Browser Studio adds single-clip MP4/WebM
-export without replacing these local tools or changing the original review page.
-Netlify serves static files and read-only public sample/health endpoints on the
-existing free plan; no database, cloud inference, API key, or paid add-on is needed.
-Free plan quotas still apply.
+Requirements: Node.js 20.9+ and a browser with compatible WebCodecs support.
 
 ```sh
-npm ci
-npm run browser:build
-npm run browser:dev
-# Open http://127.0.0.1:4176. Ctrl+C stops the preview.
-```
-
-For local full-studio setup, continue below. Its navigation includes **Free AI search**
-after `npm run browser:build`. Start/dev bind to `127.0.0.1`; foreign Host/Origin
-requests are rejected. This app is not designed to be exposed as a public server.
-
-Optional OpenAI writing remains disabled without your own server key and a positive
-budget. No live paid OpenAI call was made for this release. Budget estimates now
-include schema/Unicode overhead, SQLite serializes reservations, missing usage keeps
-its reservation, and deleting a project preserves its charge ledger. Automatic paid
-request retries are disabled. This application budget is not an account-wide billing
-cap; verify provider prices and limits before enabling paid writing.
-
-**Local AI-assisted gameplay media analysis platform — active development.**
-
-R6 Creator AI is a local-first Next.js application for organizing owned
-Rainbow Six Siege recordings, inspecting video metadata, creating timestamped
-clips, and developing content packages without uploading gameplay to a cloud
-service. It combines a TypeScript interface, SQLite persistence, streamed media,
-and FFmpeg/FFprobe processing in one desktop-friendly web workspace.
-
-Short-form writing also has an optional OpenAI Responses API provider. It is
-off by default, requires a server key, a positive configured budget, and
-per-request user consent, and sends bounded text evidence only—never source
-video/audio, reference media, filenames, or local paths. The deterministic
-local writer remains available with no key and is the transparent fallback.
-
-> The dependable portfolio scope is the local media workflow: upload, metadata
-> extraction, byte-range playback, manual timestamp clipping, clip preview and
-> download, and persistent projects. Gameplay-event detection, automatic
-> highlight selection, automatic editing, and Match Replay parsing are research
-> prototypes. This repository does **not** claim that those features work
-> reliably across recordings or game versions.
-
-## Why this project
-
-Long gameplay recordings are expensive to review and awkward to move between
-tools. This project explores a privacy-conscious workflow where the original
-media stays on the user's Mac and every generated result remains reviewable.
-Experimental signals are kept separate from verified facts so an uncertain
-detector result is not presented as a confirmed in-game event.
-
-## Verified core workflow
-
-- Stream MP4 uploads to disk with file, size, and video-stream validation.
-- Extract duration, resolution, frame rate, file size, and audio-track metadata.
-- Stream source videos and clips with HTTP byte-range support.
-- Create clips from validated start/end timestamps using local FFmpeg.
-- Preview, download, and delete generated clips.
-- Save projects, metadata, clips, and writing fields in local SQLite storage.
-- Return readable errors and clean up partial media after failed operations.
-- Exercise service and media invariants with automated Vitest coverage.
-
-The core workflow was also exercised during development with a real generated
-MP4, including upload, probe, clip creation, streaming, download headers,
-invalid-input rejection, persistence, and restart recovery.
-
-## Active-development areas
-
-The codebase contains additional labs for broad video/audio signals, transcripts,
-manual benchmark labels, candidate review, non-destructive edit plans, local
-voiceover, coaching evidence, map/operator context, and replay-provider
-experiments. These modules are intentionally conservative:
-
-- Broad scene, motion, brightness, audio, or transcript signals do not prove a
-  kill, clutch, round result, room, or operator.
-- Candidate scores help a person prioritize review; they do not predict views
-  or guarantee that a moment is a useful highlight.
-- A Match Replay adapter has been exercised against a limited fixture/package,
-  but compatibility and recovered fields can vary by game/parser version.
-- Export and editing paths require human review and are not described as a
-  reliable automatic editor.
-- No gameplay-event accuracy number is published because the repository does
-  not yet contain a sufficiently representative labeled benchmark.
-
-See [BENCHMARK.md](BENCHMARK.md) for the measurement contract and
-[docs/DETAILED_GUIDE.md](docs/DETAILED_GUIDE.md) for the complete local guide
-and implementation history. The final U8 audit is tracked in the
-[release-readiness ledger](docs/U8_RELEASE_READINESS.md), which separates
-public clean-clone checks from private retained-media verification.
-
-## Architecture
-
-```mermaid
-flowchart LR
-    UI["Next.js + TypeScript UI"] --> API["Validated route handlers"]
-    API --> Services["Project, media, clip, and evidence services"]
-    Services --> DB["SQLite + Prisma metadata"]
-    Services --> Disk["App-owned local media files"]
-    Services --> Media["FFmpeg + FFprobe"]
-    Services -. optional .-> Speech["Local whisper.cpp"]
-    Services -. experimental .-> Replay["Version-pinned replay adapter"]
-```
-
-Recordings and generated media live on disk; SQLite stores metadata and relative
-paths. Long-running processes are invoked with argument arrays rather than a
-shell, and uploaded filenames are never used as trusted filesystem paths.
-
-## Stack
-
-- Next.js, React, TypeScript, and Tailwind CSS
-- SQLite and Prisma
-- FFmpeg and FFprobe
-- Browser WebCodecs and Mediabunny; IndexedDB and optional OPFS storage
-- On-device MiniLM semantic search via Transformers.js and ONNX Runtime Web
-- Vitest, ESLint, Prettier, and strict TypeScript
-- Optional local `whisper.cpp` speech-to-text
-- Optional OpenAI Responses API with strict Zod Structured Outputs
-
-## Run locally
-
-Requirements: Node.js 20.9 or newer and macOS for the documented local workflow.
-
-```bash
 git clone https://github.com/Poojan-Desai/r6-creator-ai.git
 cd r6-creator-ai
 npm ci
-test -f .env || cp .env.example .env
+npm run browser:build
+npm run browser:dev
+```
+
+Open [http://127.0.0.1:4176/studio/](http://127.0.0.1:4176/studio/), then choose
+**Load sample project** or confirm permission to open your own recording.
+Browser sources are limited to 4 GB / 6 hours; individual exports to 5 minutes /
+256 MB, at up to 1920 pixels on the longest side and 30 fps. Encoding support
+varies by browser. Keep the original recording and download a project backup;
+browser storage can be cleared by the browser.
+
+## Run the full local application
+
+From the same checkout:
+
+```sh
+cp .env.example .env
 npm run db:setup
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Runtime recordings,
-generated clips, and SQLite files are stored in `./data` by default and are
-excluded from Git. The setup command creates `.env` from the safe example when
-needed so Prisma can read `DATABASE_URL`. Both `.env` and `.env.local` are
-ignored by Git.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The bundled FFmpeg/FFprobe
+executables support the documented macOS workflow; explicit paths can be set in
+`.env`. Runtime recordings, generated clips and SQLite data live below `./data`
+and are ignored by Git. Local transcription and replay experiments have separate
+optional setup commands in the [full guide](docs/DETAILED_GUIDE.md).
 
-Optional local transcription and replay experiments have separate setup steps:
+Press **Ctrl+C** in the terminal to stop either server. To reopen it, return to the
+checkout and run `npm run browser:dev` or `npm run dev` again. If a port is busy,
+stop the older preview or set `R6_BROWSER_PORT=4196 npm run browser:dev`. If Prisma
+reports a missing client/database, rerun `npm run db:setup`. Unsupported codec
+errors require a compatible browser or the full local FFmpeg workflow.
 
-```bash
-npm run transcription:setup
-npm run replay:setup
-```
+## Verification
 
-Neither is required for upload, metadata, playback, or manual clipping.
+Fresh local verification on October 28, 2026 passed:
 
-Optional cloud writing is configured separately. Copy `.env.example` to
-`.env.local`, set an API key and a deliberately small monthly budget, then
-select **OpenAI cloud writer** and confirm the disclosure for an individual
-generation. Keep the two pricing variables aligned with the selected model's
-official current pricing; the defaults match `gpt-5.6-luna` as checked on
-August 18, 2026. No live paid provider call is part of automated verification.
+- **367 automated tests across 80 files**, including real synthetic MP4 ingestion,
+  native clipping, upload interruption/cleanup and export-cancellation regressions.
+- **14 browser studio checks and 12 timeline/sample checks**, including actual
+  MP4/WebM rendering, playback, persistence, cancellation and narrow-screen layouts.
+- Formatting, ESLint, strict TypeScript, Next.js production build and browser build.
+- Dependency audit: zero known npm findings at verification time.
 
-After adding the key locally, run the minimal low-output provider check before
-using private project text:
-
-```bash
-npm run ai:smoke
-```
-
-Success prints the model, token counts, and `store=false`; it never prints the
-key. Then test one short-form generation in the UI to exercise consent, budget
-reservation, usage persistence, and the saved revision end to end.
-
-## Validate
-
-```bash
+```sh
+npm run db:generate
 npm run format:check
 npm run lint
 npm run typecheck
 npm test
 npm run build
+npm run browser:build
+# With browser:dev running and Google Chrome installed:
+npm run browser:verify-timeline
+npm run browser:verify -- "$PWD/browser-lab/studio/sample/clip.mp4"
 ```
 
-CI runs the same static checks, test suite, and production build. Media-specific
-changes should additionally be tested end to end with a real MP4 before being
-described as working.
+[Current verification details](docs/VERIFICATION-2026-10-28.md) record the scope.
+[GitHub Actions](https://github.com/Poojan-Desai/r6-creator-ai/actions) runs the
+source checks and builds. Local test results do not establish production load
+capacity or gameplay-recognition accuracy.
 
-The September 8, 2026 merged release passed formatting, ESLint, strict TypeScript,
-**329 tests across 75 files**, both the Next.js and browser production builds,
-and the dependency audit in
-[GitHub CI](https://github.com/Poojan-Desai/r6-creator-ai/actions/runs/34240922555).
-The [browser verification report](docs/WEB-STUDIO.md#september-7-2026-verification)
-records 14 checks on the local, preview, and production sites, including real
-MP4/WebM exports. These are release checks, not gameplay-recognition benchmarks.
+## Boundaries
 
-## Privacy and product boundaries
+Gameplay-event detection, replay compatibility and automated editing remain
+experimental; no representative event-accuracy benchmark is claimed. Notes search
+does not recognize gameplay or invent match facts. Native transcription, replay
+parsing and advanced local timelines are separate from browser studio capabilities.
 
-- Local media is excluded from version control and is not used for training.
-- Cloud writing is an explicit text-only action with preflight cost estimates,
-  global and per-project limits, persisted usage metadata, cancellation,
-  sanitized errors, and local fallback.
-- No authentication, hosted multi-user service, billing, or social publishing
-  is included.
-- YouTube references use the official embed/metadata paths; the app does not
-  download YouTube video or captions.
-- The user must own or have permission to process imported media.
-- This is an independent student project and is not affiliated with or endorsed
-  by Ubisoft.
+Media stays local. Optional cloud writing is disabled until a server key, positive
+budget and explicit per-request consent are provided; it sends bounded text only.
+No paid provider call is part of this verification. The application is designed
+for a single user's loopback machine, with no production multi-user identity or
+cloud job scheduler. Use recordings you own or have permission to process.
+
+This independent student project is not affiliated with Ubisoft. See
+[BENCHMARK.md](BENCHMARK.md) and the [release-readiness ledger](docs/U8_RELEASE_READINESS.md)
+for evidence and research limits.

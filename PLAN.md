@@ -1,3 +1,19 @@
+# October 19, 2026 — browser timeline and safe sample
+
+The current master development request adds a focused browser editing improvement:
+a source-time ruler, seek playhead, non-destructive trim handles with keyboard
+controls, optional tenth-second snapping, zoom/pan/fit, saved clip inspection,
+and an original explicitly synthetic 12-second CC0 sample. Reuse the existing
+File/Blob parser, project schema, IndexedDB, optional OPFS and worker exports.
+Saved clip ranges persist through the existing explicit Save clip action; zoom
+and unsaved range adjustments remain session state. Preserve all native U1–U8
+workflows and the review companion. No push, merge or deployment is authorized
+by this local implementation task.
+
+Patch the current Next.js/native-image/ZIP/test dependencies without upgrading
+the pinned Transformers/ONNX inference runtime. Record remaining upstream
+advisories honestly. See `docs/WEB-STUDIO.md` for scope and verification.
+
 # September 7, 2026 browser Creator Studio extension
 
 The user authorizes a production web workflow and GitHub publishing while preserving

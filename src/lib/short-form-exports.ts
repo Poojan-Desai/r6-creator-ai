@@ -206,8 +206,8 @@ export async function runShortFormExportJob(jobId: string) {
       `${jobId}.mp4`,
     );
     await mkdir(path.dirname(finalPath), { recursive: true });
-    await db.shortFormExportJob.update({
-      where: { id: jobId },
+    const claimed = await db.shortFormExportJob.updateMany({
+      where: { id: jobId, status: "QUEUED", cancelRequestedAt: null },
       data: {
         status: "RUNNING",
         progress: 1,
@@ -222,6 +222,12 @@ export async function runShortFormExportJob(jobId: string) {
         errorMessage: null,
       },
     });
+
+    if (claimed.count !== 1) {
+      if (controller.cancelRequested) throw new ExportCancelledError();
+      return;
+    }
+    if (controller.cancelRequested) throw new ExportCancelledError();
 
     await new Promise<void>((resolve, reject) => {
       const child = spawn(appConfig.ffmpegPath!, context.plan.arguments, {
@@ -252,8 +258,12 @@ export async function runShortFormExportJob(jobId: string) {
           if (Date.now() - lastProgressAt > 500) {
             lastProgressAt = Date.now();
             void db.shortFormExportJob
-              .update({
-                where: { id: jobId },
+              .updateMany({
+                where: {
+                  id: jobId,
+                  status: "RUNNING",
+                  cancelRequestedAt: null,
+                },
                 data: { progress },
               })
               .catch(() => undefined);
@@ -296,8 +306,9 @@ export async function runShortFormExportJob(jobId: string) {
         "The rendered export did not match its saved dimensions or duration.",
       );
     }
-    await db.shortFormExportJob.update({
-      where: { id: jobId },
+    if (controller.cancelRequested) throw new ExportCancelledError();
+    const completed = await db.shortFormExportJob.updateMany({
+      where: { id: jobId, status: "RUNNING", cancelRequestedAt: null },
       data: {
         status: "COMPLETED",
         progress: 100,
@@ -312,6 +323,7 @@ export async function runShortFormExportJob(jobId: string) {
         completedAt: new Date(),
       },
     });
+    if (completed.count !== 1) throw new ExportCancelledError();
   } catch (error) {
     if (!(error instanceof ExportCancelledError)) {
       console.error(
@@ -326,8 +338,8 @@ export async function runShortFormExportJob(jobId: string) {
     const cancelled =
       error instanceof ExportCancelledError || controller.cancelRequested;
     await db.shortFormExportJob
-      .update({
-        where: { id: jobId },
+      .updateMany({
+        where: { id: jobId, status: { in: ["QUEUED", "RUNNING"] } },
         data: {
           status: cancelled ? "CANCELLED" : "ERROR",
           progress: cancelled ? 0 : undefined,
@@ -458,10 +470,13 @@ export async function cancelShortFormExportJob(
     );
   }
   if (!["QUEUED", "RUNNING"].includes(job.status)) return job;
-  await db.shortFormExportJob.update({
-    where: { id: jobId },
+  const requested = await db.shortFormExportJob.updateMany({
+    where: { id: jobId, status: { in: ["QUEUED", "RUNNING"] } },
     data: { cancelRequestedAt: new Date(), stage: "Cancelling export" },
   });
+  if (requested.count !== 1) {
+    return db.shortFormExportJob.findUniqueOrThrow({ where: { id: jobId } });
+  }
   const controller = activeControllers.get(jobId);
   if (controller) {
     controller.cancelRequested = true;
@@ -472,8 +487,8 @@ export async function cancelShortFormExportJob(
       child.once("close", () => clearTimeout(forceKill));
     }
   } else {
-    await db.shortFormExportJob.update({
-      where: { id: jobId },
+    const cancelled = await db.shortFormExportJob.updateMany({
+      where: { id: jobId, status: { in: ["QUEUED", "RUNNING"] } },
       data: {
         status: "CANCELLED",
         progress: 0,
@@ -481,7 +496,7 @@ export async function cancelShortFormExportJob(
         completedAt: new Date(),
       },
     });
-    await cleanupTemporaryDirectory(jobId);
+    if (cancelled.count === 1) await cleanupTemporaryDirectory(jobId);
   }
   return db.shortFormExportJob.findUniqueOrThrow({ where: { id: jobId } });
 }
