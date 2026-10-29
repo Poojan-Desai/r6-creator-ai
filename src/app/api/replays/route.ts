@@ -1,3 +1,4 @@
+import { localRequestRejection } from "@/lib/local-request-guard";
 import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
 
@@ -12,7 +13,9 @@ import { findReplayPackage, listReplayPackages } from "@/lib/replays/service";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const rejection = localRequestRejection(request);
+  if (rejection) return rejection;
   try {
     return Response.json({ replays: await listReplayPackages() });
   } catch (error) {
@@ -21,6 +24,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const rejection = localRequestRejection(request);
+  if (rejection) return rejection;
   const importId = randomUUID();
   const replayPackageId = randomUUID();
   const temporaryDirectory = replayImportDirectory(importId);

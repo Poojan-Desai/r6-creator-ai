@@ -1,3 +1,4 @@
+import { localRequestRejection } from "@/lib/local-request-guard";
 import { mkdir, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 
@@ -21,6 +22,8 @@ export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: Context) {
+  const rejection = localRequestRejection(request);
+  if (rejection) return rejection;
   const { id: studioProjectId } = await params;
   const assetId = crypto.randomUUID();
   const directory = studioMediaDirectory(studioProjectId);

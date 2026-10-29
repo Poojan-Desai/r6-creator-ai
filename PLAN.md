@@ -1,3 +1,17 @@
+# October 28, 2026 — preserve streamed HTTP ingestion
+
+Real local user testing of the original 8.39 GB recording exposed a framework
+integration constraint: Next.js Proxy clones request bodies and its default
+10 MB clone limit truncates streamed multipart uploads before the route handler.
+Keep the limit unchanged. Exclude only the six exact streaming-ingestion route
+groups from Proxy; every exported handler in those groups must enforce the same
+loopback Host and Origin/fetch-metadata checks before any body or state work.
+Other routes retain Proxy enforcement. Verify compiled matcher boundaries,
+negative real HTTP requests before body consumption, an original-derived MP4
+larger than 10 MB through the actual server, byte-identical persisted media and
+streaming-to-disk/memory observations. Preserve original media and all native
+and browser workflows. No remote publication is part of this local fix.
+
 # October 19, 2026 — browser timeline and safe sample
 
 The current master development request adds a focused browser editing improvement:

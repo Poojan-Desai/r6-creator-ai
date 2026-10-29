@@ -16,3 +16,30 @@ export function isAllowedLocalRequest(
     return false;
   }
 }
+
+/** Enforce the same loopback/origin boundary before an upload route reads a body.
+ * These routes bypass Proxy because Next clones and buffers Proxy request bodies.
+ */
+export function localRequestRejection(request: Request): Response | null {
+  let allowed = false;
+  try {
+    allowed = isAllowedLocalRequest(
+      request.headers,
+      new URL(request.url).protocol,
+    );
+  } catch {
+    // A malformed URL must never bypass the local request boundary.
+  }
+  return allowed
+    ? null
+    : Response.json(
+        {
+          error: {
+            message:
+              "This private studio accepts same-origin requests on this Mac only.",
+            code: "LOCAL_ACCESS_ONLY",
+          },
+        },
+        { status: 403 },
+      );
+}

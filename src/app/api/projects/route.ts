@@ -1,3 +1,4 @@
+import { localRequestRejection } from "@/lib/local-request-guard";
 import { mkdir, rename, rm } from "node:fs/promises";
 import path from "node:path";
 
@@ -15,7 +16,9 @@ import { probeVideo } from "@/lib/video";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const rejection = localRequestRejection(request);
+  if (rejection) return rejection;
   try {
     const projects = await db.project.findMany({
       orderBy: { createdAt: "desc" },
@@ -28,6 +31,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const rejection = localRequestRejection(request);
+  if (rejection) return rejection;
   const projectId = crypto.randomUUID();
   const projectDirectory = projectUploadDirectory(projectId);
   const temporaryPath = path.join(projectDirectory, "source.uploading");
