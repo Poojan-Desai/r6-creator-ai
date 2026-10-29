@@ -19,7 +19,7 @@ import {
   CONTENT_TONES,
   type ContentSuggestion,
   type ContentTone,
-} from "@/lib/content-writing";
+} from "@/lib/content-writing/types";
 import { formatBytes } from "@/lib/format";
 import type { ClipDto } from "@/lib/projects";
 import { formatDuration, parseTimeInput } from "@/lib/time";

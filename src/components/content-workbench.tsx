@@ -17,7 +17,7 @@ import type { ContentDraftDto } from "@/lib/projects";
 import {
   CONTENT_SUGGESTION_EVENT,
   type ContentSuggestion,
-} from "@/lib/content-writing";
+} from "@/lib/content-writing/types";
 
 type DraftValues = Omit<ContentDraftDto, "updatedAt">;
 

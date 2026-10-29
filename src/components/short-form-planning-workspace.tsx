@@ -17,7 +17,7 @@ import type {
   ShortFormProductionState,
   ShortFormStoryPlan,
 } from "@/lib/short-form-productions";
-import type { ShortFormWritingPackage } from "@/lib/content-writing";
+import type { ShortFormWritingPackage } from "@/lib/content-writing/types";
 import { formatDuration } from "@/lib/time";
 
 type Candidate = StudioCandidateState["candidates"][number];
