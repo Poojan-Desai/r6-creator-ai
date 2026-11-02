@@ -5,19 +5,22 @@ Next.js, SQLite/Prisma and FFmpeg. A separate browser studio uses WebCodecs and
 IndexedDB to trim and export video without uploading recordings.
 
 [Browser demo](https://r6-creator-studio-poojan.netlify.app/studio/) ·
+[Updates and editor limits](https://r6-creator-studio-poojan.netlify.app/release-notes.html) ·
 [Architecture and browser limits](docs/WEB-STUDIO.md) ·
 [Full local guide](docs/DETAILED_GUIDE.md)
 
-The hosted demo may lag this repository. Run the current source locally to use
-the October timeline and packaged synthetic sample.
+The browser build includes timeline trimming and a packaged synthetic sample.
+Use the full local application for native FFmpeg workflows and larger recordings.
 
 ## Engineering highlights
 
 - Streamed, validated MP4 ingestion with bounded multipart fields, request-abort
   handling, exclusive private temporary files and ownership-safe failure cleanup.
-- SQLite metadata and persisted media jobs with cancellation, restart recovery
-  and guarded terminal transitions that prevent a late cancellation or probe
-  result from overwriting completed or cancelled export state.
+- SQLite metadata and persisted media jobs. Short-form final exports use guarded
+  terminal transitions to arbitrate late cancellation and completion; other
+  render paths have separate lifecycle limits documented in the verification notes.
+- Guarded native ingestion avoids Next Proxy body cloning, while shared writing
+  controls keep native server dependencies outside the browser bundle.
 - Browser playback, keyboard/drag timeline trimming, zoom, saved clip ranges,
   portable JSON backups, optional local recording storage and MP4/WebM export.
 - A checksummed original CC0 sample makes the editing workflow reproducible
@@ -42,8 +45,8 @@ npm run browser:dev
 
 Open [http://127.0.0.1:4176/studio/](http://127.0.0.1:4176/studio/), then choose
 **Load sample project** or confirm permission to open your own recording.
-Browser sources are limited to 4 GB / 6 hours; individual exports to 5 minutes /
-256 MB, at up to 1920 pixels on the longest side and 30 fps. Encoding support
+Browser sources are limited to 4 GiB / 6 hours; individual exports to 5 minutes /
+256 MiB, at up to 1920 pixels on the longest side and 30 fps. Encoding support
 varies by browser. Keep the original recording and download a project backup;
 browser storage can be cleared by the browser.
 
@@ -71,14 +74,29 @@ errors require a compatible browser or the full local FFmpeg workflow.
 
 ## Verification
 
-Fresh local verification on October 28, 2026 passed:
+Fresh source validation on November 2, 2026, after the two ingestion/client-boundary
+fixes passed:
 
-- **367 automated tests across 80 files**, including real synthetic MP4 ingestion,
-  native clipping, upload interruption/cleanup and export-cancellation regressions.
+- **400 automated tests across 82 files**, including real synthetic MP4 ingestion,
+  native clipping, upload interruption/cleanup, request guards, browser dependency
+  boundaries and export-cancellation regressions.
 - **14 browser studio checks and 12 timeline/sample checks**, including actual
-  MP4/WebM rendering, playback, persistence, cancellation and narrow-screen layouts.
+  MP4/WebM rendering, playback, persistence, cancellation and narrow-screen layouts
+  (recorded October 28; these are separate from the full application's manual review).
 - Formatting, ESLint, strict TypeScript, Next.js production build and browser build.
-- Dependency audit: zero known npm findings at verification time.
+
+The October 28–November 2 hands-on review imported an owned **8.39 GB** original
+into the full local app, verified byte identity, and created/downloaded a real
+**12-second 1080p/60 fps** Clip Station output. Range validation, playback,
+saved text and completed-work persistence after a clean restart were exercised.
+The complete source decode finished with one duplicate-DTS warning; the output
+decode was clean. The visual review sampled the timeline rather than watching
+every frame. These results do not apply to the hosted browser editor's lower limits.
+See the [real-recording review](docs/REAL_RECORDING_REVIEW.md) for scope and limits.
+
+The November 2 npm audit reported zero production findings and 16 moderate
+development-tool findings, with no high or critical findings. No forced dependency
+downgrade was applied to silence the development audit.
 
 ```sh
 npm run db:generate

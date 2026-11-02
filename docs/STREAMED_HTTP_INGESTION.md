@@ -70,6 +70,7 @@ without establishing their exact contribution. Live backing storage and disk
 progress support streaming for these bounded requests.
 
 These are controlled local observations, not a general memory ceiling, production
-load benchmark or proof for every 20 GiB recording. The original full recording
-requires a separate manual post-fix import and editing verification. No global
+load benchmark or proof for every 20 GiB recording. The separate full-recording
+post-fix import and editing results are recorded in
+[the real-recording review](REAL_RECORDING_REVIEW.md). No global
 concurrency/disk scheduler or multi-user server is introduced.

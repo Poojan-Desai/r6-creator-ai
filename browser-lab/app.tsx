@@ -583,6 +583,7 @@ function App() {
       </main>
       <footer>
         <span>R6 Creator AI · Built by Poojan Desai</span>
+        <a href="./release-notes.html">Updates & editor limits</a>
         <span>{backend}</span>
         <span>Independent fan project. Not affiliated with Ubisoft.</span>
       </footer>

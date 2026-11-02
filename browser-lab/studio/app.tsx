@@ -576,6 +576,7 @@ function Studio() {
           <span>STUDIO</span>
         </a>
         <nav>
+          <a href="../release-notes.html">Updates & editor limits</a>
           <a href="../">
             <ArrowLeft size={16} /> Review companion
           </a>

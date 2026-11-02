@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { execFileSync } from "node:child_process";
 import {
   copyFile,
   mkdir,
@@ -30,8 +31,28 @@ await build({
   define: { "process.env.NODE_ENV": '"production"' },
   legalComments: "external",
 });
-for (const name of ["index.html", "favicon.svg"])
+for (const name of [
+  "index.html",
+  "favicon.svg",
+  "release-notes.html",
+  "release-notes.css",
+])
   await copyFile(`browser-lab/${name}`, `${output}/${name}`);
+await writeFile(
+  `${output}/build-info.json`,
+  JSON.stringify(
+    {
+      repository: "Poojan-Desai/r6-creator-ai",
+      commit: execFileSync("git", ["rev-parse", "HEAD"], {
+        encoding: "utf8",
+      }).trim(),
+      builtAt: new Date().toISOString(),
+      application: "browser-studio",
+    },
+    null,
+    2,
+  ) + "\n",
+);
 await copyFile("browser-lab/studio/index.html", `${output}/studio/index.html`);
 await mkdir(`${output}/studio/sample`, { recursive: true });
 for (const name of ["clip.mp4", "manifest.json", "LICENSE.txt", "README.md"])
