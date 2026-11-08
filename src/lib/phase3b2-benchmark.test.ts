@@ -48,6 +48,118 @@ describe("Phase 3B.2 benchmark calculations", () => {
     ).toHaveLength(1);
   });
 
+  it("never matches spans from different benchmark categories", () => {
+    expect(
+      matchBenchmarkSpans(
+        [span("label", 0, 5, 10)],
+        [{ ...span("event", 0, 5, 10), category: "QUIET_OR_LOW_INTEREST" }],
+      ),
+    ).toEqual([]);
+  });
+
+  it("requires meaningful overlap for quiet sections even when peaks are close", () => {
+    expect(
+      matchBenchmarkSpans(
+        [{ ...span("label", 0, 2, 4), category: "QUIET_OR_LOW_INTEREST" }],
+        [{ ...span("event", 3.5, 4, 20), category: "QUIET_OR_LOW_INTEREST" }],
+      ),
+    ).toEqual([]);
+  });
+
+  it("requires a close peak for creator reactions even with high overlap", () => {
+    expect(
+      matchBenchmarkSpans(
+        [{ ...span("label", 0, 2, 30), category: "LOUD_CREATOR_REACTION" }],
+        [{ ...span("event", 0, 25, 30), category: "LOUD_CREATOR_REACTION" }],
+      ),
+    ).toEqual([]);
+  });
+
+  it("requires overlap as well as a close peak for creator reactions", () => {
+    expect(
+      matchBenchmarkSpans(
+        [{ ...span("label", 0, 1, 1.5), category: "LOUD_CREATOR_REACTION" }],
+        [{ ...span("event", 2, 2.5, 3), category: "LOUD_CREATOR_REACTION" }],
+      ),
+    ).toEqual([]);
+  });
+
+  it.each(["QUIET_OR_LOW_INTEREST", "LOUD_CREATOR_REACTION"] as const)(
+    "accepts supported %s matches",
+    (category) => {
+      expect(
+        matchBenchmarkSpans(
+          [{ ...span("label", 0, 5, 10), category }],
+          [{ ...span("event", 2, 6, 12), category }],
+        ),
+      ).toHaveLength(1);
+    },
+  );
+
+  it.each(["MENU", "LOADING_SCREEN"] as const)(
+    "matches %s transition boundaries by peak tolerance, not interval overlap",
+    (category) => {
+      expect(
+        matchBenchmarkSpans(
+          [{ ...span("label", 0, 1, 1.5), category }],
+          [{ ...span("event", 2, 3, 4), category }],
+        ),
+      ).toHaveLength(1);
+      expect(
+        matchBenchmarkSpans(
+          [{ ...span("label", 0, 1, 30), category }],
+          [{ ...span("event", 0, 25, 30), category }],
+        ),
+      ).toEqual([]);
+    },
+  );
+
+  it("isolates the requested category before calculating metric denominators", () => {
+    const metric = calculateBenchmarkMetric({
+      category: "HIGH_ACTION_GAMEPLAY",
+      labels: [
+        span("label", 0, 5, 10),
+        { ...span("other-label", 0, 5, 10), category: "MENU" },
+      ],
+      events: [
+        span("event", 0, 5, 10),
+        { ...span("other-event", 0, 5, 10), category: "MENU" },
+      ],
+      falsePositiveScopeComplete: true,
+    });
+    expect(metric).toMatchObject({ sampleCount: 1, truePositives: 1, f1: 1 });
+  });
+
+  it("reports measured zero F1 when a fully reviewed benchmark misses every label", () => {
+    const metric = calculateBenchmarkMetric({
+      category: "HIGH_ACTION_GAMEPLAY",
+      labels: [span("label", 0, 1, 2)],
+      events: [span("unmatched", 20, 21, 22)],
+      falsePositiveScopeComplete: true,
+    });
+    expect(metric).toMatchObject({ precision: 0, recall: 0, f1: 0 });
+  });
+
+  it("reports zero F1 for a fully reviewed missed label even without predictions", () => {
+    const metric = calculateBenchmarkMetric({
+      category: "HIGH_ACTION_GAMEPLAY",
+      labels: [span("label", 0, 1, 2)],
+      events: [],
+      falsePositiveScopeComplete: true,
+    });
+    expect(metric).toMatchObject({ precision: null, recall: 0, f1: 0 });
+  });
+
+  it("keeps metrics unavailable for a fully reviewed empty category", () => {
+    const metric = calculateBenchmarkMetric({
+      category: "HIGH_ACTION_GAMEPLAY",
+      labels: [],
+      events: [],
+      falsePositiveScopeComplete: true,
+    });
+    expect(metric).toMatchObject({ precision: null, recall: null, f1: null });
+  });
+
   it("does not report precision before full-category review", () => {
     const metric = calculateBenchmarkMetric({
       category: "HIGH_ACTION_GAMEPLAY",

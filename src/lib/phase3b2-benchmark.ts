@@ -10,7 +10,7 @@ import {
   LABEL_SCHEMA_VERSION,
 } from "@/lib/ground-truth";
 
-export const PHASE3B2_MATCHING_RULE_VERSION = "phase3b2-broad-signal-v1";
+export const PHASE3B2_MATCHING_RULE_VERSION = "phase3b2-broad-signal-v2";
 export const MINIMUM_BENCHMARK_EXAMPLES = 5;
 export const MINIMUM_INTERSECTION_OVER_UNION = 0.3;
 export const MAXIMUM_PEAK_ERROR_SECONDS = 2;
@@ -35,6 +35,18 @@ export const PHASE3B2_CATEGORY_LABELS: Record<
   LOUD_CREATOR_REACTION: "Loud creator reaction",
   MENU: "Menu transition boundary",
   LOADING_SCREEN: "Loading transition boundary",
+};
+
+export const PHASE3B2_CATEGORY_MATCH_RULES: Record<
+  Phase3b2BenchmarkCategory,
+  string
+> = {
+  HIGH_ACTION_GAMEPLAY:
+    "IoU >= 0.30, or overlapping ranges with peak error <= 2 s",
+  QUIET_OR_LOW_INTEREST: "IoU >= 0.30",
+  LOUD_CREATOR_REACTION: "Overlapping ranges with peak error <= 2 s",
+  MENU: "Transition-boundary peak error <= 2 s",
+  LOADING_SCREEN: "Transition-boundary peak error <= 2 s",
 };
 
 const categorySchema = z.enum(PHASE3B2_BENCHMARK_CATEGORIES);
@@ -114,15 +126,24 @@ export function matchBenchmarkSpans(
 ): BenchmarkMatch[] {
   const pairs = labels.flatMap((label) =>
     events.flatMap((event) => {
+      if (label.category !== event.category) return [];
       const overlap = overlapSeconds(label, event);
       const iou = intersectionOverUnion(label, event);
       const peakError = Math.abs(label.peakSeconds - event.peakSeconds);
-      if (
-        iou < MINIMUM_INTERSECTION_OVER_UNION &&
-        !(overlap > 0 && peakError <= MAXIMUM_PEAK_ERROR_SECONDS)
-      ) {
-        return [];
-      }
+      // Different observations require different evidence. A similar peak
+      // cannot establish a quiet interval, and broad overlap cannot establish
+      // a reaction or transition boundary at the correct time.
+      const closePeak = peakError <= MAXIMUM_PEAK_ERROR_SECONDS;
+      const qualifies =
+        label.category === "QUIET_OR_LOW_INTEREST"
+          ? iou >= MINIMUM_INTERSECTION_OVER_UNION
+          : label.category === "LOUD_CREATOR_REACTION"
+            ? overlap > 0 && closePeak
+            : label.category === "MENU" || label.category === "LOADING_SCREEN"
+              ? closePeak
+              : iou >= MINIMUM_INTERSECTION_OVER_UNION ||
+                (overlap > 0 && closePeak);
+      if (!qualifies) return [];
       return [
         {
           labelId: label.id,
@@ -160,27 +181,33 @@ export function calculateBenchmarkMetric(input: {
   events: BenchmarkSpan[];
   falsePositiveScopeComplete: boolean;
 }): CalculatedBenchmarkMetric {
-  const matches = matchBenchmarkSpans(input.labels, input.events);
+  const labels = input.labels.filter(
+    (span) => span.category === input.category,
+  );
+  const events = input.events.filter(
+    (span) => span.category === input.category,
+  );
+  const matches = matchBenchmarkSpans(labels, events);
   const truePositives = matches.length;
-  const falseNegatives = input.labels.length - truePositives;
-  const unmatchedCandidateCount = input.events.length - truePositives;
+  const falseNegatives = labels.length - truePositives;
+  const unmatchedCandidateCount = events.length - truePositives;
   const falsePositives = input.falsePositiveScopeComplete
     ? unmatchedCandidateCount
     : 0;
-  const recall =
-    input.labels.length > 0 ? truePositives / input.labels.length : null;
+  const recall = labels.length > 0 ? truePositives / labels.length : null;
   const precision = input.falsePositiveScopeComplete
     ? truePositives + falsePositives > 0
       ? truePositives / (truePositives + falsePositives)
       : null
     : null;
+  const f1Denominator = 2 * truePositives + falsePositives + falseNegatives;
   const f1 =
-    precision !== null && recall !== null && precision + recall > 0
-      ? (2 * precision * recall) / (precision + recall)
+    input.falsePositiveScopeComplete && f1Denominator > 0
+      ? (2 * truePositives) / f1Denominator
       : null;
   return {
     category: input.category,
-    sampleCount: input.labels.length,
+    sampleCount: labels.length,
     truePositives,
     falsePositives,
     falseNegatives,
@@ -190,7 +217,7 @@ export function calculateBenchmarkMetric(input: {
     medianPeakError: median(matches.map((match) => match.peakErrorSeconds)),
     medianStartError: median(matches.map((match) => match.startErrorSeconds)),
     medianEndError: median(matches.map((match) => match.endErrorSeconds)),
-    insufficientExamples: input.labels.length < MINIMUM_BENCHMARK_EXAMPLES,
+    insufficientExamples: labels.length < MINIMUM_BENCHMARK_EXAMPLES,
     falsePositiveScopeComplete: input.falsePositiveScopeComplete,
     unmatchedCandidateCount,
     matches,
@@ -478,6 +505,7 @@ export async function runProjectBenchmark(projectId: string) {
       version: PHASE3B2_MATCHING_RULE_VERSION,
       minimumIntersectionOverUnion: MINIMUM_INTERSECTION_OVER_UNION,
       maximumPeakErrorSeconds: MAXIMUM_PEAK_ERROR_SECONDS,
+      categoryRules: PHASE3B2_CATEGORY_MATCH_RULES,
       oneToOne: true,
     },
     detectorManifest,
