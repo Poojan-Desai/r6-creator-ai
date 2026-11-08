@@ -8,8 +8,8 @@ transcript-evidence, and reaction-candidate signals. These are observable local
 measurements, not kills, deaths, round results, map/room locations, operators,
 defuser events, clutches, highlights, or predictions of content performance.
 
-The broad-signal dashboard uses the versioned `phase3b2-broad-signal-v1`
-matching method below. With only one approved `MENU` range and no complete
+New broad-signal runs use the versioned `phase3b2-broad-signal-v2`
+matching method below. Historical runs retain their stored rule version and metrics. With only one approved `MENU` range and no complete
 category-review confirmation, the current honest result remains **Insufficient
 benchmark examples** and false-positive precision remains **Not measured**.
 
@@ -246,7 +246,23 @@ loadout verified,” and operator detection remains unsupported.
 
 ## Phase 3B.2 broad-signal evaluation method
 
-Method ID: `phase3b2-broad-signal-v1`.
+Method ID for new runs: `phase3b2-broad-signal-v2`.
+
+The November 7, 2026 correction makes the implementation enforce the category
+rules in the table below. Version 1 used the generic high-action IoU/peak rule
+for every category. That could accept a quiet interval with only a tiny overlap,
+accept a badly timed reaction because its range was broad, or miss a correctly
+timed transition because narrow ranges did not overlap. Version 2 also forbids
+cross-category matching and isolates metric denominators by the requested
+category. This changes evaluation accounting, not detector predictions. Stored
+version 1 runs are not rewritten; rerun explicitly to produce a new version 2
+report and do not present the two rule versions as a model improvement.
+
+For a fully reviewed category, F1 uses `2 TP / (2 TP + FP + FN)`. It is zero when
+there are counted errors and no correct matches, and unavailable only when that
+denominator is zero or the false-positive review scope is incomplete. Precision
+still needs a nonzero prediction count and recall needs a nonzero label count;
+these individual ratios may remain unavailable when F1 is a defined zero.
 
 Phase 3B.2 evaluates observable signals only. It never compares a scene,
 motion, audio, silence, transcript, or reaction detector against kill, death,
